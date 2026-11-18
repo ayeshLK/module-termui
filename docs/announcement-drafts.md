@@ -30,7 +30,7 @@ One channel at a time over about a week, and answer every reply quickly.
 > Experimental (0.1), macOS and Linux. Demo and a 25-line quickstart in the repo: <repo link>
 > I would love feedback on the API, and on what an agent CLI needs that is missing.
 
-Attach `docs/assets/demo.gif`.
+Attach `docs/assets/harness-demo.gif`.
 
 ## Long post (Tech Blog, dev.to)
 

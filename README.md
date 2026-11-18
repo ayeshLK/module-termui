@@ -9,9 +9,9 @@
 ![Ballerina](https://img.shields.io/badge/Ballerina-2201.14-blue)
 ![Status](https://img.shields.io/badge/status-experimental-orange)
 
-![The agent demo: streamed text, a live status line, an approval prompt, then the same program piped and run headless](docs/assets/demo.gif)
+![The agent harness: a prompt typed, a streamed answer with a code block, and two approval prompts](docs/assets/harness-demo.gif)
 
-<sub>The [agent demo](examples/agent-demo), recorded from the real program: interactively, with its output redirected, and with no terminal at all.</sub>
+<sub>The [agent harness](examples/agent-harness), recorded from the real program: a prompt with history, a streamed answer with a colored code block, tool calls, and two approval prompts.</sub>
 
 > **Status: experimental (0.1).** The API can still change before 1.0. macOS and Linux only.
 
@@ -96,13 +96,8 @@ You write a `Program` with two methods: `update` is called for each message and 
 
 | Example | Shows |
 |---|---|
-| [`examples/agent-harness`](examples/agent-harness) | **A Claude-Code-style agent harness with a scripted "model":** a prompt with history, streamed answers with colored code blocks, tool calls with approval prompts, a status line with elapsed time and tokens, and Esc to interrupt |
-| [`examples/agent-demo`](examples/agent-demo) | The same program run three ways: interactively, with its output redirected, and with no terminal at all (the recording at the top) |
+| [`examples/agent-harness`](examples/agent-harness) | **A Claude-Code-style agent harness with a scripted "model":** a prompt with history, streamed answers with colored code blocks, tool calls with approval prompts, a status line with elapsed time and tokens, and Esc to interrupt (the recording at the top) |
 | [`examples/counter`](examples/counter) | The smallest interactive program (the quickstart above); clone the repo and `bal run` in the folder |
-
-![The agent harness: a prompt typed, a streamed answer with a code block, and two approval prompts](docs/assets/harness-demo.gif)
-
-<sub>The [agent harness](examples/agent-harness), recorded from the real program.</sub>
 
 ## Documentation
 
