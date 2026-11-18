@@ -12,6 +12,7 @@ org = "ayesha"
 name = "termui"
 version = "0.1.0"
 modules = [
-	{org = "ayesha", packageName = "termui", moduleName = "termui"}
+	{org = "ayesha", packageName = "termui", moduleName = "termui"},
+	{org = "ayesha", packageName = "termui", moduleName = "termui.text"}
 ]
 

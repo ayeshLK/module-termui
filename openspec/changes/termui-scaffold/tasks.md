@@ -9,9 +9,9 @@
 
 ## 2. Single version source
 
-- [ ] 2.1 Add `build-config/resources/Ballerina.toml` and `version.bal.template` plus the `updateTomlFiles` Gradle task, and verify that changing `version` in `gradle.properties` and running the task rewrites both `Ballerina.toml` and `version.bal` to the same value
-- [ ] 2.2 Verify a `-SNAPSHOT` development version produces generated files without the suffix (inspect `Ballerina.toml` and `version.bal` after the task)
-- [ ] 2.3 Add an empty placeholder submodule under `ballerina/modules/` and verify `./gradlew build` handles a multi-module package (this confirms the Gradle-plugin risk from `design.md`); adapt the plugin's `module` configuration if it does not, and keep or remove the placeholder as `termui-foundation` needs
+- [x] 2.1 Add `build-config/resources/Ballerina.toml` and `version.bal.template` plus the `updateTomlFiles` Gradle task, and verify that changing `version` in `gradle.properties` and running the task rewrites both `Ballerina.toml` and `version.bal` to the same value
+- [x] 2.2 Verify a `-SNAPSHOT` development version produces generated files without the suffix (inspect `Ballerina.toml` and `version.bal` after the task)
+- [x] 2.3 Add an empty placeholder submodule under `ballerina/modules/` and verify `./gradlew build` handles a multi-module package (this confirms the Gradle-plugin risk from `design.md`); adapt the plugin's `module` configuration if it does not, and keep or remove the placeholder as `termui-foundation` needs
 
 ## 3. Test tiers and coverage
 

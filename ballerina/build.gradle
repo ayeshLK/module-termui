@@ -14,6 +14,8 @@
  * language governing permissions and limitations under the License.
  */
  
+import org.apache.tools.ant.taskdefs.condition.Os
+
 plugins {
     id 'io.ballerina.plugin'
 }
@@ -22,13 +24,56 @@ description = 'termui - Ballerina'
 
 def packageName = "termui"
 def packageOrg = "ayesha"
+def tomlVersion = stripBallerinaExtensionVersion("${project.version}")
+def ballerinaTomlFilePlaceHolder = new File("${project.rootDir}/build-config/resources/Ballerina.toml")
+def ballerinaTomlFile = new File("$project.projectDir/Ballerina.toml")
+def versionBalFilePlaceHolder = new File("${project.rootDir}/build-config/resources/version.bal.template")
+def versionBalFile = new File("$project.projectDir/version.bal")
+
+def stripBallerinaExtensionVersion(String extVersion) {
+    if (extVersion.matches(project.ext.timestampedVersionRegex)) {
+        def splitVersion = extVersion.split('-')
+        if (splitVersion.length > 3) {
+            def strippedValues = splitVersion[0..-4]
+            return strippedValues.join('-')
+        } else {
+            return extVersion
+        }
+    } else {
+        return extVersion.replace("${project.ext.snapshotVersion}", "")
+    }
+}
 
 ballerina {
     packageOrganization = packageOrg
     module = packageName
     testCoverageParam = "--code-coverage --coverage-format=xml"
-    isConnector = false
+    // Plugin 2.3.0 only builds through the Ballerina Docker image when this is true. With false it
+    // needs a jballerina-tools download whose version resolves to null (see termui-scaffold notes).
+    isConnector = true
     platform = "any"
+}
+
+task updateTomlFiles {
+    doLast {
+        def newBallerinaToml = ballerinaTomlFilePlaceHolder.text.replace("@project.version@", project.version)
+        newBallerinaToml = newBallerinaToml.replace("@toml.version@", tomlVersion)
+        ballerinaTomlFile.text = newBallerinaToml
+        versionBalFile.text = versionBalFilePlaceHolder.text.replace("@toml.version@", tomlVersion)
+    }
+}
+
+task commitTomlFiles {
+    doLast {
+        project.exec {
+            ignoreExitValue true
+            if (Os.isFamily(Os.FAMILY_WINDOWS)) {
+                commandLine 'cmd', '/c', "git commit -m \"[Automated] Update the toml files\" Ballerina.toml Dependencies.toml version.bal"
+            } else {
+                commandLine 'sh', '-c', "git commit -m '[Automated] Update the toml files' Ballerina.toml Dependencies.toml version.bal"
+            }
+        }
+    }
 }
 
 publishing {
