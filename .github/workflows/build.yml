@@ -52,6 +52,10 @@ jobs:
       - name: Point the examples at the package built here
         run: .github/scripts/point-examples-at-source.sh
 
+      # The harness check feeds the app's output to a terminal emulator to look at the screen.
+      - name: Install pyte (terminal emulator for the harness check)
+        run: python3 -m pip install pyte==0.8.2
+
       - name: Build and verify the agent harness
         working-directory: examples/agent-harness
         run: |

@@ -7,7 +7,7 @@ Thanks for helping. This page covers building, testing, and releasing. For what 
 - JDK 25 (Ballerina 2201.14 and later need it)
 - Ballerina 2201.14.2 (the version pinned as `ballerinaLangVersion` in `gradle.properties`)
 - macOS or Linux (Windows is not supported yet)
-- `python3` (used by the `tty` tests to allocate a pseudo-terminal)
+- `python3` (used by the `tty` tests to allocate a pseudo-terminal), and `pip install pyte` for the agent harness check (a terminal emulator it uses to look at the screen)
 - `packageUser` and `packagePAT` environment variables: a GitHub user and a token that can read
   packages. The Gradle plugin is resolved from `https://maven.pkg.github.com/ballerina-platform/*`,
   even for builds that publish nothing.
