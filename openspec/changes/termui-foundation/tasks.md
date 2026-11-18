@@ -54,11 +54,11 @@ Depends on `termui-scaffold` for the build, test, and CI setup. Group 1 is a gat
 
 ## 7. Headless behavior
 
-- [ ] 7.1 Implement mode selection from stdin and stdout tty state across all four combinations, and verify tests for each combination choose the expected mode
-- [ ] 7.2 Route the interactive interface to the tty (or stderr) and results to stdout when stdout is redirected, and verify a test captures stdout and finds only result output
-- [ ] 7.3 Implement `NoTerminal` errors and caller-supplied defaults for prompts without a terminal, and verify tests that a prompt returns immediately with the error or the default and never blocks
-- [ ] 7.4 Verify headless output is deterministic and wraps at 80 columns when width is unknown, using a repeated-run byte-comparison test
-- [ ] 7.5 Document headless behavior and the stdout/tty split in `Package.md`, and verify the documented commands produce the documented output
+- [x] 7.1 Implement mode selection from stdin and stdout tty state across all four combinations, and verify tests for each combination choose the expected mode
+- [x] 7.2 Route the interactive interface to the tty (or stderr) and results to stdout when stdout is redirected, and verify a test captures stdout and finds only result output
+- [x] 7.3 Implement `NoTerminal` errors and caller-supplied defaults for prompts without a terminal, and verify tests that a prompt returns immediately with the error or the default and never blocks
+- [x] 7.4 Verify headless output is deterministic and wraps at 80 columns when width is unknown, using a repeated-run byte-comparison test
+- [x] 7.5 Document headless behavior and the stdout/tty split in `Package.md`, and verify the documented commands produce the documented output
 
 ## 8. Integration and delivery
 

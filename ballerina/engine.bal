@@ -38,10 +38,13 @@ public type Program object {
 # + colors - whether to write color sequences
 # + reflow - whether the terminal re-wraps text when it is resized (see `render:InlineRenderer`)
 # + pollInterval - seconds the loop sleeps when there is nothing to do
+# + interactive - whether a user can answer questions; when `false`, `confirm` and `choose` return
+#                 their default or a `NoTerminal` error at once
 public type Options record {|
     boolean colors = true;
     boolean reflow = true;
     decimal pollInterval = 0.005;
+    boolean interactive = true;
 |};
 
 // Reads the terminal's input and turns each event into a message. Runs on its own strand because
@@ -92,13 +95,13 @@ class Engine {
     private int promptSerial = 0;
     private int promptIndex = 0;
 
-    function init(Program program, term:Terminal terminal, render:Renderer renderer) {
+    function init(Program program, term:Terminal terminal, render:Renderer renderer, boolean interactive = true) {
         self.program = program;
         self.terminal = terminal;
         self.renderer = renderer;
         self.queue = new MessageQueue();
         self.board = new;
-        self.session = new Session(self.queue, self.board);
+        self.session = new Session(self.queue, self.board, interactive);
     }
 
     // Starts reading the terminal.
@@ -253,21 +256,23 @@ class Engine {
 # + program - the application
 # + terminal - the terminal to use
 # + options - how to run
+# + renderer - what draws the program; an `InlineRenderer` on the terminal when absent (pass a
+#              `PlainRenderer` for output that is not an interactive terminal)
 # + return - an error when the terminal cannot be used or drawing fails
-public function run(Program program, term:Terminal terminal, Options options = {}) returns error? {
+public function run(Program program, term:Terminal terminal, Options options = {}, render:Renderer? renderer = ()) returns error? {
     check terminal.acquire();
     error? failure = ();
     Engine? engine = ();
     do {
         term:Size size = check terminal.size();
-        render:InlineRenderer renderer = new (terminal, size.width, size.height, options.colors, options.reflow);
-        Engine running = new (program, terminal, renderer);
+        render:Renderer drawing = renderer ?: new render:InlineRenderer(terminal, size.width, size.height, options.colors, options.reflow);
+        Engine running = new (program, terminal, drawing, options.interactive);
         engine = running;
         running.launch();
         while check running.step() {
             runtime:sleep(options.pollInterval);
         }
-        check renderer.close();
+        check drawing.close();
     } on fail error cause {
         failure = cause;
     }

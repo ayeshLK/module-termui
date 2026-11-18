@@ -175,3 +175,11 @@ If a later task finds one of these assumptions false, the fallback is the JLine 
 - **The final frame is drawn on quit**, so the last state stays on screen.
 - **Prompts:** an effect asks through a one-slot board and polls for the answer; the loop shows the question below the view and routes keys to it. `choose` is the name of the pick-one method because `select` is reserved.
 - **Reserved words** hit again: `commit`, `select`, `start`, `by`, `order`.
+
+## Findings while building headless mode
+
+- **`Interface` is the one place that chooses.** It picks the terminal (`UnixTerminal` for `interactive` and `pipedOutput`, `StreamTerminal` otherwise), the renderer (inline or plain), and the `run` options from the four stdin/stdout combinations; `result` always goes to standard output (or a result file for tests), so chrome and results never mix. In `pipedOutput` a terminal is still available, so questions can be asked.
+- **Questions without a terminal fail fast.** `confirm` and `choose` return their default or a `NoTerminal` error at once instead of waiting for input that cannot come; verified with a time bound.
+- **Colors on a terminal with redirected output** are decided by `NO_COLOR` and `TERM=dumb` only, because the interface is not drawn on standard output; `Environment` therefore gained a `noColor` field.
+- **A Ballerina gotcha for tests:** `io:fileReadString` drops a trailing newline (3 characters for 4 bytes). Read bytes when a test must see exactly what was written.
+- **`PlainRenderer` writes the live region once**, at `close`, so a spinner appears as its final frame only.

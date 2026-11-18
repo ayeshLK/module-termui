@@ -106,3 +106,11 @@ sys.stdout.write(data.decode())`;
     string output = check runPython(code, STDIO_PROBE_SCRIPT);
     test:assertEquals(parseStdioProbe(output), [true, true, true], output);
 }
+
+@test:Config {}
+function testModeFollowsTheStandardStreams() {
+    test:assertEquals(selectMode(environmentFrom({}, true, true, true)), "interactive");
+    test:assertEquals(selectMode(environmentFrom({}, true, false, true)), "pipedOutput");
+    test:assertEquals(selectMode(environmentFrom({}, false, true, true)), "pipedInput");
+    test:assertEquals(selectMode(environmentFrom({}, false, false, false)), "headless");
+}

@@ -98,11 +98,13 @@ isolated class PromptBoard {
 public isolated class Session {
     private final Queue queue;
     private final PromptBoard board;
+    private final boolean interactive;
     private boolean stopped = false;
 
-    isolated function init(Queue queue, PromptBoard board) {
+    isolated function init(Queue queue, PromptBoard board, boolean interactive = true) {
         self.queue = queue;
         self.board = board;
+        self.interactive = interactive;
     }
 
     # Sends a message to the program. After the program has ended, messages are dropped.
@@ -137,22 +139,43 @@ public isolated class Session {
     # Asks the user a yes or no question and waits for the answer. The question appears in the live
     # region; `y`, `n`, Enter (the default, when there is one) and Esc (no) answer it.
     #
+    # When nobody can answer (input is not a terminal) it does not wait: it returns the default when
+    # there is one, and a `NoTerminal` error otherwise.
+    #
     # + question - the question
-    # + defaultAnswer - the answer chosen by Enter, or `()` to make Enter do nothing
-    # + return - the answer, or an error when the program ends before it is answered
+    # + defaultAnswer - the answer chosen by Enter, and the answer used when there is no terminal;
+    #                   `()` for none
+    # + return - the answer, a `NoTerminal` error, or an error when the program ends first
     public isolated function confirm(string question, boolean? defaultAnswer = ()) returns boolean|error {
+        if !self.interactive {
+            if defaultAnswer is boolean {
+                return defaultAnswer;
+            }
+            return noTerminal(question);
+        }
         PromptRequest request = {kind: "confirm", question, options: [], defaultAnswer};
         int answer = check self.board.ask(request.cloneReadOnly());
         return answer == 1;
     }
 
-    # Asks the user to pick one of several options and waits (named `choose` because `select` is reserved). Up and Down move, Enter chooses, Esc
-    # cancels.
+    # Asks the user to pick one of several options and waits (named `choose` because `select` is
+    # reserved). Up and Down move, Enter chooses, Esc cancels.
+    #
+    # When nobody can answer it does not wait: it returns `defaultChoice` when there is one, and a
+    # `NoTerminal` error otherwise.
     #
     # + question - the question
     # + options - the options
-    # + return - the index of the chosen option, or an error when the user cancels or the program ends
-    public isolated function choose(string question, string[] options) returns int|error {
+    # + defaultChoice - the index used when there is no terminal; `()` for none
+    # + return - the index of the chosen option, a `NoTerminal` error, or an error when the user
+    #            cancels or the program ends
+    public isolated function choose(string question, string[] options, int? defaultChoice = ()) returns int|error {
+        if !self.interactive {
+            if defaultChoice is int && defaultChoice >= 0 && defaultChoice < options.length() {
+                return defaultChoice;
+            }
+            return noTerminal(question);
+        }
         PromptRequest request = {kind: "select", question, options: options.clone(), defaultAnswer: ()};
         int answer = check self.board.ask(request.cloneReadOnly());
         if answer < 0 {

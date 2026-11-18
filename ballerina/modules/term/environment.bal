@@ -20,6 +20,7 @@ import ballerina/os;
 # + stdoutIsTerminal - whether standard output is an interactive terminal
 # + stderrIsTerminal - whether standard error is an interactive terminal
 # + dumbTerminal - whether `TERM` is `dumb`, a terminal without cursor control
+# + noColor - whether `NO_COLOR` asks for no color (set and not empty)
 # + colorEnabled - whether color sequences may be written to standard output
 # + width - the terminal width from `COLUMNS`, or 80 when it is unknown
 # + height - the terminal height from `LINES`, or 24 when it is unknown
@@ -28,6 +29,7 @@ public type Environment record {|
     boolean stdoutIsTerminal;
     boolean stderrIsTerminal;
     boolean dumbTerminal;
+    boolean noColor;
     boolean colorEnabled;
     int width;
     int height;
@@ -114,6 +116,7 @@ public isolated function environmentFrom(map<string> variables, boolean stdinIsT
         stdoutIsTerminal,
         stderrIsTerminal,
         dumbTerminal: dumb,
+        noColor,
         colorEnabled: stdoutIsTerminal && !noColor && !dumb,
         width: positiveInt(variables["COLUMNS"], DEFAULT_WIDTH),
         height: positiveInt(variables["LINES"], DEFAULT_HEIGHT)
@@ -133,4 +136,24 @@ public isolated function detectEnvironment() returns Environment {
         return environmentFrom(os:listEnv(), false, false, false);
     }
     return environmentFrom(os:listEnv(), probed[0], probed[1], probed[2]);
+}
+
+# How the program is attached to its surroundings.
+#
+# - `interactive`: input and output are both terminals.
+# - `pipedOutput`: output is redirected but a terminal is available; the interface is drawn on the
+#   terminal and only results go to standard output.
+# - `pipedInput`: input is redirected, so nobody can answer questions.
+# - `headless`: neither is a terminal (a script or a CI job).
+public type Mode "interactive"|"pipedOutput"|"pipedInput"|"headless";
+
+# Chooses the mode from what the process is attached to.
+#
+# + environment - the detected environment
+# + return - the mode
+public isolated function selectMode(Environment environment) returns Mode {
+    if environment.stdinIsTerminal {
+        return environment.stdoutIsTerminal ? "interactive" : "pipedOutput";
+    }
+    return environment.stdoutIsTerminal ? "pipedInput" : "headless";
 }
