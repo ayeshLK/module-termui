@@ -145,7 +145,6 @@ function testInputIsDecodedFromTheTerminal() returns error? {
         {op: "send", hex: "1b"},
         {op: "wait", file: "escape-seen"},
         {op: "send", hex: "1b5b"},
-        {op: "sleep", seconds: 0.01},
         {op: "send", hex: "41"},
         {op: "wait", file: "finished"}
     ]);
@@ -163,7 +162,8 @@ function testInputIsDecodedFromTheTerminal() returns error? {
     // a lone Esc is reported as the Escape key once nothing follows it
     check expectEvent(terminal, <KeyEvent>{key: "escape"});
     check touch(dir, "escape-seen");
-    // a sequence split across two writes, a few milliseconds apart, is still one key
+    // a sequence written in two parts is still one key (whether the two parts arrive in one read or two;
+    // a gap longer than the Esc timeout would make it Escape, which the decoder unit tests cover)
     check expectEvent(terminal, <KeyEvent>{key: "up"});
 
     check terminal.release();

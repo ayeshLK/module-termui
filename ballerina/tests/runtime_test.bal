@@ -614,3 +614,49 @@ function testModuleDocExample() returns error? {
     check run(new DocCounter(), terminal);
     test:assertEquals(terminal.screenText(), "count: 2");
 }
+
+// ---- output keeps the order of the messages ------------------------------------------------------
+
+class OrderingProgram {
+    *Program;
+
+    private final term:FakeTerminal terminal;
+
+    function init(term:FakeTerminal terminal) {
+        self.terminal = terminal;
+    }
+
+    public function update(Message message) returns Command? {
+        if message is term:KeyEvent {
+            if message.key == "c" {
+                return commitProse([[{text: "committed"}]]);
+            }
+            if message.key == "r" {
+                // output the program writes itself, as a result on standard output would be
+                error? written = self.terminal.write("RESULT\r\n");
+                if written is error {
+                    return quit();
+                }
+            }
+        }
+        return ();
+    }
+
+    public function view() returns text:Span[][] {
+        return [];
+    }
+}
+
+@test:Config {}
+function testCommittedOutputAndOwnOutputKeepTheOrderOfTheMessages() returns error? {
+    term:FakeTerminal terminal = new (40, 10);
+    OrderingProgram program = new (terminal);
+    render:InlineRenderer renderer = new (terminal, 40, 10);
+    Engine engine = new (program, terminal, renderer);
+    // all in one batch: whatever the batching, "committed" came first and so it must be written first
+    engine.session.send(keyMessage("c"));
+    engine.session.send(keyMessage("r"));
+    engine.session.send(keyMessage("c"));
+    _ = check engine.step();
+    test:assertEquals(terminal.screenLines().slice(0, 3), ["committed", "RESULT", "committed"]);
+}

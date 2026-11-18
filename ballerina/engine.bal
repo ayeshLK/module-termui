@@ -93,7 +93,7 @@ class Engine {
     final Session session;
     private boolean quitting = false;
     private boolean drawn = false;
-    private Command[] pendingCommits = [];
+    private Command? initial = ();
     private PromptRequest? prompt = ();
     private int promptSerial = 0;
     private int promptIndex = 0;
@@ -107,9 +107,9 @@ class Engine {
         self.session = new Session(self.queue, self.board, interactive);
     }
 
-    // Carries out the initial command and starts reading the terminal.
+    // Remembers the initial command (carried out by the first step) and starts reading the terminal.
     function launch(Command? initial = ()) {
-        self.carryOut(initial);
+        self.initial = initial;
         _ = start inputLoop(self.terminal, self.session);
     }
 
@@ -124,6 +124,9 @@ class Engine {
 
     function step() returns boolean|error {
         boolean changed = !self.drawn;
+        Command? first = self.initial;
+        self.initial = ();
+        check self.carryOut(first);
         foreach Message message in self.queue.takeAll() {
             boolean isResize = message is term:ResizeEvent;
             if isResize {
@@ -135,23 +138,13 @@ class Engine {
                 changed = true;
                 continue;
             }
-            self.carryOut(self.program.update(message));
+            check self.carryOut(self.program.update(message));
             changed = true;
             if self.quitting {
                 break; // messages after a quit are dropped, but the final state is still drawn
             }
         }
         if self.syncPrompt() {
-            changed = true;
-        }
-        Command[] commits = self.pendingCommits;
-        self.pendingCommits = [];
-        foreach Command item in commits {
-            if item is CommitProse {
-                check self.renderer.commitProse(item.paragraphs);
-            } else if item is CommitBlock {
-                check self.renderer.commitBlock(item.lines);
-            }
             changed = true;
         }
         if changed {
@@ -161,7 +154,10 @@ class Engine {
         return !self.quitting;
     }
 
-    private function carryOut(Command? command) {
+    // Carries out a command. Commits are written at once, in the order the messages were handled, so
+    // output the program writes itself (a result on standard output) and committed output keep the
+    // order of the messages that caused them, however the messages happened to be batched.
+    private function carryOut(Command? command) returns error? {
         if command is () {
             return;
         }
@@ -173,10 +169,12 @@ class Engine {
             _ = start tickLoop(self.session, command.interval, command.message);
         } else if command is Batch {
             foreach Command each in command.commands {
-                self.carryOut(each);
+                check self.carryOut(each);
             }
+        } else if command is CommitProse {
+            check self.renderer.commitProse(command.paragraphs);
         } else {
-            self.pendingCommits.push(command);
+            check self.renderer.commitBlock(command.lines);
         }
     }
 

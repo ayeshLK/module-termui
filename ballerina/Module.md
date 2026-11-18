@@ -24,7 +24,9 @@ methods, and the runtime does the rest.
 a program can keep plain mutable state and widgets as ordinary fields without locks. Everything that
 happens elsewhere (reading the keyboard, timers, long-running work) reaches the program only as a
 message. The loop applies every waiting message, then draws **one** frame, so a burst of streamed
-tokens costs one redraw.
+tokens costs one redraw. Committed output is written at once, in the order of the messages that
+caused it, so output the program writes itself (a result on standard output) stays in the same order
+however the messages were batched.
 
 ### Effects
 
