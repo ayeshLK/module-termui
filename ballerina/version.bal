@@ -12,5 +12,10 @@
 // either express or implied. See the License for the specific
 // language governing permissions and limitations under the License.
 
+// Generated file — rendered from `build-config/resources/version.bal.template` by the
+// `updateTomlFiles` Gradle task, which substitutes the package version from `gradle.properties`.
+// To bump the version, edit `gradle.properties`; to change anything else here, edit the template
+// and keep the checked-in copy in sync by hand, as with Ballerina.toml.
+
 # The version of this package, matching the `version` in `Ballerina.toml`.
 const string VERSION = "0.1.0";
