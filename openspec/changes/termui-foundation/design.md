@@ -66,7 +66,7 @@ Alternatives: JLine via a Java shim (mature, handles Windows and real signals, b
 - [A hard kill (SIGKILL) can leave the terminal in raw mode] -> Restore on normal exit, catchable errors, and graceful stop; document `stty sane` for recovery.
 - [Polling for resize leaves a short window of redrawing at the old size] -> Accept occasional self-healing artifacts; use DEC mode 2048 where available.
 - [Terminals differ in reflow behavior] -> Compute clearing conservatively and cover it with fake-terminal tests that simulate reflowing and non-reflowing terminals.
-- [JVM startup time] -> Keep the foundation dependency-light and measure a hello-world baseline and time-to-first-frame in the spike; set a startup budget from the measured numbers.
+- [JVM startup time] -> Measured in the spike (about 160 ms to first frame on the JVM, about 90 ms with an AppCDS archive); keep the foundation dependency-light and hold it to the budget proposed under Spike results.
 - [Mutable model plus concurrent effects invites races] -> Single-owner loop, `readonly` messages, `isolated` effect functions, and verification that the compiler enforces this (spike).
 
 ## Spike (gate for the rest of the change)
@@ -77,14 +77,14 @@ These must be answered before building on the design; each has a fallback noted 
 2. Does a blocking read starve other strands, and does the reader need a dedicated thread? (Answered below.)
 3. Does the compiler enforce `isolated` for `start`ed effect functions, or only hint? (Answered below.)
 4. Does `runtime:onGracefulStop` fire on SIGINT and SIGTERM, including while the terminal is in raw mode? (Answered below.)
-5. Is write throughput acceptable, and can a whole frame be flushed in one write without flicker?
-6. Baseline: hello-world startup and time-to-first-frame on the JVM.
+5. Is write throughput acceptable, and can a whole frame be flushed in one write without flicker? (Answered below.)
+6. Baseline: hello-world startup and time-to-first-frame on the JVM. (Answered below.)
 
 ## Open Questions
 
 - Structured (JSON/NDJSON) output format: deferred to a later change; the commit model leaves room for it.
 - The message seam with Ballerina's AI module: deferred until widgets and an agent example exist.
-- The startup budget: set after the spike's baseline measurement.
+- The startup budget: proposed below from the spike baseline; confirmed or revised in task 8.3.
 - Whether to add a JLine backend, and for which platforms: decided after the first release.
 
 ## Spike results
@@ -104,3 +104,22 @@ Measured on Ballerina 2201.14.2 / JDK 25 / macOS, driving a throwaway Ballerina 
    - **Consequence:** the runtime's effect API must take `isolated function` parameters and `readonly` messages, and the event queue must be an `isolated` class that guards its state with `lock`; then the single-owner and immutable-message rules are compiler-checked for everything that goes through the API. Application code that calls `start` directly bypasses the check, which is documented as out of contract.
 
 4. **`onGracefulStop` on signals (task 1.4).** A handler registered with `runtime:onGracefulStop` that runs `stty <saved>` through `os:exec` ran and **restored the terminal (raw to cooked) on SIGTERM, SIGINT, and SIGHUP**, whether the main strand was sleeping or blocked in a `/dev/tty` read; the JVM then exited. SIGKILL cannot be handled, as expected. In raw mode Ctrl+C is the byte `0x03` and not a signal, so the application handles it as a key event; SIGINT only arrives from outside (for example `kill -INT`). **Caveat for tests:** when a harness signals a whole process group, the `bal run` launcher script dies at once while the JVM is still running its shutdown hook, so wait for the JVM itself (or signal only the JVM) before checking the terminal state. **Consequence:** the restore-on-exit plan stands; only SIGKILL leaves the terminal raw, which the README recovery note (`stty sane`) covers.
+
+5. **Write throughput and flushing (task 1.5).** Measured by a Ballerina program writing to a pty that a harness drains, on this macOS machine (11 cores, JDK 25).
+   - `io:print` **flushes without a newline**: `io:print("PARTIAL")` was visible 0.18 s after launch (when the JVM had started), not after the 2 s sleep that followed.
+   - **One `io:print` per frame beats one per row by 4-6x**: 24x80 frames ran at about 32.8k frames/s in one write versus 5.5k frames/s row by row, and 50x200 frames (about 10 KB with ANSI) at about 11.6k frames/s versus 2.6k (0.09 ms versus 0.38 ms per frame). A single write is far below a 60 fps budget (16 ms).
+   - I could not count `write(2)` calls (no `strace` or `dtruss` here), so "one write" is inferred from the throughput gap. Flicker cannot be measured headlessly; the mitigation is the single write per frame plus wrapping each frame in synchronized-output sequences (DEC mode 2026) on terminals that support it.
+   - **Consequence:** the renderer builds the whole frame as one string and emits it with a single `io:print` (or `io:fprint` to the tty or stderr path), with synchronized output where available.
+
+6. **JVM startup baseline (task 1.5).** `java -jar` of a built executable jar, 10 runs after a warm-up, timed from process start to the first byte of output under a pty (medians):
+
+   | Configuration | Time to first frame |
+   |---|---|
+   | `java -version` (JVM floor) | 20 ms |
+   | hello, imports `io` only | 156 ms |
+   | hello, imports `io`, `os`, `time` (what the foundation imports) | 161 ms |
+   | same, C1 compiler only (`-XX:TieredStopAtLevel=1`) | 140 ms |
+   | same, AppCDS archive (`-XX:SharedArchiveFile`) | 92 ms |
+   | same, AppCDS and C1 only | 80 ms |
+
+   The three stdlib imports cost about 5 ms; the Ballerina runtime itself is the bulk of the gap above the JVM floor. **Proposed startup budget:** time to first frame of **250 ms or less** for a plain `java -jar` on a developer laptop (about 1.5x the measured 161 ms, leaving room for the foundation's own code), and **120 ms or less** with a documented AppCDS launcher (measured 92 ms). Task 8.3 re-measures on the finished foundation and confirms or revises these numbers.
