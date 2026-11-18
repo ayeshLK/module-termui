@@ -26,7 +26,7 @@ Findings from inspecting the local distribution:
 
 ```
   text    (no deps)             styles, width, wrapping
-  term    (io, os)              Terminal interface, unix backend, fake backend, mode detection
+  term    (io, os, text)        Terminal interface, unix backend, fake backend, mode detection
   render  (text, term)          cell buffer, diff, inline viewport, commit-above, plain renderer
   root    (text, term, render)  MVU runtime, event queue, effects, prompts
 ```
@@ -144,3 +144,9 @@ Measured on Ballerina 2201.14.2 / JDK 25 / macOS, driving a throwaway Ballerina 
 - Windows remains out of scope.
 
 If a later task finds one of these assumptions false, the fallback is the JLine backend behind the same `Terminal` interface, as designed.
+
+## Findings while building the `term` module
+
+- **Stdio detection needs an OS lookup.** A child started with `os:exec` always gets pipes, so it cannot tell whether the parent's stdin, stdout, or stderr is a terminal. `detectEnvironment` instead asks the operating system about its parent process: `readlink /proc/<pid>/fd/N` on Linux and `lsof` on macOS (about 25 ms, run once at startup), and treats a missing answer as "not a terminal" so the safe non-interactive mode is chosen. The probe script and its parser are separate, public, and tested (including under a real pty).
+- **The fake terminal has a small virtual screen.** The `term` module imports `text` for display width, so `term` depends on `text` as well as `io` and `os`. The screen interprets cursor movement, erase, scrolling, and autowrap, and ignores styles and modes; a line feed moves down only, as in raw mode. Reflow on resize is not simulated yet; task 5.4 adds it where the renderer needs it.
+- **`Terminal` is an isolated object type.** `nextEvent` blocks, so implementations must not hold a lock while waiting; the fake never blocks and returns `()` when its script is exhausted.

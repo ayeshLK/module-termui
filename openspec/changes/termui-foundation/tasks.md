@@ -20,9 +20,9 @@ Depends on `termui-scaffold` for the build, test, and CI setup. Group 1 is a gat
 
 ## 3. Terminal abstraction and fake backend (`term` module)
 
-- [ ] 3.1 Define the `Terminal` interface (acquire, release, read events, size, write frame) and the input event types, and verify the module compiles and an interface-conformance test passes for the fake backend
-- [ ] 3.2 Implement the in-memory fake backend with scripted input and screen inspection, and verify tests feed a key sequence and read back rendered contents
-- [ ] 3.3 Implement environment detection (stdin/stdout tty checks, `NO_COLOR`, `TERM=dumb`, default width), and verify tests with redirected stdio and environment variables cover each scenario in `specs/terminal-backend/spec.md`
+- [x] 3.1 Define the `Terminal` interface (acquire, release, read events, size, write frame) and the input event types, and verify the module compiles and an interface-conformance test passes for the fake backend
+- [x] 3.2 Implement the in-memory fake backend with scripted input and screen inspection, and verify tests feed a key sequence and read back rendered contents
+- [x] 3.3 Implement environment detection (stdin/stdout tty checks, `NO_COLOR`, `TERM=dumb`, default width), and verify tests with redirected stdio and environment variables cover each scenario in `specs/terminal-backend/spec.md`
 
 ## 4. Unix backend (`term` module)
 
