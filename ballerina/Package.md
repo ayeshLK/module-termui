@@ -37,7 +37,9 @@ is attached to and hands out the matching terminal, renderer, and options:
 - **Plain output.** Committed output is written as lines with no styling, escape sequences, or carriage
   returns. The live region (a spinner, a status line) is not repeated: only its final state is written,
   once, when the program ends. Text is wrapped at the terminal width from `COLUMNS`, or 80 columns when
-  it is unknown. Two runs with the same input produce identical bytes.
+  it is unknown. Two runs with the same input produce identical bytes, as long as the program does not put
+  timing-dependent content (an animation frame, a clock) in the live region: stop animating when
+  `ui.interactive` is `false`.
 - **Color.** `NO_COLOR` (set and not empty) and `TERM=dumb` turn color off, also on a terminal.
 
 Detecting the environment costs one short process (about 25 ms), so do it once at startup.
