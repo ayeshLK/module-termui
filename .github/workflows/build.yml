@@ -27,6 +27,8 @@ jobs:
 
       - name: Set up build
         uses: ./.github/actions/setup-build
+        with:
+          install-ballerina: "true"
 
       # Build and test run separately: the Ballerina Gradle plugin only supports test-group
       # selection with `gradlew test`, not with `gradlew build`.
@@ -38,6 +40,21 @@ jobs:
 
       - name: Test (tty group, real pseudo-terminal)
         run: ./gradlew test -Pgroups=tty
+
+      # The example uses the package the way a consumer would: from the local repository.
+      - name: Publish the package to the local repository
+        working-directory: ballerina
+        run: |
+          bal pack
+          bal push --repository=local
+
+      - name: Build the example
+        working-directory: examples/agent-demo
+        run: bal build
+
+      - name: Verify the example end to end (pty)
+        working-directory: examples/agent-demo
+        run: JAVA="$(command -v java)" python3 verify.py
 
       - name: Upload coverage
         if: ${{ matrix.os == 'ubuntu-22.04' }}

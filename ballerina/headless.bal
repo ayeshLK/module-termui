@@ -101,8 +101,11 @@ public class Interface {
     # Runs a program with the terminal, renderer, and options that match the mode.
     #
     # + program - the application
+    # + initialCommand - a command to carry out before the first message, for example to start an effect
     # + return - an error when the terminal cannot be used or drawing fails
-    public function run(Program program) returns error? {
-        return run(program, self.terminal, self.options(), self.renderer());
+    public function run(Program program, Command? initialCommand = ()) returns error? {
+        Options options = self.options();
+        options.initialCommand = initialCommand;
+        return run(program, self.terminal, options, self.renderer());
     }
 }

@@ -56,3 +56,14 @@ jobs:
       - name: Test with GraalVM
         working-directory: ballerina
         run: bal test --graalvm --disable-groups tty
+
+      - name: Publish the package to the local repository
+        working-directory: ballerina
+        run: |
+          bal pack
+          bal push --repository=local
+
+      # Building the example natively shows whether a real application can ship as a native image.
+      - name: Build the example as a native image
+        working-directory: examples/agent-demo
+        run: bal build --graalvm

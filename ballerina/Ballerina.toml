@@ -6,4 +6,5 @@ distribution = "2201.14.2"
 keywords = ["terminal", "tui", "cli", "ui"]
 license = ["Apache-2.0"]
 readme = "Package.md"
+export = ["termui", "termui.term", "termui.render", "termui.text"]
 repository = "https://github.com/ayeshLK/module-termui"

@@ -40,11 +40,14 @@ public type Program object {
 # + pollInterval - seconds the loop sleeps when there is nothing to do
 # + interactive - whether a user can answer questions; when `false`, `confirm` and `choose` return
 #                 their default or a `NoTerminal` error at once
+# + initialCommand - a command to carry out before the first message, for example to start streaming
+#                    from an agent
 public type Options record {|
     boolean colors = true;
     boolean reflow = true;
     decimal pollInterval = 0.005;
     boolean interactive = true;
+    Command? initialCommand = ();
 |};
 
 // Reads the terminal's input and turns each event into a message. Runs on its own strand because
@@ -104,8 +107,9 @@ class Engine {
         self.session = new Session(self.queue, self.board, interactive);
     }
 
-    // Starts reading the terminal.
-    function launch() {
+    // Carries out the initial command and starts reading the terminal.
+    function launch(Command? initial = ()) {
+        self.carryOut(initial);
         _ = start inputLoop(self.terminal, self.session);
     }
 
@@ -268,7 +272,7 @@ public function run(Program program, term:Terminal terminal, Options options = {
         render:Renderer drawing = renderer ?: new render:InlineRenderer(terminal, size.width, size.height, options.colors, options.reflow);
         Engine running = new (program, terminal, drawing, options.interactive);
         engine = running;
-        running.launch();
+        running.launch(options.initialCommand);
         while check running.step() {
             runtime:sleep(options.pollInterval);
         }

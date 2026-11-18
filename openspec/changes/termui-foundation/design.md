@@ -183,3 +183,9 @@ If a later task finds one of these assumptions false, the fallback is the JLine 
 - **Colors on a terminal with redirected output** are decided by `NO_COLOR` and `TERM=dumb` only, because the interface is not drawn on standard output; `Environment` therefore gained a `noColor` field.
 - **A Ballerina gotcha for tests:** `io:fileReadString` drops a trailing newline (3 characters for 4 bytes). Read bytes when a test must see exactly what was written.
 - **`PlainRenderer` writes the live region once**, at `close`, so a spinner appears as its final frame only.
+
+## Findings while building the example
+
+- **Submodules must be exported.** `Ballerina.toml` needs `export = [...]` listing every module; without it a consumer cannot import `termui.term`, `termui.text`, or `termui.render`, and nothing inside the package notices. The example found it, which is the argument for keeping a consumer-style example in CI.
+- **`Options.initialCommand`** lets a program start work (an effect, a timer) before any message arrives; `Interface.run` takes it as a second argument.
+- **End to end under a pty** (`examples/agent-demo/verify.py`, 19 checks): interactive question and answer with the terminal raw while running and restored after; output redirected to a file holds only the result while the interface stays on the terminal; headless output is plain, denies the question by default, and is byte-identical across runs; SIGTERM, SIGINT, and SIGHUP each leave the terminal restored.
