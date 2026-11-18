@@ -16,9 +16,9 @@
 
 ## 3. Test tiers and coverage
 
-- [ ] 3.1 Add a trivial default test that needs no terminal, and verify `./gradlew test` passes in an environment with no tty (for example `./gradlew test < /dev/null` or in CI)
-- [ ] 3.2 Add the `tty` test group, disabled by default and enabled with `-Pgroups=tty`, with a sample test that allocates a pseudo-terminal, and verify the sample is skipped by default and runs and passes with `-Pgroups=tty` on macOS and Linux
-- [ ] 3.3 Enable XML coverage output in `ballerina/build.gradle` and verify an XML coverage report file is produced by `./gradlew test` even though the distribution lacks the HTML report tools
+- [x] 3.1 Add a trivial default test that needs no terminal, and verify `./gradlew test` passes in an environment with no tty (for example `./gradlew test < /dev/null` or in CI)
+- [x] 3.2 Add the `tty` test group, disabled by default and enabled with `-Pgroups=tty`, with a sample test that allocates a pseudo-terminal, and verify the sample is skipped by default and runs and passes with `-Pgroups=tty` on macOS (Linux is verified in CI by 4.2)
+- [x] 3.3 Enable XML coverage output in `ballerina/build.gradle` and verify an XML coverage report file is produced by `./gradlew test` even though the distribution lacks the HTML report tools
 
 ## 4. CI workflows
 

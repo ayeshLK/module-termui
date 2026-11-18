@@ -55,7 +55,7 @@ allprojects {
 
 allprojects {
     if (!project.hasProperty('groups') && !project.hasProperty('disable')) {
-        project.ext.disable = 'live'
+        project.ext.disable = 'tty'
     }
 }
 
