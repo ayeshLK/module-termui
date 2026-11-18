@@ -207,4 +207,4 @@ The spike's 250 ms and 120 ms were extrapolated from an empty program, and an ap
 
 ## Native image results (task 8.2)
 
-In CI (GraalVM Community, JDK 21 line before the stack move, then JDK 25): the package's own tests pass under `bal test --graalvm` (about 85 s to build), and the agent demo builds as a native executable with `bal build --graalvm` (about 72 s). The native workflow also runs the executable headless and checks its output. This confirms that nothing in the foundation blocks native-image, which is the v1 goal; it is still not a gate.
+In CI (GraalVM Community, JDK 21 line before the stack move, then JDK 25): the package's own tests pass under `bal test --graalvm` (about 85 s to build), and the agent demo builds as a native executable with `bal build --graalvm` (about 72 s). The native workflow also runs the executable headless and checks its output: it produced the expected result in 354 ms in total, about 300 ms of which are the demo's own pauses between words. This confirms that nothing in the foundation blocks native-image, which is the v1 goal; it is still not a gate.
