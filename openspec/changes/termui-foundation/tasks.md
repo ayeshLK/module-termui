@@ -28,9 +28,9 @@ Depends on `termui-scaffold` for the build, test, and CI setup. Group 1 is a gat
 
 - [x] 4.1 Implement raw-mode acquire and restore with `stty`, including restore on release, catchable errors, and graceful stop, and verify `tty`-group tests (a helper-owned pty, no controlling terminal needed) confirm the settings are restored on release and when the work fails; restoring on a real signal is verified in 8.1 with the example app, since the spike (1.4) showed the graceful-stop hook fires and the hook calls the tested `release`
 - [x] 4.2 Implement the key and paste decoder (printable, arrows, navigation, function keys, Ctrl and Alt, lone Esc via a decoder-level timeout, bracketed paste, sequences split across reads), and verify decoder unit tests on byte sequences plus a `tty`-group test through a pty
-- [ ] 4.3 Implement terminal size query and resize detection (polling, plus DEC mode 2048 where supported), and verify a `tty`-group test changes the pty size and sees a resize event
-- [ ] 4.4 Implement single-write frame output, and verify a test records exactly one write per frame
-- [ ] 4.5 Document the backend's requirements and limits (Unix only, `stty sane` recovery after a hard kill) in `Module.md`, and verify the documented recovery command restores a raw terminal
+- [x] 4.3 Implement terminal size query and resize detection (polling, plus DEC mode 2048 where supported), and verify a `tty`-group test changes the pty size and sees a resize event
+- [x] 4.4 Implement single-call frame output for the Unix backend, and verify through the helper pty that large frames arrive complete and in order and that throughput is well above 60 frames per second; that the renderer issues exactly one `write` per frame is verified in 5.1 with the fake terminal's write log
+- [x] 4.5 Document the backend's requirements and limits (Unix only, `stty sane` recovery after a hard kill) in `Module.md`, and verify the documented recovery command restores a raw terminal
 
 ## 5. Renderer (`render` module)
 

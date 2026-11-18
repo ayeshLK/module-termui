@@ -11,6 +11,7 @@ files, so no step depends on timing alone. The plan is a list of steps:
   {"op": "snapshot", "label": "x"}               record the terminal settings, then touch done-x
   {"op": "send", "hex": "1b5b41"}                write bytes to the master (as if typed)
   {"op": "drain", "label": "x", "seconds": 0.3}  read what the application wrote, store it as hex
+  {"op": "drain", "label": "x", "until_file": "name"}  keep reading until <work-dir>/name exists, then a little longer
   {"op": "sleep", "seconds": 0.1}
   {"op": "resize", "rows": 30, "cols": 100}
 
@@ -71,9 +72,15 @@ for step in plan:
     elif op == "send":
         os.write(master, bytes.fromhex(step["hex"]))
     elif op == "drain":
-        deadline = time.time() + step.get("seconds", 0.3)
+        until = step.get("until_file")
+        limit = time.time() + (60 if until else step.get("seconds", 0.3))
+        grace = None
         data = b""
-        while time.time() < deadline:
+        while time.time() < limit:
+            if until and grace is None and os.path.exists(os.path.join(work, until)):
+                grace = time.time() + 0.3
+            if grace is not None and time.time() > grace:
+                break
             ready, _, _ = select.select([master], [], [], 0.05)
             if ready:
                 try:

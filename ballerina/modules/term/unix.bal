@@ -18,7 +18,15 @@ import ballerina/os;
 import ballerina/time;
 
 const string BRACKETED_PASTE_ON = "\u{1b}[?2004h";
-const string BRACKETED_PASTE_OFF = "\u{1b}[?2004l";
+
+// In-band resize notifications (DEC private mode 2048): terminals that support it send
+// ESC [ 48 ; rows ; cols ; height ; width t whenever the window changes. (release switches both this
+// and bracketed paste off again with printf, inside the same timed command that restores the settings.)
+const string RESIZE_REPORTS_ON = "\u{1b}[?2048h";
+
+// How often the size is polled while no in-band notification has ever been received. Each poll costs
+// about 15 ms (a process spawn), so this stays coarse.
+const decimal RESIZE_POLL_INTERVAL = 1;
 
 // How long an Esc byte waits for the rest of a sequence before it is reported as the Escape key.
 const decimal ESCAPE_TIMEOUT = 0.05;
@@ -32,6 +40,15 @@ isolated function shell(string script) returns string|error {
         return error(string `command failed with status ${status}: ${script}`);
     }
     return string:fromBytes(output);
+}
+
+// Like shell, but gives up after a number of seconds. Opening a terminal device that has gone away
+// (a closed window, a vanished pty) can block forever, and a blocked graceful-stop hook would stop
+// the process from ever exiting. The command runs in a background subshell that a timer kills.
+isolated function shellWithin(string script, int seconds) returns string|error {
+    string wrapped = string `( ${script} ) & job=$!; ( sleep ${seconds}; kill -9 $job 2>/dev/null ) >/dev/null 2>&1 & ` +
+        string `timer=$!; wait $job; status=$?; kill $timer 2>/dev/null; exit $status`;
+    return shell(wrapped);
 }
 
 isolated function shellQuote(string value) returns string {
@@ -60,6 +77,9 @@ public isolated class UnixTerminal {
     private int[] pending = [];
     private InputEvent[] ready = [];
     private decimal lastByteAt = 0;
+    private Size? lastSize = ();
+    private decimal lastSizeCheck = 0;
+    private boolean inBandResize = false;
 
     # + ttyPath - the terminal device; the controlling terminal by default
     public isolated function init(string ttyPath = "/dev/tty") {
@@ -79,14 +99,17 @@ public isolated class UnixTerminal {
                 return error(string `not a terminal device: ${self.ttyPath}`);
             }
             string tty = shellQuote(self.ttyPath);
-            string saved = (check shell(string `stty -g < ${tty}`)).trim();
-            _ = check shell(string `stty raw -echo min 1 time 0 < ${tty}`);
+            string saved = (check shellWithin(string `stty -g < ${tty}`, 5)).trim();
+            _ = check shellWithin(string `stty raw -echo min 1 time 0 < ${tty}`, 5);
             self.savedSettings = saved;
             self.acquired = true;
             self.queue.clear();
             self.pending = [];
             self.ready = [];
-            check io:fileWriteString(self.ttyPath, BRACKETED_PASTE_ON, io:APPEND);
+            check io:fileWriteString(self.ttyPath, BRACKETED_PASTE_ON + RESIZE_REPORTS_ON, io:APPEND);
+            self.inBandResize = false;
+            self.lastSize = check self.size();
+            self.lastSizeCheck = time:monotonicNow();
             if !self.readerStarted {
                 self.readerStarted = true;
                 startReader = true;
@@ -114,12 +137,10 @@ public isolated class UnixTerminal {
                 return;
             }
             self.acquired = false;
-            io:Error? pasteOff = io:fileWriteString(self.ttyPath, BRACKETED_PASTE_OFF, io:APPEND);
-            if pasteOff is io:Error {
-                // best effort: restoring the settings below matters more than turning bracketed paste off
-                self.acquired = false;
-            }
-            _ = check shell(string `stty ${self.savedSettings} < ${shellQuote(self.ttyPath)}`);
+            // One timed command: switch the reports off, then restore the saved settings. If the terminal
+            // has gone away it is killed after a few seconds instead of blocking the process forever.
+            string tty = shellQuote(self.ttyPath);
+            _ = check shellWithin(string `printf '\033[?2004l\033[?2048l' > ${tty}; stty ${self.savedSettings} < ${tty}`, 3);
         }
     }
 
@@ -127,7 +148,7 @@ public isolated class UnixTerminal {
     #
     # + return - the size, or an error when it cannot be read
     public isolated function size() returns Size|error {
-        string output = (check shell(string `stty size < ${shellQuote(self.ttyPath)}`)).trim();
+        string output = (check shellWithin(string `stty size < ${shellQuote(self.ttyPath)}`, 2)).trim();
         string[] parts = re ` `.split(output);
         if parts.length() != 2 {
             return error(string `unexpected stty size output: ${output}`);
@@ -138,11 +159,14 @@ public isolated class UnixTerminal {
     }
 
     # Waits for the next input event, decoding the bytes the reader strand received. A lone Esc byte is
-    # reported as the Escape key once nothing has followed it for a short time.
+    # reported as the Escape key once nothing has followed it for a short time. Resizes arrive as
+    # `ResizeEvent`s, from the terminal's own notifications where it sends them and from polling the
+    # size about once a second otherwise.
     #
     # + return - the event, `()` when the terminal input has ended, or an error when reading fails
     public isolated function nextEvent() returns InputEvent|error? {
         while true {
+            boolean checkSize = false;
             lock {
                 if self.ready.length() > 0 {
                     InputEvent event = self.ready.remove(0);
@@ -152,23 +176,55 @@ public isolated class UnixTerminal {
                 if fresh.length() > 0 {
                     self.pending.push(...fresh);
                     self.lastByteAt = time:monotonicNow();
-                    DecodeResult decoded = decodeInput(self.pending, false);
-                    self.pending = decoded.rest;
-                    self.ready.push(...decoded.events);
+                    self.accept(decodeInput(self.pending, false).cloneReadOnly());
                     continue;
                 }
                 if self.pending.length() > 0 && time:monotonicNow() - self.lastByteAt >= ESCAPE_TIMEOUT {
-                    DecodeResult decoded = decodeInput(self.pending, true);
-                    self.pending = decoded.rest;
-                    self.ready.push(...decoded.events);
+                    self.accept(decodeInput(self.pending, true).cloneReadOnly());
                     self.lastByteAt = time:monotonicNow();
                     continue;
                 }
                 if self.pending.length() == 0 && self.queue.hasEnded() {
                     return self.queue.lastFailure();
                 }
+                if !self.inBandResize && time:monotonicNow() - self.lastSizeCheck >= RESIZE_POLL_INTERVAL {
+                    self.lastSizeCheck = time:monotonicNow();
+                    checkSize = true;
+                }
+            }
+            if checkSize {
+                // measured outside the lock: the size query takes about 15 ms and must not hold up writes
+                Size|error current = self.size();
+                if current is Size {
+                    self.noteSize(current.cloneReadOnly());
+                }
             }
             runtime:sleep(0.002);
+        }
+    }
+
+    // Stores decoded events and what is left over, and learns from in-band resize notifications.
+    private isolated function accept(DecodeResult & readonly decoded) {
+        lock {
+            self.pending = [...decoded.rest];
+            foreach InputEvent event in decoded.events {
+                if event is ResizeEvent {
+                    self.inBandResize = true;
+                    self.lastSize = {width: event.width, height: event.height};
+                }
+                self.ready.push(event.clone());
+            }
+        }
+    }
+
+    // Queues a resize event when the polled size differs from the last known one.
+    private isolated function noteSize(Size & readonly current) {
+        lock {
+            Size? known = self.lastSize;
+            if known is () || known != current {
+                self.lastSize = current.clone();
+                self.ready.push({kind: "resize", width: current.width, height: current.height});
+            }
         }
     }
 

@@ -12,8 +12,10 @@
 // either express or implied. See the License for the specific
 // language governing permissions and limitations under the License.
 
+import ballerina/io;
 import ballerina/os;
 import ballerina/test;
+import ballerina/time;
 
 @test:Config {}
 function testShellQuoteEscapesSingleQuotes() {
@@ -192,4 +194,186 @@ function testABurstOfInputLosesNothing() returns error? {
     check terminal.release();
     check touch(dir, "finished");
     _ = check finishHelper(helper, dir);
+}
+
+@test:Config {groups: ["tty"]}
+function testAResizeIsDetectedByPolling() returns error? {
+    string dir = check newWorkDir();
+    os:Process helper = check startHelper(dir, [
+        {op: "wait", file: "acquired"},
+        {op: "resize", rows: 40, cols: 120},
+        {op: "wait", file: "finished"}
+    ]);
+    UnixTerminal terminal = new (check helperTty(dir));
+    check terminal.acquire();
+    check touch(dir, "acquired");
+    // no notification is sent here, so this arrives from the periodic size check
+    check expectEvent(terminal, <ResizeEvent>{width: 120, height: 40});
+    check terminal.release();
+    check touch(dir, "finished");
+    _ = check finishHelper(helper, dir);
+}
+
+@test:Config {groups: ["tty"]}
+function testNoResizeEventWhileTheSizeIsUnchanged() returns error? {
+    string dir = check newWorkDir();
+    os:Process helper = check startHelper(dir, [
+        {op: "wait", file: "acquired"},
+        {op: "sleep", seconds: 2.5},
+        {op: "send", hex: "61"},
+        {op: "wait", file: "finished"}
+    ]);
+    UnixTerminal terminal = new (check helperTty(dir));
+    check terminal.acquire();
+    check touch(dir, "acquired");
+    // two size checks happen before the key arrives; neither may report a change
+    check expectEvent(terminal, <KeyEvent>{key: "a"});
+    check terminal.release();
+    check touch(dir, "finished");
+    _ = check finishHelper(helper, dir);
+}
+
+@test:Config {groups: ["tty"]}
+function testAnInBandResizeNotificationStopsPolling() returns error? {
+    string dir = check newWorkDir();
+    os:Process helper = check startHelper(dir, [
+        {op: "wait", file: "acquired"},
+        // ESC [ 48 ; 30 ; 100 ; 0 ; 0 t
+        {op: "send", hex: "1b5b34383b33303b3130303b303b3074"},
+        {op: "wait", file: "notified"},
+        // the real size changes, but the terminal has shown that it reports resizes itself, so nothing
+        // may poll: the first event after this must be the key, not a resize
+        {op: "resize", rows: 50, cols: 90},
+        {op: "sleep", seconds: 2.5},
+        {op: "send", hex: "61"},
+        {op: "wait", file: "finished"}
+    ]);
+    UnixTerminal terminal = new (check helperTty(dir));
+    check terminal.acquire();
+    check touch(dir, "acquired");
+    check expectEvent(terminal, <ResizeEvent>{width: 100, height: 30});
+    check touch(dir, "notified");
+    check expectEvent(terminal, <KeyEvent>{key: "a"});
+    check terminal.release();
+    check touch(dir, "finished");
+    _ = check finishHelper(helper, dir);
+}
+
+// Frames are written whole and in order, including frames larger than the pty's buffer.
+@test:Config {groups: ["tty"]}
+function testLargeFramesArriveCompleteAndInOrder() returns error? {
+    string dir = check newWorkDir();
+    os:Process helper = check startHelper(dir, [
+        {op: "wait", file: "acquired"},
+        {op: "drain", label: "out", until_file: "written"},
+        {op: "wait", file: "finished"}
+    ]);
+    UnixTerminal terminal = new (check helperTty(dir));
+    check terminal.acquire();
+    check touch(dir, "acquired");
+    string row = "";
+    foreach int _ in 0 ..< 200 {
+        row += "x";
+    }
+    string frame = "";
+    foreach int _ in 0 ..< 1000 {
+        frame += row + "\r\n";
+    }
+    // 1000 rows of 200 columns: about 200 KB, far more than a pty holds
+    check terminal.write("<<" + frame + ">>");
+    check terminal.write("[second]");
+    check touch(dir, "written");
+    map<json> result = check finishAfterRelease(helper, dir, terminal);
+    string out = check drained(result, "out");
+    int begin = check out.indexOf("<<").ensureType();
+    string body = out.substring(begin);
+    test:assertTrue(body.startsWith("<<" + frame + ">>[second]"), "the frames must arrive complete and in order");
+}
+
+function finishAfterRelease(os:Process helper, string dir, UnixTerminal terminal) returns map<json>|error {
+    check terminal.release();
+    check touch(dir, "finished");
+    return finishHelper(helper, dir);
+}
+
+// A loose floor, not a benchmark: frames of a full 50x200 screen must be written at well over 60 per
+// second, or the renderer could not keep up with streaming output.
+@test:Config {groups: ["tty"]}
+function testWritingFramesIsFastEnough() returns error? {
+    string dir = check newWorkDir();
+    os:Process helper = check startHelper(dir, [
+        {op: "wait", file: "acquired"},
+        {op: "drain", label: "out", until_file: "written"},
+        {op: "wait", file: "finished"}
+    ]);
+    UnixTerminal terminal = new (check helperTty(dir));
+    check terminal.acquire();
+    check touch(dir, "acquired");
+    string row = "";
+    foreach int _ in 0 ..< 200 {
+        row += "y";
+    }
+    string frame = "\u{1b}[H";
+    foreach int _ in 0 ..< 50 {
+        frame += row + "\r\n";
+    }
+    int frames = 300;
+    decimal startedAt = time:monotonicNow();
+    foreach int _ in 0 ..< frames {
+        check terminal.write(frame);
+    }
+    decimal seconds = time:monotonicNow() - startedAt;
+    io:println(string `${frames} frames of ${frame.length()} bytes in ${seconds} s: ${<decimal>frames / seconds} frames/s`);
+    check touch(dir, "written");
+    _ = check finishAfterRelease(helper, dir, terminal);
+    test:assertTrue(<decimal>frames / seconds > 100d, "writes are too slow for streaming output");
+}
+
+// The recovery command documented for a terminal left raw (after SIGKILL, for example) must work.
+@test:Config {groups: ["tty"]}
+function testSttySaneRecoversATerminalLeftRaw() returns error? {
+    string dir = check newWorkDir();
+    os:Process helper = check startHelper(dir, [
+        {op: "wait", file: "acquired"},
+        {op: "snapshot", label: "raw"},
+        {op: "wait", file: "recovered"},
+        {op: "snapshot", label: "sane"},
+        {op: "wait", file: "finished"}
+    ]);
+    string tty = check helperTty(dir);
+    UnixTerminal terminal = new (tty);
+    check terminal.acquire();
+    check touch(dir, "acquired");
+    check waitFor(dir, "done-raw");
+    // what a user would type after a crash left the terminal raw
+    string _ = check shell("stty sane < " + shellQuote(tty));
+    check touch(dir, "recovered");
+    check waitFor(dir, "done-sane");
+    check touch(dir, "finished");
+    map<json> result = check finishHelper(helper, dir);
+    test:assertFalse(check snapshotFlag(result, "raw", "icanon"));
+    foreach string flag in ["icanon", "echo", "isig", "opost"] {
+        test:assertTrue(check snapshotFlag(result, "sane", flag), "stty sane must turn " + flag + " back on");
+    }
+}
+
+// Opening a terminal device that has gone away can block forever. Release runs in the graceful-stop
+// hook, so it must give up instead of keeping the process alive.
+@test:Config {groups: ["tty"]}
+function testReleaseDoesNotHangWhenTheTerminalHasGoneAway() returns error? {
+    string dir = check newWorkDir();
+    os:Process helper = check startHelper(dir, [
+        {op: "wait", file: "acquired"}
+    ]);
+    UnixTerminal terminal = new (check helperTty(dir));
+    check terminal.acquire();
+    check touch(dir, "acquired");
+    _ = check finishHelper(helper, dir); // the helper exits, and the pty with it
+    decimal startedAt = time:monotonicNow();
+    error? outcome = terminal.release();
+    decimal seconds = time:monotonicNow() - startedAt;
+    test:assertTrue(seconds < 10d, string `release took ${seconds} s`);
+    // whether it succeeds or reports an error is up to the platform; it must come back, and only once
+    test:assertTrue(outcome is () || outcome is error);
+    test:assertEquals(terminal.release(), (), "a second release is a no-op");
 }
