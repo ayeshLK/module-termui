@@ -61,12 +61,14 @@ a development version to the Dev or Stage Central without tagging.
 
 ## The examples
 
-The examples depend on the package from your local Ballerina repository, the way a user's program does:
+The examples depend on the version of termui published on Ballerina Central, so anyone who clones the repository can run them with `bal run`. To try them against the code in your working tree, publish it to your local repository and point the examples at it:
 
 ```sh
 (cd ballerina && bal pack && bal push --repository=local)
+.github/scripts/point-examples-at-source.sh          # edits the examples' Ballerina.toml: do not commit the result
 (cd examples/agent-demo && bal build && JAVA=$(which java) python3 verify.py)
 (cd examples/counter && bal build && JAVA=$(which java) python3 verify.py)
+git checkout examples                                  # back to the published dependency
 ```
 
 CI does the same on Linux and macOS, and `examples/agent-demo/record_demo.py` regenerates the demo recording used in the README (it needs [`agg`](https://github.com/asciinema/agg)).

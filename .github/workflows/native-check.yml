@@ -63,6 +63,10 @@ jobs:
           bal pack
           bal push --repository=local
 
+      # The examples use the published package; test them against the code in this commit instead.
+      - name: Point the examples at the package built here
+        run: .github/scripts/point-examples-at-source.sh
+
       # Building the example natively shows whether a real application can ship as a native image.
       - name: Build the example as a native image
         working-directory: examples/agent-demo

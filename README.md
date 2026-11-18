@@ -4,6 +4,8 @@
 
 [![Build](https://github.com/ayeshLK/module-termui/actions/workflows/ci.yml/badge.svg)](https://github.com/ayeshLK/module-termui/actions/workflows/ci.yml)
 [![License](https://img.shields.io/github/license/ayeshLK/module-termui)](LICENSE)
+[![Ballerina Central](https://img.shields.io/badge/Ballerina%20Central-ayesha%2Ftermui-blue)](https://central.ballerina.io/ayesha/termui/0.1.0)
+[![Release](https://img.shields.io/github/v/release/ayeshLK/module-termui)](https://github.com/ayeshLK/module-termui/releases)
 ![Ballerina](https://img.shields.io/badge/Ballerina-2201.14-blue)
 ![Status](https://img.shields.io/badge/status-experimental-orange)
 
@@ -23,21 +25,13 @@
 
 ## Quickstart
 
-termui is not on Ballerina Central yet. Until the first release, install it from source into your local repository:
-
-```sh
-git clone https://github.com/ayeshLK/module-termui
-cd module-termui/ballerina && bal pack && bal push --repository=local
-```
-
-Add it to your package's `Ballerina.toml`:
+termui is on [Ballerina Central](https://central.ballerina.io/ayesha/termui/0.1.0). Import it and Ballerina fetches it on the next build; to pin a version, add it to your package's `Ballerina.toml`:
 
 ```toml
 [[dependency]]
 org = "ayesha"
 name = "termui"
 version = "0.1.0"
-repository = "local"
 ```
 
 A counter, in `main.bal` ([`examples/counter`](examples/counter) is this file, built in CI):
@@ -79,7 +73,7 @@ public function main() returns error? {
 }
 ```
 
-Run it with `bal run` and press `+`, `-` and `q`. Requires JDK 25 and Ballerina 2201.14.
+Run it with `bal run` and press `+`, `-` and `q`. Requires Ballerina 2201.14 and JDK 25.
 
 ## How it works
 
@@ -102,7 +96,7 @@ You write a `Program` with two methods: `update` is called for each message and 
 
 | Example | Shows |
 |---|---|
-| [`examples/counter`](examples/counter) | The smallest interactive program (the quickstart above) |
+| [`examples/counter`](examples/counter) | The smallest interactive program (the quickstart above); clone the repo and `bal run` in the folder |
 | [`examples/agent-demo`](examples/agent-demo) | An agent-style app: streamed text, a spinner and status line, an approval prompt, a result on standard output. Run it three ways, as in the recording above |
 
 ## Documentation

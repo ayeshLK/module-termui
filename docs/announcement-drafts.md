@@ -16,8 +16,8 @@ One channel at a time over about a week, and answer every reply quickly.
 
 ## Before posting
 
-- [ ] The first release is on Ballerina Central, and the README install section uses the normal dependency lines instead of "from source". (Publishing is permanent: a version cannot be overwritten or removed.)
-- [ ] The repository description and topics are set.
+- [x] The first release (0.1.0) is on Ballerina Central, and the README install section uses it. (Publishing is permanent: a version cannot be overwritten or removed.)
+- [x] The repository description and topics are set.
 - [ ] GitHub Discussions are enabled.
 - [ ] A few issues are labelled `good first issue`.
 - [ ] Each channel's rules on self-promotion have been read.
