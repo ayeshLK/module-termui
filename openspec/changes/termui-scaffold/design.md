@@ -67,6 +67,7 @@ Alternative considered: a plain `bal`-only repo with scripts. Rejected, because 
 - [pty tests flaky in CI] -> Keep the `tty` group small, run it separately from the default tests, and treat it as a distinct check so flakiness is isolated.
 - [The stdlib list in the root `build.gradle` can drift from the package's imports] -> Keep it next to the versions in `gradle.properties`, and let the PR build fail when an imported stdlib module is missing from the unpacked distribution.
 - [A newer Ballerina line needs a newer JDK or Gradle again] -> The setup action derives the JDK from the pinned version's minor, so a pin bump moves CI's JDK automatically; the daily canary shows the next line's problems early.
+- [A committed `Dependencies.toml` goes stale when the pin moves, and a stale lock whose `distribution-version` matches the installed Ballerina made the daily `bal build` fail to resolve `ballerina/os` on a clean runner] -> Refresh it with a `bal build` whenever the pin or the stdlib versions change, and keep its `io`, `os`, and `time` versions equal to those in `gradle.properties`.
 - [The `jballerina-tools` distribution lacks the HTML coverage report tools] -> Verify that the XML coverage report is still produced (task 3.3).
 - [macOS runner cost and queue time] -> Restrict the macOS job to PR and main, and skip it for docs-only changes if cost becomes an issue.
 - [Native-image feature is experimental] -> The check is non-blocking, and failures are triaged rather than gated.

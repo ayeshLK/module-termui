@@ -6,7 +6,7 @@
 - [x] 1.2 Add the root Gradle files (`settings.gradle`, `build.gradle`, `gradle.properties`, wrapper) adapted from `module-arxiv` with the `ayesha`/`termui` identity, and verify `./gradlew projects` lists the `termui-ballerina` subproject
 - [x] 1.3 Create the `ballerina/` package shell (`Ballerina.toml`, `Dependencies.toml`, `Package.md`, `Module.md`, a minimal root `.bal` file, and `ballerina/build.gradle` with `isConnector = false` and `platform = "any"`), and verify `bal build` succeeds inside `ballerina/`
 - [x] 1.4 Pin `ballerinaLangVersion` and the package `distribution` to one deliberately chosen Ballerina version (2201.14.2, the local toolchain and the line the foundation targets), and verify local `bal version`, `gradle.properties`, and `Ballerina.toml` agree on the pin (that CI reads the pin from `gradle.properties` is verified in 4.1)
-- [ ] 1.5 Move the build to the 2201.14 stack (Ballerina 2201.14.2, JDK 25, Gradle 9.5.1, release plugin 3.1.0, `ExecOperations`), and verify `./gradlew build`, `./gradlew test`, and `./gradlew test -Pgroups=tty` pass locally on JDK 25 and the CI build is green on both OSes
+- [x] 1.5 Move the build to the 2201.14 stack (Ballerina 2201.14.2, JDK 25, Gradle 9.5.1, release plugin 3.1.0, `ExecOperations`), and verify `./gradlew build`, `./gradlew test`, and `./gradlew test -Pgroups=tty` pass locally on JDK 25 and the CI build is green on both OSes
 
 ## 2. Single version source
 
