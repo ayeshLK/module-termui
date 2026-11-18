@@ -1,68 +1,130 @@
-# module-termui
+# termui
 
-`ayesha/termui` is a terminal UI toolkit for building polished, interactive, agent-style
-command-line applications in Ballerina: an inline live region, committed scrollback, streaming
-output, and non-blocking input. It is a UI/CLI toolkit only; agent logic stays in the application.
+**Build agent-style terminal apps in Ballerina: streaming output, a live region, and approval prompts that stay well-behaved in pipes and CI.**
 
-> Status: under development. The design lives in [`openspec/`](openspec/) (see the
-> `termui-foundation` and `termui-scaffold` changes).
+[![Build](https://github.com/ayeshLK/module-termui/actions/workflows/ci.yml/badge.svg)](https://github.com/ayeshLK/module-termui/actions/workflows/ci.yml)
+[![License](https://img.shields.io/github/license/ayeshLK/module-termui)](LICENSE)
+![Ballerina](https://img.shields.io/badge/Ballerina-2201.14-blue)
+![Status](https://img.shields.io/badge/status-experimental-orange)
 
-## Requirements
+![The agent demo: streamed text, a live status line, an approval prompt, then the same program piped and run headless](docs/assets/demo.gif)
 
-- JDK 25 (Ballerina 2201.14 and later need it)
-- Ballerina 2201.14.2 (the version pinned as `ballerinaLangVersion` in `gradle.properties`)
-- macOS or Linux (Windows is not supported yet)
-- `python3` (used by the `tty` tests to allocate a pseudo-terminal)
-- `packageUser` and `packagePAT` environment variables: a GitHub user and a token that can read
-  packages. The Gradle plugin is resolved from `https://maven.pkg.github.com/ballerina-platform/*`,
-  even for builds that publish nothing.
+<sub>The [agent demo](examples/agent-demo), recorded from the real program: interactively, with its output redirected, and with no terminal at all.</sub>
 
-## Build and test
+> **Status: experimental (0.1).** The API can still change before 1.0. macOS and Linux only.
 
-The build uses the Gradle wrapper (Gradle 9.5.1). Run it on JDK 25, for example with
-`JAVA_HOME` pointing at a JDK 25 install, because the Ballerina tools it unpacks need that Java.
+## Why termui
 
-Build and test go through Gradle, not `bal` directly, because Gradle regenerates
-`ballerina/Ballerina.toml` and `ballerina/version.bal` from the templates in `build-config/`.
+- **Inline, not full-screen.** A small live region (a spinner, a status line, a prompt) is redrawn in place at the bottom. Finished output is written once into your normal scrollback, so it stays selectable, searchable and in your terminal's history.
+- **Safe in pipes and CI.** The same program runs interactively, with its output redirected, and with no terminal at all. Results go to standard output and nothing else does; questions never wait for input that cannot come; headless output is plain and repeatable.
+- **Testable without a terminal.** A `FakeTerminal` with a small virtual screen lets you script keys and assert on what was drawn, including reflow on resize.
+- **Concurrency the compiler checks.** Your program's state lives on one strand. Effects are `isolated` functions that report back with immutable messages, and a mutable message or a non-isolated effect does not compile.
+- **Pure Ballerina.** No Java code to ship, and it builds as a GraalVM native image.
+
+## Quickstart
+
+termui is not on Ballerina Central yet. Until the first release, install it from source into your local repository:
 
 ```sh
-./gradlew build -x test        # compile and package, without tests
-./gradlew test                 # default tests: need no terminal
-./gradlew test -Pgroups=tty    # tty tests only: need a pseudo-terminal (see below)
-./gradlew build                # build and the default tests
+git clone https://github.com/ayeshLK/module-termui
+cd module-termui/ballerina && bal pack && bal push --repository=local
 ```
 
-Run a single test with Ballerina directly: `cd ballerina && bal test --tests <testFunctionName>`.
+Add it to your package's `Ballerina.toml`:
 
-### Test groups
+```toml
+[[dependency]]
+org = "ayesha"
+name = "termui"
+version = "0.1.0"
+repository = "local"
+```
 
-| Group | Runs by default | What it is for |
-|---|---|---|
-| (none) | yes | Unit tests that use the in-memory terminal backend and need no terminal. |
-| `tty` | no | Tests that need a real pseudo-terminal. They allocate one with Python's `pty` module. |
+A counter, in `main.bal` ([`examples/counter`](examples/counter) is this file, built in CI):
 
-Coverage is written as XML to `ballerina/target/report/termui/coverage-report.xml`. The unpacked
-distribution has no HTML report tools, so the HTML report warning can be ignored.
+```ballerina
+import ayesha/termui;
+import ayesha/termui.term;
+import ayesha/termui.text;
 
-### Native-image check
+class Counter {
+    *termui:Program;
 
-`.github/workflows/native-check.yml` runs the package's tests as a GraalVM native image
-(`bal test --graalvm`) on a monthly schedule, on demand, and on pull requests. Add the
-`Skip GraalVM Check` label to a pull request to opt out. This check is not required: native-image
-is a v1 goal, not a first-release gate.
+    int count = 0;
 
-## Versioning
+    public function update(termui:Message message) returns termui:Command? {
+        if message is term:KeyEvent {
+            if message.key == "+" {
+                self.count += 1;
+            } else if message.key == "-" {
+                self.count -= 1;
+            } else if message.key == "q" {
+                return termui:quit();
+            }
+        }
+        return ();
+    }
 
-The package version is defined once, in `gradle.properties` (`version=...`, with `-SNAPSHOT` during
-development). The build renders `ballerina/Ballerina.toml` and `ballerina/version.bal` from the
-templates in `build-config/resources/`; never edit the version in those two files by hand.
+    public function view() returns text:Span[][] {
+        return [
+            [{text: "count: " + self.count.toString(), style: {bold: true}}],
+            [{text: "+ and - change it, q quits", style: {dim: true}}]
+        ];
+    }
+}
 
-## Releasing
+public function main() returns error? {
+    termui:Interface ui = new (term:detectEnvironment());
+    check ui.run(new Counter());
+}
+```
 
-Releases are cut with the manual **Publish Release** workflow, which builds and tests the package,
-creates a `release-<version>` branch, tags `v<version>`, publishes to Ballerina Central, creates a
-GitHub release, and opens a sync pull request. **Publish to the Ballerina Dev/Stage Central** publishes
-a development version to the Dev or Stage Central without tagging.
+Run it with `bal run` and press `+`, `-` and `q`. Requires JDK 25 and Ballerina 2201.14.
+
+## How it works
+
+```
+ keys, resizes, timers, effect results ──> message queue ──> loop ──> update(message) ──> command
+                                                               │
+                                                               └──> view() ──> one frame per batch
+```
+
+You write a `Program` with two methods: `update` is called for each message and returns what to do next (`quit()`, start an `effect`, `commitProse` some finished output, and so on), and `view` returns the live region as lines of styled text. The runtime applies every waiting message, then draws **one** frame, writing only the cells that changed. Work that takes time runs in an effect on its own strand and reports back with messages, so the interface never blocks.
+
+| Module | What it is for |
+|---|---|
+| [`ayesha/termui`](ballerina/Module.md) | The runtime: `Program`, `run`, messages, commands, effects, prompts, `Interface` |
+| [`ayesha/termui.term`](ballerina/modules/term/Module.md) | The terminal: `UnixTerminal`, `FakeTerminal`, input events, environment detection |
+| [`ayesha/termui.render`](ballerina/modules/render/Module.md) | Drawing: the inline renderer, the plain renderer, the cell buffer |
+| [`ayesha/termui.text`](ballerina/modules/text/Module.md) | Styled text, display width (CJK, emoji, combining marks), wrapping |
+
+## Examples
+
+| Example | Shows |
+|---|---|
+| [`examples/counter`](examples/counter) | The smallest interactive program (the quickstart above) |
+| [`examples/agent-demo`](examples/agent-demo) | An agent-style app: streamed text, a spinner and status line, an approval prompt, a result on standard output. Run it three ways, as in the recording above |
+
+## Documentation
+
+- **[Package guide](ballerina/Package.md):** the modes (interactive, piped output, piped input, headless), what each guarantees, and the plain-output rules.
+- **Module references:** the four `Module.md` files linked above.
+- **[Specifications](openspec/specs):** the behavior the library promises, as testable requirements and scenarios.
+- **[Design notes](openspec/changes/archive):** why it is built the way it is, including measurements (startup time, write throughput) and what was tried.
+
+## Status and limits
+
+Worth knowing before you build on it:
+
+- **Experimental.** Expect API changes before 1.0.
+- **Platforms:** macOS and Linux. Windows is not supported.
+- **Startup:** about 0.3 s to the first frame on the JVM (334 ms for the agent demo on a developer laptop) and about 0.23 s with an AppCDS archive. The Ballerina runtime is most of that. Long-lived interactive programs will not notice; a command you run a hundred times a day might.
+- **Resize:** committed output is not re-laid out; terminals that re-wrap text do it for prose, and blocks keep the width they were written at. The renderer needs to be told whether your terminal re-wraps (`reflow`).
+- **Not there yet:** ready-made widgets (text editor, select list, spinner), incremental markdown rendering, a bridge to Ballerina's AI module, and JSON output for headless mode.
+
+## Contributing
+
+Issues and pull requests are welcome. [CONTRIBUTING.md](CONTRIBUTING.md) covers building, the test groups, the native-image check, and releasing.
 
 ## License
 

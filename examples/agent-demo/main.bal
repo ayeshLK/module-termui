@@ -16,6 +16,7 @@ import ayesha/termui;
 import ayesha/termui.term;
 import ayesha/termui.text;
 import ballerina/lang.runtime;
+import ballerina/os;
 
 // A small agent-style program: it streams text token by token, shows a spinner and a status line in
 // the live region, asks for approval before "running a tool", and prints its result on standard
@@ -79,10 +80,17 @@ class AgentDemo {
     }
 }
 
+// Seconds between words. AGENT_DEMO_PACE_MS slows the stream down so it can be recorded and watched.
+isolated function pace() returns decimal {
+    int|error milliseconds = int:fromString(os:getEnv("AGENT_DEMO_PACE_MS"));
+    return milliseconds is int && milliseconds > 0 ? <decimal>milliseconds / 1000 : 0.02;
+}
+
 isolated function say(termui:Session session, string sentence) {
+    decimal delay = pace();
     foreach string word in re ` `.split(sentence) {
         session.send({kind: "token", text: word + " "});
-        runtime:sleep(0.02);
+        runtime:sleep(delay);
     }
     session.send({kind: "line"});
 }

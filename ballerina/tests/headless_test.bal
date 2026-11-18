@@ -263,3 +263,47 @@ function testPackageDocExample() returns error? {
     check ui.run(new DocReport());
     test:assertEquals(check readFile(dir + "/out.txt"), "report ready\nworking...\n");
 }
+
+// ---- a result written while the interface is on the terminal ---------------------------------------------------------
+
+class ResultProgram {
+    *Program;
+
+    private final Interface ui;
+    private int lines = 0;
+
+    function init(Interface ui) {
+        self.ui = ui;
+    }
+
+    public function update(Message message) returns Command? {
+        if message is term:KeyEvent {
+            if message.key == "r" {
+                self.lines += 1;
+                error? written = self.ui.result("result " + self.lines.toString());
+                if written is error {
+                    return quit();
+                }
+            } else if message.key == "q" {
+                return quit();
+            }
+        }
+        return ();
+    }
+
+    public function view() returns text:Span[][] {
+        return [[{text: "live line"}], [{text: "| status"}]];
+    }
+}
+
+// When standard output is the terminal, a result written straight to it would land in the middle of the
+// live region and throw the renderer's row accounting off by one; it must be committed above the region.
+@test:Config {}
+function testAResultOnTheTerminalDoesNotCorruptTheLiveRegion() returns error? {
+    term:FakeTerminal terminal = new (40, 10);
+    term:Environment environment = term:environmentFrom({COLUMNS: "40", LINES: "10"}, true, true, true);
+    Interface ui = new (environment, terminal = terminal);
+    terminal.pushText("rrrq");
+    check ui.run(new ResultProgram(ui));
+    test:assertEquals(terminal.screenLines().slice(0, 6), ["result 1", "result 2", "result 3", "live line", "| status", ""]);
+}

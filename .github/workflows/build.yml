@@ -56,6 +56,13 @@ jobs:
         working-directory: examples/agent-demo
         run: JAVA="$(command -v java)" python3 verify.py
 
+      # The README's quickstart is this example: building it keeps the documentation honest.
+      - name: Build and verify the counter (README quickstart)
+        working-directory: examples/counter
+        run: |
+          bal build
+          JAVA="$(command -v java)" python3 verify.py
+
       - name: Upload coverage
         if: ${{ matrix.os == 'ubuntu-22.04' }}
         uses: codecov/codecov-action@303a32d7a59b442fa8d48b6a1cc6825c09c847a5 # v7.1.1

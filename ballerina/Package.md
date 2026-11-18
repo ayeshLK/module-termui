@@ -1,10 +1,15 @@
 ## Overview
 
-`ayesha/termui` is a terminal UI toolkit for building polished, interactive, agent-style command-line
-applications in Ballerina: an inline live region, committed scrollback, streaming output, and
-non-blocking input. It is a UI toolkit only; agent logic stays in the application.
+**Build agent-style terminal apps in Ballerina: streaming output, a live region, and approval prompts that stay well-behaved in pipes and CI.**
 
-> This package is under development. Windows is not supported yet.
+A small live region (a spinner, a status line, a prompt) is redrawn in place at the bottom of the
+terminal, and finished output goes into your normal scrollback. The same program runs interactively,
+with its output redirected, and with no terminal at all, and it can be tested without a terminal.
+Your program's state lives on one strand; effects are `isolated` and report back with immutable
+messages. It is a UI toolkit only: agent logic stays in your application.
+
+> **Status: experimental (0.1).** The API can change before 1.0. macOS and Linux only. See the
+> [repository](https://github.com/ayeshLK/module-termui) for a demo recording, examples and the design notes.
 
 ## Modules
 
@@ -29,8 +34,10 @@ is attached to and hands out the matching terminal, renderer, and options:
 | redirected | terminal | `pipedInput` | Plain text, no colors or cursor control. Nobody can answer questions. |
 | redirected | redirected | `headless` | Plain text, as for `pipedInput`. |
 
-- **Results.** `ui.result(text)` writes a line to standard output, never to the terminal the interface is
-  drawn on. Use it for what a caller or a pipe is waiting for.
+- **Results.** `ui.result(text)` is for what a caller or a pipe is waiting for. With output redirected
+  it writes a line to standard output and never to the terminal the interface is drawn on. When
+  standard output is the terminal itself, it is committed above the live region like other finished
+  output (writing to the terminal directly would corrupt the live region).
 - **Questions.** Without a terminal, `session.confirm` and `session.choose` never wait: they return
   the default you gave, or a `NoTerminal` error when there is none. Decide in your program what
   "no answer" means, for example deny by default.

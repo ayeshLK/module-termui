@@ -40,18 +40,24 @@ public class Interface {
 
     private final term:Environment environment;
     private final string? resultFile;
+    private render:Renderer? active = ();
 
     # + environment - what the process is attached to (see `term:detectEnvironment`)
     # + ttyPath - the terminal device to draw on in the interactive modes
     # + resultFile - write results to this file instead of standard output (for tests and for tools
     #                that capture them)
-    public function init(term:Environment environment, string ttyPath = "/dev/tty", string? resultFile = ()) {
+    # + terminal - use this terminal instead of the one the mode would choose (for tests and for custom
+    #              terminals)
+    public function init(term:Environment environment, string ttyPath = "/dev/tty", string? resultFile = (),
+            term:Terminal? terminal = ()) {
         self.environment = environment;
         self.mode = term:selectMode(environment);
         // with output redirected a terminal is still there, so questions can be asked
         self.interactive = self.mode == "interactive" || self.mode == "pipedOutput";
         self.resultFile = resultFile;
-        if self.mode == "interactive" || self.mode == "pipedOutput" {
+        if terminal is term:Terminal {
+            self.terminal = terminal;
+        } else if self.mode == "interactive" || self.mode == "pipedOutput" {
             self.terminal = new term:UnixTerminal(ttyPath);
         } else {
             self.terminal = new term:StreamTerminal(io:stdout, environment.width, environment.height, resultFile);
@@ -84,16 +90,23 @@ public class Interface {
         return {colors: self.colorsOnTerminal(), interactive: self.interactive};
     }
 
-    # Writes a result: the output a caller or a pipe is waiting for. It always goes to standard output
-    # (or the result file), never to the terminal the interface is drawn on, so a piped program gets
-    # results and nothing else.
+    # Writes a result: the output a caller or a pipe is waiting for.
     #
-    # + text - the result, written with a line feed
+    # With output redirected it goes to standard output (or the result file), never to the terminal the
+    # interface is drawn on, so a piped program gets results and nothing else. When standard output is
+    # the terminal itself (interactive mode) it is committed above the live region like any other
+    # finished output, because writing to the terminal directly would corrupt the live region.
+    #
+    # + text - the result, written as a line
     # + return - an error when the output cannot be written
     public function result(string text) returns error? {
         string? file = self.resultFile;
         if file is string {
             return io:fileWriteString(file, text + "\n", io:APPEND);
+        }
+        render:Renderer? drawing = self.active;
+        if self.mode == "interactive" && drawing is render:Renderer {
+            return drawing.commitProse([[{text}]]);
         }
         io:println(text);
     }
@@ -106,6 +119,10 @@ public class Interface {
     public function run(Program program, Command? initialCommand = ()) returns error? {
         Options options = self.options();
         options.initialCommand = initialCommand;
-        return run(program, self.terminal, options, self.renderer());
+        render:Renderer drawing = self.renderer();
+        self.active = drawing;
+        error? outcome = run(program, self.terminal, options, drawing);
+        self.active = ();
+        return outcome;
     }
 }
