@@ -71,6 +71,13 @@ public class Interface {
         return onTerminal && !self.environment.noColor && !self.environment.dumbTerminal;
     }
 
+    // The size of the terminal itself. COLUMNS and LINES are usually not exported by shells, so they are only the
+    // fallback for when the terminal cannot be asked.
+    private function terminalSize() returns term:Size {
+        term:Size|error size = self.terminal.size();
+        return size is term:Size ? size : {width: self.environment.width, height: self.environment.height};
+    }
+
     # A renderer that matches the mode: the inline interface on a terminal, plain text otherwise.
     #
     # + reflow - whether the terminal re-wraps text on resize (see `render:InlineRenderer`)
@@ -79,7 +86,8 @@ public class Interface {
     # + return - the renderer
     public function renderer(boolean reflow = true, boolean anchorBottom = false) returns render:Renderer {
         if self.mode == "interactive" || self.mode == "pipedOutput" {
-            return new render:InlineRenderer(self.terminal, self.environment.width, self.environment.height,
+            term:Size size = self.terminalSize();
+            return new render:InlineRenderer(self.terminal, size.width, size.height,
                 self.colorsOnTerminal(), reflow, anchorBottom);
         }
         return new render:PlainRenderer(self.terminal, self.environment.width);

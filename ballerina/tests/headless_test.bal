@@ -405,3 +405,17 @@ function testTheOptionIsIgnoredWhenTheRunIsNotInteractive() returns error? {
             {interactive: false, anchorBottom: true});
     test:assertEquals(anchored.screenLines(), plain.screenLines());
 }
+
+// COLUMNS and LINES are usually not exported by shells, so the environment falls back to 80x24; the renderer
+// must use the size of the terminal itself (anchoring depends on the height being right).
+@test:Config {}
+function testTheRendererUsesTheRealTerminalSizeNotTheEnvironment() returns error? {
+    term:FakeTerminal terminal = new (60, 12);
+    check terminal.write("banner\r\n");
+    Interface ui = new (term:environmentFrom({}, true, true, true), terminal = terminal);
+    render:Renderer drawing = ui.renderer(anchorBottom = true);
+    check drawing.draw([[{text: "live"}]]);
+    test:assertEquals(terminal.screenLines()[11], "live", "the region is on the last row of the real 12-row terminal");
+    check drawing.commitBlock([[{text: "x" + "y".padEnd(50, "y")}]]);
+    test:assertEquals(terminal.screenLines()[1].length(), 51, "blocks are wrapped to the real width, not 80 columns' default");
+}
