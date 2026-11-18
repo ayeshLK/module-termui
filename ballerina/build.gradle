@@ -1,0 +1,58 @@
+/*
+ * Copyright (c) 2026, Ayesh Almeida.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing,
+ * software distributed under the License is distributed on an
+ * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND,
+ * either express or implied. See the License for the specific
+ * language governing permissions and limitations under the License.
+ */
+ 
+plugins {
+    id 'io.ballerina.plugin'
+}
+
+description = 'termui - Ballerina'
+
+def packageName = "termui"
+def packageOrg = "ayesha"
+
+ballerina {
+    packageOrganization = packageOrg
+    module = packageName
+    testCoverageParam = "--code-coverage --coverage-format=xml"
+    isConnector = false
+    platform = "any"
+}
+
+publishing {
+    publications {
+        maven(MavenPublication) {
+            artifact source: createArtifactZip, extension: 'zip'
+        }
+    }
+    repositories {
+        maven {
+            name = "GitHubPackages"
+            url = uri("https://maven.pkg.github.com/ayeshLK/module-termui")
+            credentials {
+                username = System.getenv("publishUser")
+                password = System.getenv("publishPAT")
+            }
+        }
+    }
+}
+
+clean {
+    delete 'build'
+}
+
+build.dependsOn "generatePomFileForMavenPublication"
+publishToMavenLocal.dependsOn build
+publish.dependsOn build
