@@ -102,8 +102,8 @@ public function main() returns error? {
     // The spinner only animates where someone can see it: in plain output the final state of the live
     // region is written, and a frame that depends on how long the run took would make the output differ
     // from run to run.
-    termui:Command start = ui.interactive
+    termui:Command initial = ui.interactive
         ? termui:batch([termui:effect(agent), termui:every(0.1, {kind: "tick"})])
         : termui:effect(agent);
-    check ui.run(new AgentDemo(ui), start);
+    check ui.run(new AgentDemo(ui), initial);
 }
