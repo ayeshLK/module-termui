@@ -9,14 +9,14 @@ Depends on `termui-scaffold` for the build, test, and CI setup. Group 1 is a gat
 - [x] 1.3 Test whether the compiler enforces `isolated` on a `start`ed effect function and on posting a mutable message, or only hints; verify with a compile of both a correct and an offending sample and record the diagnostics
 - [x] 1.4 Test whether `runtime:onGracefulStop` fires on SIGINT and SIGTERM while the terminal is in raw mode and can restore it; verify by sending both signals to a running sample and recording the terminal state afterward
 - [x] 1.5 Measure write throughput and flicker for writing a full frame in one flushed write at streaming rates, and measure hello-world startup and time-to-first-frame on the JVM; verify the numbers are recorded and use them to propose a startup budget in `design.md`
-- [ ] 1.6 Record a go or no-go for the pure-Ballerina Unix backend in `design.md`, with the JLine-shim fallback noted for any failed question; verify the decision is reviewed before group 3 starts
+- [x] 1.6 Record a go or no-go for the pure-Ballerina Unix backend in `design.md`, with the JLine-shim fallback noted for any failed question; verify the decision is reviewed before group 3 starts
 
 ## 2. Text primitives (`text` module)
 
-- [ ] 2.1 Implement styled text (colors, attributes, spans) with the color-disabled path, and verify unit tests cover mixed-style lines and `NO_COLOR` output
-- [ ] 2.2 Implement display width (wide characters, combining marks, escape sequences counting zero) with lazily built tables, and verify unit tests cover CJK, combining marks, and ANSI strings
-- [ ] 2.3 Implement wrapping (word boundaries, overlong-word split, style continuity, hanging indents), and verify unit tests cover every scenario in `specs/text-primitives/spec.md`
-- [ ] 2.4 Document the module in `Module.md` with a short example, and verify the example compiles and its output matches the docs
+- [x] 2.1 Implement styled text (colors, attributes, spans) with the color-disabled path, and verify unit tests cover mixed-style lines and `NO_COLOR` output
+- [x] 2.2 Implement display width (wide characters, combining marks, escape sequences counting zero) with static range tables (small literals, so no lazy build is needed), and verify unit tests cover CJK, combining marks, and ANSI strings
+- [x] 2.3 Implement wrapping (word boundaries, overlong-word split, style continuity, hanging indents), and verify unit tests cover every scenario in `specs/text-primitives/spec.md`
+- [x] 2.4 Document the module in `Module.md` with a short example, and verify the example compiles and its output matches the docs
 
 ## 3. Terminal abstraction and fake backend (`term` module)
 
