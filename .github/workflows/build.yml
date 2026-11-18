@@ -52,15 +52,18 @@ jobs:
       - name: Point the examples at the package built here
         run: .github/scripts/point-examples-at-source.sh
 
-      # The harness check feeds the app's output to a terminal emulator to look at the screen.
+      # The harness check feeds the app's output to a terminal emulator to look at the screen. A virtualenv,
+      # because the Python on macOS runners is externally managed and refuses system-wide installs.
       - name: Install pyte (terminal emulator for the harness check)
-        run: python3 -m pip install pyte==0.8.2
+        run: |
+          python3 -m venv "$RUNNER_TEMP/venv"
+          "$RUNNER_TEMP/venv/bin/pip" install pyte==0.8.2
 
       - name: Build and verify the agent harness
         working-directory: examples/agent-harness
         run: |
           bal build
-          JAVA="$(command -v java)" python3 verify.py
+          JAVA="$(command -v java)" "$RUNNER_TEMP/venv/bin/python" verify.py
 
       # The README's quickstart is this example: building it keeps the documentation honest.
       - name: Build and verify the counter (README quickstart)

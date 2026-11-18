@@ -7,7 +7,7 @@ Thanks for helping. This page covers building, testing, and releasing. For what 
 - JDK 25 (Ballerina 2201.14 and later need it)
 - Ballerina 2201.14.2 (the version pinned as `ballerinaLangVersion` in `gradle.properties`)
 - macOS or Linux (Windows is not supported yet)
-- `python3` (used by the `tty` tests to allocate a pseudo-terminal), and `pip install pyte` for the agent harness check (a terminal emulator it uses to look at the screen)
+- `python3` (used by the `tty` tests to allocate a pseudo-terminal), and `pyte` for the agent harness check (a terminal emulator it uses to look at the screen; install it in a virtualenv: `python3 -m venv .venv && .venv/bin/pip install pyte`, then run the check with `.venv/bin/python`)
 - `packageUser` and `packagePAT` environment variables: a GitHub user and a token that can read
   packages. The Gradle plugin is resolved from `https://maven.pkg.github.com/ballerina-platform/*`,
   even for builds that publish nothing.
@@ -66,7 +66,7 @@ The examples depend on the version of termui published on Ballerina Central, so 
 ```sh
 (cd ballerina && bal pack && bal push --repository=local)
 .github/scripts/point-examples-at-source.sh          # edits the examples' Ballerina.toml: do not commit the result
-(cd examples/agent-harness && bal build && JAVA=$(which java) python3 verify.py)
+(cd examples/agent-harness && bal build && JAVA=$(which java) python3 verify.py)   # python3 with pyte installed, see Requirements
 (cd examples/counter && bal build && JAVA=$(which java) python3 verify.py)
 git checkout examples                                  # back to the published dependency
 ```
