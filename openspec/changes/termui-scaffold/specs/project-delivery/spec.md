@@ -61,15 +61,26 @@ The package SHALL be built and tested daily against the latest released Ballerin
 - **THEN** the package is built and tested with the latest Ballerina distribution and the result is visible to maintainers
 
 ### Requirement: Native-image compatibility is checked without blocking
-A workflow SHALL build the example application as a native image and report the outcome, and a failure of that check SHALL NOT block pull request merging or a release while native-image remains a non-gating goal.
+A workflow SHALL run the package's tests under GraalVM native image on a schedule and on demand, SHALL allow a pull request to opt out with a label, and a failure SHALL NOT block pull request merging or a release while native-image remains a non-gating goal.
 
-#### Scenario: Native build passes
-- **WHEN** the native-image check runs and the example builds
+#### Scenario: Native tests pass
+- **WHEN** the native-image check runs and the tests pass under GraalVM
 - **THEN** the check reports success
 
-#### Scenario: Native build fails
-- **WHEN** the native-image check runs and the example fails to build
+#### Scenario: Native tests fail
+- **WHEN** the native-image check runs and a test or the native build fails
 - **THEN** the failure is reported to maintainers and the pull request or release is not blocked
+
+#### Scenario: Opt-out label
+- **WHEN** a pull request carries the skip label
+- **THEN** the native-image check does not run for that pull request
+
+### Requirement: Static analysis on pull requests
+Pull requests SHALL be analyzed with Ballerina's static analysis tool, and its findings SHALL be visible in the check output.
+
+#### Scenario: Pull request opened
+- **WHEN** a pull request is opened or updated
+- **THEN** the package is scanned and any findings appear in the check results
 
 ### Requirement: Releases are manual and reproducible
 A release SHALL be started manually by a maintainer from the package's owning repository, SHALL build and test the package, and SHALL publish the release version (without a development suffix) to Ballerina Central, tag it, and create a GitHub release.

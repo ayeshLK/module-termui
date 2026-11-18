@@ -47,10 +47,8 @@ def stripBallerinaExtensionVersion(String extVersion) {
 ballerina {
     packageOrganization = packageOrg
     module = packageName
+    langVersion = ballerinaLangVersion
     testCoverageParam = "--code-coverage --coverage-format=xml"
-    // Plugin 2.3.0 only builds through the Ballerina Docker image when this is true. With false it
-    // needs a jballerina-tools download whose version resolves to null (see termui-scaffold notes).
-    isConnector = true
     platform = "any"
 }
 
@@ -75,6 +73,10 @@ task commitTomlFiles {
         }
     }
 }
+
+// The plugin runs this after every build. Locally it would create an unwanted git commit, so only
+// run it in CI, where the release flow needs the regenerated files committed.
+commitTomlFiles.onlyIf { System.getenv('CI') == 'true' }
 
 publishing {
     publications {
@@ -101,3 +103,7 @@ clean {
 build.dependsOn "generatePomFileForMavenPublication"
 publishToMavenLocal.dependsOn build
 publish.dependsOn build
+
+build.dependsOn unpackJballerinaTools
+test.dependsOn unpackJballerinaTools
+updateTomlFiles.dependsOn copyStdlibs

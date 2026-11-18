@@ -15,7 +15,7 @@ The local toolchain is Ballerina 2201.13.5 on Java 21; `module-arxiv` pins 2201.
 - Fix the security and maintenance weak spots of the arxiv workflows instead of copying them.
 
 **Non-Goals:**
-- Library code, widgets, or examples beyond a minimal build-able sample.
+- Library code, widgets, or example applications (the foundation change adds those).
 - Windows CI, a JLine/Java platform dependency, or a vulnerability scan of Java libraries (revisit if a Java shim is ever added).
 - Changing how Ballerina Central publishing works.
 
@@ -30,7 +30,6 @@ module-termui/
     tests/
     build.gradle
   build-config/resources/    Ballerina.toml + version.bal.template
-  examples/                  sample app used by the native-image check
   build.gradle, settings.gradle, gradle.properties
   .github/{workflows,CODEOWNERS,pull_request_template.md}
 ```
@@ -43,11 +42,17 @@ Alternative considered: a plain `bal`-only repo with scripts. Rejected, because 
 
 **Test tiers.** Reuse arxiv's group mechanism (`disable = 'live'` by default, `-Pgroups=...` to enable), renaming the group to `tty`. Default tests use the fake terminal backend from `termui-foundation` and need no terminal. The `tty` group runs against a pseudo-terminal: on Linux through `script` (or an equivalent pty wrapper), on macOS through the BSD `script`. Alternative: run everything on a real tty locally only. Rejected, because the Unix backend is the riskiest part of the library and needs CI coverage.
 
-**CI matrix.** Ubuntu and macOS for PR, main, and daily builds. arxiv only builds on Ubuntu. macOS runners cost more, so the full matrix runs on PRs and main, while the daily build against the latest Ballerina runs on Ubuntu only unless a regression suggests otherwise.
+**Build path (verified).** Follow the `module-ballerinax-solace` wiring, not arxiv's. The Ballerina Gradle plugin is 4.0.0 (2.3.0 resolves `jballerina-tools:null` unless `isConnector = true`, which switches to a Docker-only build). The root `build.gradle` declares `jbalTools` (the pinned `jballerina-tools`) and `ballerinaStdLibs` for subprojects; `ballerina/build.gradle` sets `langVersion = ballerinaLangVersion` and makes `build` and `test` depend on `unpackJballerinaTools`, and `updateTomlFiles` on `copyStdlibs`. The stdlib closure for what the foundation imports is `io`, `os`, and `time`, with versions in `gradle.properties`. This path needs no Docker, so it runs on macOS and Linux runners and runs tty tests on a native terminal. Alternative: arxiv's `isConnector = true` (Docker) path. Rejected: macOS runners have no Docker and a pty is awkward inside a container.
 
-**Workflow set.** Keep: pull-request, main build (with Codecov), daily build, release, Dev/Stage publish. Add: `native-check` (non-blocking). Drop for now: Trivy scan, because there is no `ballerina/lib` of Java dependencies.
+**`commitTomlFiles` only in CI.** The plugin runs it after every build, which makes an unwanted local git commit, so it is gated on `CI=true`.
 
-**Native-image check.** A workflow sets up GraalVM, then runs `bal build --graalvm` on the `examples/` app and reports the result. It is marked non-required, so a failure is visible but not blocking. This implements the "v1 goal, not a first-release gate" decision. Alternative: a gating job. Rejected for now, because the Ballerina native-image feature is experimental and would block unrelated work.
+**CI matrix.** Ubuntu and macOS for PR and main builds. `./gradlew build -x test` and `./gradlew test` run as separate steps, because the plugin only supports test-group selection with `gradlew test` (the official ballerina-library templates do the same). The daily build against the latest Ballerina runs on Ubuntu only unless a regression suggests otherwise.
+
+**Workflow set.** Keep: pull-request, main build (with Codecov), daily build, release, Dev/Stage publish. Add: `native-check` (non-blocking, monthly and on demand). Drop for now: Trivy scan, because there is no `ballerina/lib` of Java dependencies.
+
+**Native-image check.** Follow the official GraalVM check: build with Gradle, then run `bal test --graalvm` from `ballerina/` with `setup-ballerina` and `setup-graalvm`. It runs monthly and on manual dispatch, can be skipped with a PR label, and is not a required check, so a failure is visible but not blocking. This implements the "v1 goal, not a first-release gate" decision and tests the package's own tests natively, which is more than building a sample app. Alternative: a gating job, or building an `examples/` app. Rejected for now: the feature is experimental, and the example app belongs to `termui-foundation`.
+
+**Static analysis.** Run `bal scan` on the package in the PR workflow, as the official PR template does, and report findings in the check output.
 
 **Workflow hygiene (deliberate deviations from arxiv).**
 - Pass secrets per step through `env`, never by exporting the whole `secrets` object into `GITHUB_ENV`.
@@ -60,7 +65,8 @@ Alternative considered: a plain `bal`-only repo with scripts. Rejected, because 
 ## Risks / Trade-offs
 
 - [pty tests flaky in CI] -> Keep the `tty` group small, run it separately from the default tests, and treat it as a distinct check so flakiness is isolated.
-- [Gradle plugin may not handle submodules the way a single-module arxiv does] -> Confirm early in implementation by adding an empty submodule before `termui-foundation` starts, and adapt the plugin's `module` configuration if needed.
+- [The stdlib list in the root `build.gradle` can drift from the package's imports] -> Keep it next to the versions in `gradle.properties`, and let the PR build fail when an imported stdlib module is missing from the unpacked distribution.
+- [The `jballerina-tools` distribution lacks the HTML coverage report tools] -> Verify that the XML coverage report is still produced (task 3.3).
 - [macOS runner cost and queue time] -> Restrict the macOS job to PR and main, and skip it for docs-only changes if cost becomes an issue.
 - [Native-image feature is experimental] -> The check is non-blocking, and failures are triaged rather than gated.
 - [Secrets are not yet provisioned] -> The scaffold documents the required secrets; CI cannot fully run until they exist. Local builds still work without them where possible.

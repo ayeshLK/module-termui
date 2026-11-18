@@ -63,7 +63,7 @@ Depends on `termui-scaffold` for the build, test, and CI setup. Group 1 is a gat
 ## 8. Integration and delivery
 
 - [ ] 8.1 Build an `examples/` app that streams text, shows a live region, and asks an approval prompt, and verify it runs interactively and headless (piped) with the documented behavior
-- [ ] 8.2 Run the native-image check from `termui-scaffold` against the example and record the result (pass or the first failure) in `design.md`; verify the outcome is reported without gating the build
+- [ ] 8.2 Run the native-image check from `termui-scaffold` (`bal test --graalvm`) and also build the example with `bal build --graalvm`, and record the result (pass or the first failure) in `design.md`; verify the outcome is reported without gating the build
 - [ ] 8.3 Re-measure startup and time-to-first-frame on the finished foundation and compare with the spike baseline, and verify the numbers are recorded and the startup budget in `design.md` is updated
 - [ ] 8.4 Run the full default and `tty` test suites in CI on Linux and macOS, and verify both are green
 
