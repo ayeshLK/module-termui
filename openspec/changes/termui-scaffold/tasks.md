@@ -22,12 +22,12 @@
 
 ## 4. CI workflows
 
-- [ ] 4.1 Add `.github/workflows/pull-request.yml` with an Ubuntu and macOS matrix, pinned action versions, separate `./gradlew build -x test` and `./gradlew test` steps, per-step secrets only, a concurrency group keyed by workflow and ref, and the coverage upload; verify it with `actionlint` and with a green run on a pushed pull request on both OSes
-- [ ] 4.2 Add a CI step that runs the `tty` group on both OSes (pty via `script` on Linux and the BSD equivalent on macOS), and verify the step passes in the pull-request run
+- [x] 4.1 Add `.github/workflows/pull-request.yml` with an Ubuntu and macOS matrix, pinned action versions, separate `./gradlew build -x test` and `./gradlew test` steps, per-step secrets only, a concurrency group keyed by workflow and ref, and the coverage upload; verify it with `actionlint` and with a green run on a pushed pull request on both OSes
+- [x] 4.2 Add a CI step that runs the `tty` group on both OSes (pty via `script` on Linux and the BSD equivalent on macOS), and verify the step passes in the pull-request run
 - [x] 4.3 Add `.github/workflows/ci.yml` for pushes to `main` with coverage upload, and verify a merge to `main` triggers a green run
 - [x] 4.4 Add `.github/workflows/daily-build.yml` that builds and tests with `bal` against the latest Ballerina distribution (and the JDK it needs) on Ubuntu, and verify a manual dispatch run completes and shows the Ballerina version used
 - [x] 4.5 Verify no workflow exports the whole `secrets` object and that every third-party action is pinned (`grep` the workflows for `toJson(secrets)` and `@master`/`@main`)
-- [ ] 4.6 Add a `bal scan` step to the pull-request workflow and verify a pull request run shows the scan results (and that an injected finding appears)
+- [x] 4.6 Add a `bal scan` step to the pull-request workflow and verify a pull request run shows the scan results (and that an injected finding appears)
 
 ## 5. Native-image check
 
@@ -49,7 +49,7 @@
 
 ## 8. Integration check
 
-- [ ] 8.1 Open a pull request from a branch with a deliberately failing test and verify the check fails on both OSes, then fix it and verify the checks turn green
+- [x] 8.1 Open a pull request from a branch with a deliberately failing test and verify the check fails on both OSes, then fix it and verify the checks turn green
 
 ## Workflow follow-up
 
