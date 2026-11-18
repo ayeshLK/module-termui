@@ -24,3 +24,14 @@ function testModuleDocExample() returns error? {
     check renderer.draw([[{text: "> typing"}]]);
     test:assertEquals(terminal.screenText(), "Hello!\n> typing");
 }
+
+// Mirrors the anchoring example in Module.md; if this test changes, update the documentation to match.
+@test:Config {}
+function testAnchoringDocExample() returns error? {
+    term:FakeTerminal terminal = new (30, 8);
+    check terminal.write("banner\r\n");
+    InlineRenderer renderer = new (terminal, 30, 8, anchorBottom = true);
+    check renderer.draw([[{text: "> typing"}]]);
+    check renderer.commitProse([[{text: "Hello!"}]]);
+    test:assertEquals(terminal.screenLines(), ["banner", "Hello!", "", "", "", "", "", "> typing"]);
+}

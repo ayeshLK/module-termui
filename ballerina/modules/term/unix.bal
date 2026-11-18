@@ -83,7 +83,6 @@ isolated function shellQuote(string value) returns string {
 # Output goes to the terminal device itself, not to standard output, so redirecting standard output
 # does not disturb the interface.
 public isolated class UnixTerminal {
-    *Terminal;
     *CursorReporter;
 
     private final string ttyPath;

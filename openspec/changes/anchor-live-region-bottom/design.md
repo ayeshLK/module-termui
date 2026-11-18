@@ -111,5 +111,5 @@ Gathered while applying group 1 (2026-11-18).
 
 ## Implementation notes
 
-- With Ballerina 2201.14.2, after `terminal is term:CursorReporter` a method call directly on the narrowed value crashes the compiler (`Cannot read field "owner" because "symbol" is null`). Assigning it first (`term:CursorReporter reporter = terminal;`) and calling through `reporter` works. The renderer must do the same.
+- With Ballerina 2201.14.2, narrowing a `Terminal` to a separate capability type (`Terminal & CursorReporter`) and then using the value crashes the compiler (`Cannot read field "owner" because "symbol" is null`), or fails JVM generation across modules. `term:CursorReporter` therefore includes `*Terminal`, so narrowing yields `CursorReporter` itself and works. Decision 3 stands: it is still a separate, optional type that existing terminals need not implement.
 - The method is named `queryCursor` (not `cursorPosition`) because `FakeTerminal.cursorPosition()` already exists with a different return type; the record is `term:CursorPosition {row, col}`, counted from zero.

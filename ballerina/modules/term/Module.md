@@ -8,9 +8,9 @@ The terminal the application draws on and reads input from.
 - **`FakeTerminal`** is an in-memory implementation for tests and non-interactive use. Script input
   with `pushText`, `pushKey`, and `pushEvent`; read the result back with `screenLines`, `screenText`,
   `scrollbackLines`, and `cursorPosition`; check how it was written with `writes`.
-- **`CursorReporter`** is an optional capability for asking where the cursor is (`queryCursor`). `FakeTerminal`
-  and `UnixTerminal` implement it; a terminal that does not is treated as not knowing. Test for it with
-  `terminal is term:CursorReporter`.
+- **`CursorReporter`** is a `Terminal` that can also be asked where its cursor is (`queryCursor`), an optional
+  capability. `FakeTerminal` and `UnixTerminal` implement it; a terminal that does not is treated as not
+  knowing. Test for it with `terminal is term:CursorReporter`.
 - **`detectEnvironment`** reports whether standard input, output, and error are terminals and whether
   color may be used (`NO_COLOR`, `TERM=dumb`, and a non-terminal output all turn it off). It asks the
   operating system about its parent process, which costs one short `sh` process (about 25 ms), so call it
@@ -58,8 +58,7 @@ import ayesha/termui.term;
 
 function cursorRow(term:Terminal terminal) returns int? {
     if terminal is term:CursorReporter {
-        term:CursorReporter reporter = terminal; // call through the capability type (see the note below)
-        term:CursorPosition|error? position = reporter.queryCursor();
+        term:CursorPosition|error? position = terminal.queryCursor();
         if position is term:CursorPosition {
             return position.row; // counted from zero
         }
@@ -67,10 +66,6 @@ function cursorRow(term:Terminal terminal) returns int? {
     return (); // not offered, not answered, or failed: treat the position as unknown
 }
 ```
-
-Call `queryCursor` through a variable of type `term:CursorReporter`, as above, rather than directly on the
-narrowed `terminal`: with Ballerina 2201.14.2 a method call on the narrowed `Terminal & CursorReporter` value
-crashes the compiler.
 
 ### Example
 

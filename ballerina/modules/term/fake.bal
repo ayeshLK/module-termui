@@ -19,7 +19,6 @@
 # and every `write` is also logged whole (see `writes`), so tests can check both what the user would
 # see and how it was written.
 public isolated class FakeTerminal {
-    *Terminal;
     *CursorReporter;
 
     private InputEvent[] script = [];

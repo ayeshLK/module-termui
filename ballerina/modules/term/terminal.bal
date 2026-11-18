@@ -54,11 +54,13 @@ public type CursorPosition record {|
     int col;
 |};
 
-# An optional capability of a `Terminal`: telling where its cursor is.
+# A `Terminal` that can also tell where its cursor is: an optional capability.
 #
 # A terminal that cannot ask (an output-only terminal, or a real terminal that never answers) simply does
 # not implement this, and callers treat the position as unknown. Test with `terminal is CursorReporter`.
 public type CursorReporter isolated object {
+    *Terminal;
+
     # Asks for the cursor position.
     #
     # + return - the position, `()` when it is unknown (the terminal does not answer), or an error when

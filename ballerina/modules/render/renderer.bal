@@ -64,7 +64,69 @@ isolated function toTerminalText(string value) returns string {
 type InlineState record {|
     Buffer? previous;
     int cursorRow;
+    boolean anchored;
+    int gap;
 |};
+
+// How to put a region of `regionHeight` rows on the last rows of a `height`-row screen when the first free
+// row (the row after the output) is `row`: move to the last row, scroll by exactly the rows that are
+// missing (none when there is room), and go up to the region's top. Also returns the number of blank rows
+// that are left between the output and the region.
+isolated function anchorSequence(int row, int regionHeight, int height) returns [string, int] {
+    int scroll = int:max(0, row + regionHeight - height);
+    string out = string `${ESC}[${height}B`;
+    foreach int _ in 0 ..< scroll {
+        out += "\n";
+    }
+    if regionHeight > 1 {
+        out += string `${ESC}[${regionHeight - 1}A`;
+    }
+    return [out, int:max(0, height - regionHeight - row)];
+}
+
+// The number of rows a terminal of this width uses for the text: each line wraps the way the in-memory
+// terminal wraps (a wide character that does not fit moves to the next row).
+isolated function rowsOccupied(string text, int width) returns int {
+    int total = 0;
+    foreach string segment in re `\r\n`.split(stripEscapes(text)) {
+        int rows = 1;
+        int col = 0;
+        boolean pending = false;
+        foreach string:Char char in segment {
+            if char == "\t" {
+                col = int:min((col / 8 + 1) * 8, width - 1);
+                pending = false;
+                continue;
+            }
+            int cells = txt:displayWidth(char);
+            if cells == 0 {
+                continue;
+            }
+            if pending || col + cells > width {
+                rows += 1;
+                col = 0;
+                pending = false;
+            }
+            col += cells;
+            if col >= width {
+                col = width - 1;
+                pending = true;
+            }
+        }
+        total += rows;
+    }
+    return total;
+}
+
+// Text outside ASCII may be drawn with a different width by some terminals, so its row count is not trusted.
+isolated function hasNonAscii(string text) returns boolean {
+    foreach string:Char char in text {
+        if char.toCodePointInt() > 0x7F {
+            return true;
+        }
+    }
+    return false;
+}
 
 # Draws a live region at the bottom of the terminal without taking over the screen, and writes
 # finished output above it into the normal scrollback.
@@ -73,6 +135,12 @@ type InlineState record {|
 # `draw` writes only what changed since the last one, using relative cursor movement, and leaves the
 # cursor at column 0 of the region's last row. Committed output is never redrawn. The region is at most
 # as tall as the terminal.
+#
+# With `anchorBottom` the region is kept on the last rows of the terminal instead, if the terminal reports
+# where its cursor is (see `term:CursorReporter`): the blank rows between the existing output and the region
+# are used for committed output and for the region's growth before the screen scrolls, so nothing that was
+# on screen moves until the conversation fills it, and no blank row ever reaches the scrollback. Without a
+# cursor report it behaves exactly as without the option.
 public class InlineRenderer {
     *Renderer;
 
@@ -81,6 +149,11 @@ public class InlineRenderer {
     private int height;
     private final boolean colors;
     private final boolean reflow;
+    private final boolean anchorBottom;
+    // when anchored: the region is on the last rows, `gap` blank rows lie between the output and the region,
+    // and the cursor rests on the last row
+    private boolean anchored = false;
+    private int gap = 0;
     private Buffer? previous = ();
     private int cursorRow = 0;
     private boolean fullScreen = false;
@@ -92,12 +165,28 @@ public class InlineRenderer {
     # + colors - whether to write color sequences
     # + reflow - whether the terminal re-wraps text that was wrapped automatically when it is resized
     #            (most do); it decides how many rows the live region occupies after a resize
-    public function init(term:Terminal terminal, int width, int height, boolean colors = true, boolean reflow = true) {
+    # + anchorBottom - whether to keep the live region on the last rows of the terminal, using the blank
+    #                  rows above it before anything scrolls; needs a terminal that reports its cursor
+    public function init(term:Terminal terminal, int width, int height, boolean colors = true, boolean reflow = true,
+            boolean anchorBottom = false) {
         self.terminal = terminal;
         self.width = width;
         self.height = height;
         self.colors = colors;
         self.reflow = reflow;
+        self.anchorBottom = anchorBottom;
+    }
+
+    // The row the cursor is on, counted from zero, or `()` when the terminal does not say.
+    private function cursorRowFromTerminal() returns int? {
+        term:Terminal current = self.terminal;
+        if current is term:CursorReporter {
+            term:CursorPosition|error? position = current.queryCursor();
+            if position is term:CursorPosition {
+                return position.row;
+            }
+        }
+        return ();
     }
 
     # The live region as it was last drawn, for tests and tools that want to look at it.
@@ -119,9 +208,23 @@ public class InlineRenderer {
         Buffer next = bufferFromLines(visible, self.width);
         Buffer? previousBuffer = self.previous;
         int previousHeight = previousBuffer is Buffer ? previousBuffer.height : 0;
+        if self.anchored && previousBuffer is Buffer && previousHeight > 0 {
+            return self.drawAnchored(previousBuffer, next);
+        }
         string out = "";
         int cursor = self.cursorRow;
         if previousBuffer is () || previousHeight == 0 {
+            self.anchored = false;
+            self.gap = 0;
+            if self.anchorBottom && next.height > 0 {
+                int? row = self.cursorRowFromTerminal();
+                if row is int {
+                    [string, int] [sequence, blankRows] = anchorSequence(row, next.height, self.height);
+                    out += sequence;
+                    self.anchored = true;
+                    self.gap = blankRows;
+                }
+            }
             foreach int row in 0 ..< next.height {
                 out += (row > 0 ? "\r\n" : "") + rowUpdate((), next.cells[row], self.colors);
             }
@@ -155,6 +258,89 @@ public class InlineRenderer {
         }
         self.previous = next;
         self.cursorRow = cursor;
+        return out;
+    }
+
+    // Draws a region that is anchored to the last rows. Rows are compared aligned at the bottom, so a
+    // region that grows or shrinks keeps its last rows where they are, and what changes goes through the
+    // blank rows above the region before anything scrolls.
+    private function drawAnchored(Buffer before, Buffer next) returns string {
+        int h = self.height;
+        int p = before.height;
+        int n = next.height;
+        string out = "";
+        int cur = h - 1; // the cursor rests on the last row
+        if n == p {
+            foreach int row in 0 ..< n {
+                string update = rowUpdate(before.cells[row], next.cells[row], self.colors);
+                if update != "" {
+                    out += moveRows(cur, h - p + row) + update;
+                    cur = h - p + row;
+                }
+            }
+        } else if n > p {
+            int d = n - p;
+            if d <= self.gap {
+                // the new rows go into the blank rows above the region, and the old rows stay put
+                foreach int j in 0 ..< d {
+                    string update = rowUpdate((), next.cells[j], self.colors);
+                    if update != "" {
+                        out += moveRows(cur, h - n + j) + update;
+                        cur = h - n + j;
+                    }
+                }
+                foreach int i in 0 ..< p {
+                    string update = rowUpdate(before.cells[i], next.cells[i + d], self.colors);
+                    if update != "" {
+                        out += moveRows(cur, h - p + i) + update;
+                        cur = h - p + i;
+                    }
+                }
+                self.gap -= d;
+            } else {
+                // not enough blank rows: clear the region, scroll for the shortfall only, and write it whole
+                out += moveRows(cur, h - p) + toColumn(0) + ERASE_BELOW;
+                [string, int] [sequence, blankRows] = anchorSequence(h - p - self.gap, n, h);
+                out += sequence;
+                foreach int row in 0 ..< n {
+                    out += (row > 0 ? "\r\n" : "") + rowUpdate((), next.cells[row], self.colors);
+                }
+                cur = h - 1;
+                self.gap = blankRows;
+            }
+        } else {
+            // the vacated top rows are erased and become blank rows; the last rows do not move
+            int d = p - n;
+            foreach int i in 0 ..< d {
+                out += moveRows(cur, h - p + i) + toColumn(0) + ERASE_TO_END_OF_LINE;
+                cur = h - p + i;
+            }
+            foreach int j in 0 ..< n {
+                string update = rowUpdate(before.cells[j + d], next.cells[j], self.colors);
+                if update != "" {
+                    out += moveRows(cur, h - n + j) + update;
+                    cur = h - n + j;
+                }
+            }
+            if n == 0 {
+                // nothing left on screen: wait at the end of the output, and anchor again at the next draw
+                int outputEnd = h - p - self.gap;
+                out += moveRows(cur, outputEnd);
+                cur = outputEnd;
+                self.anchored = false;
+                self.gap = 0;
+            } else {
+                self.gap += d;
+            }
+        }
+        if self.anchored {
+            out += moveRows(cur, h - 1);
+        }
+        if out != "" {
+            out += toColumn(0);
+        }
+        self.previous = next;
+        self.cursorRow = self.anchored ? n - 1 : 0;
         return out;
     }
 
@@ -203,6 +389,9 @@ public class InlineRenderer {
         }
         Buffer? region = self.previous;
         int regionHeight = region is Buffer ? region.height : 0;
+        if self.anchored && region is Buffer && regionHeight > 0 {
+            return self.writeAboveAnchored(rendered, region);
+        }
         string out = "";
         if regionHeight > 0 {
             out += moveRows(self.cursorRow, 0) + toColumn(0) + ERASE_BELOW;
@@ -224,6 +413,52 @@ public class InlineRenderer {
         }
     }
 
+    // The anchored form of writeAbove: the lines go into the blank rows above the region, directly below the
+    // existing output, and the region is not touched. Lines that do not fit (or whose width is not
+    // certain) are written from the end of the output over the region, and the region is anchored again below.
+    private function writeAboveAnchored(string[] rendered, Buffer region) returns error? {
+        if rendered.length() == 0 {
+            return;
+        }
+        int h = self.height;
+        int m = region.height;
+        int outputEnd = h - m - self.gap;
+        int needed = 0;
+        boolean uncertain = false;
+        string text = "";
+        foreach string line in rendered {
+            needed += rowsOccupied(line, self.width);
+            uncertain = uncertain || hasNonAscii(line);
+            text += line + "\r\n";
+        }
+        if needed <= self.gap && !uncertain {
+            check self.terminal.write(moveRows(h - 1, outputEnd) + toColumn(0) + text +
+                    moveRows(outputEnd + needed, h - 1) + toColumn(0));
+            self.gap -= needed;
+            return;
+        }
+        string out = moveRows(h - 1, outputEnd) + toColumn(0) + ERASE_BELOW + text;
+        int row = int:min(outputEnd + needed, h - 1);
+        if uncertain {
+            // measure instead of counting: a terminal may draw some characters wider or narrower than expected
+            check self.terminal.write(out);
+            out = "";
+            int? measured = self.cursorRowFromTerminal();
+            if measured is int {
+                row = measured;
+            }
+        }
+        [string, int] [sequence, blankRows] = anchorSequence(row, m, h);
+        out += sequence;
+        foreach int index in 0 ..< m {
+            out += (index > 0 ? "\r\n" : "") + rowUpdate((), region.cells[index], self.colors);
+        }
+        out += toColumn(0);
+        self.gap = blankRows;
+        self.cursorRow = m - 1;
+        check self.terminal.write(out);
+    }
+
     public function resize(int width, int height) returns error? {
         string out = "";
         if self.fullScreen {
@@ -240,6 +475,9 @@ public class InlineRenderer {
                         up += int:max(1, ceilDiv(contentWidth(region.cells[row]), width));
                     }
                 }
+                if self.anchored {
+                    up += self.gap; // back to the end of the output, so the blank rows are not left above the region
+                }
                 out = (up > 0 ? string `${ESC}[${up}A` : "") + toColumn(0) + ERASE_BELOW;
             }
         }
@@ -247,6 +485,8 @@ public class InlineRenderer {
         self.height = height;
         self.previous = ();
         self.cursorRow = 0;
+        self.anchored = false; // the next draw asks where the cursor is and anchors again
+        self.gap = 0;
         if out != "" {
             check self.terminal.write(out);
         }
@@ -260,7 +500,7 @@ public class InlineRenderer {
         if self.fullScreen {
             return;
         }
-        self.savedInline = {previous: self.previous, cursorRow: self.cursorRow};
+        self.savedInline = {previous: self.previous, cursorRow: self.cursorRow, anchored: self.anchored, gap: self.gap};
         self.fullScreen = true;
         self.previous = ();
         check self.terminal.write(ESC + "[?1049h" + ESC + "[2J" + ESC + "[H");
@@ -277,6 +517,8 @@ public class InlineRenderer {
         InlineState? saved = self.savedInline;
         self.previous = saved is InlineState ? saved.previous : ();
         self.cursorRow = saved is InlineState ? saved.cursorRow : 0;
+        self.anchored = saved is InlineState ? saved.anchored : false;
+        self.gap = saved is InlineState ? saved.gap : 0;
         self.savedInline = ();
         check self.terminal.write(ESC + "[?1049l");
     }
@@ -291,6 +533,8 @@ public class InlineRenderer {
         }
         self.previous = ();
         self.cursorRow = 0;
+        self.anchored = false;
+        self.gap = 0;
     }
 }
 
