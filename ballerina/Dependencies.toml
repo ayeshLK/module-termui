@@ -12,8 +12,11 @@ org = "ayesha"
 name = "termui"
 version = "0.1.0"
 dependencies = [
+	{org = "ballerina", name = "io"},
+	{org = "ballerina", name = "lang.runtime"},
 	{org = "ballerina", name = "os"},
-	{org = "ballerina", name = "test"}
+	{org = "ballerina", name = "test"},
+	{org = "ballerina", name = "time"}
 ]
 modules = [
 	{org = "ayesha", packageName = "termui", moduleName = "termui"},
@@ -28,6 +31,9 @@ version = "1.8.3"
 dependencies = [
 	{org = "ballerina", name = "jballerina.java"},
 	{org = "ballerina", name = "lang.value"}
+]
+modules = [
+	{org = "ballerina", packageName = "io", moduleName = "io"}
 ]
 
 [[package]]
@@ -72,6 +78,17 @@ scope = "testOnly"
 
 [[package]]
 org = "ballerina"
+name = "lang.runtime"
+version = "0.0.0"
+dependencies = [
+	{org = "ballerina", name = "jballerina.java"}
+]
+modules = [
+	{org = "ballerina", packageName = "lang.runtime", moduleName = "lang.runtime"}
+]
+
+[[package]]
+org = "ballerina"
 name = "lang.value"
 version = "0.0.0"
 dependencies = [
@@ -102,5 +119,16 @@ dependencies = [
 ]
 modules = [
 	{org = "ballerina", packageName = "test", moduleName = "test"}
+]
+
+[[package]]
+org = "ballerina"
+name = "time"
+version = "2.8.3"
+dependencies = [
+	{org = "ballerina", name = "jballerina.java"}
+]
+modules = [
+	{org = "ballerina", packageName = "time", moduleName = "time"}
 ]
 

@@ -26,8 +26,8 @@ Depends on `termui-scaffold` for the build, test, and CI setup. Group 1 is a gat
 
 ## 4. Unix backend (`term` module)
 
-- [ ] 4.1 Implement raw-mode acquire and restore with `stty`, including restore on release, catchable errors, and graceful stop, and verify a `tty`-group test confirms the terminal settings are restored in each case
-- [ ] 4.2 Implement the key and paste decoder (printable, arrows, navigation, function keys, Ctrl and Alt, lone Esc via a decoder-level timeout, bracketed paste, sequences split across reads), and verify decoder unit tests on byte sequences plus a `tty`-group test through a pty
+- [x] 4.1 Implement raw-mode acquire and restore with `stty`, including restore on release, catchable errors, and graceful stop, and verify `tty`-group tests (a helper-owned pty, no controlling terminal needed) confirm the settings are restored on release and when the work fails; restoring on a real signal is verified in 8.1 with the example app, since the spike (1.4) showed the graceful-stop hook fires and the hook calls the tested `release`
+- [x] 4.2 Implement the key and paste decoder (printable, arrows, navigation, function keys, Ctrl and Alt, lone Esc via a decoder-level timeout, bracketed paste, sequences split across reads), and verify decoder unit tests on byte sequences plus a `tty`-group test through a pty
 - [ ] 4.3 Implement terminal size query and resize detection (polling, plus DEC mode 2048 where supported), and verify a `tty`-group test changes the pty size and sees a resize event
 - [ ] 4.4 Implement single-write frame output, and verify a test records exactly one write per frame
 - [ ] 4.5 Document the backend's requirements and limits (Unix only, `stty sane` recovery after a hard kill) in `Module.md`, and verify the documented recovery command restores a raw terminal
@@ -62,7 +62,7 @@ Depends on `termui-scaffold` for the build, test, and CI setup. Group 1 is a gat
 
 ## 8. Integration and delivery
 
-- [ ] 8.1 Build an `examples/` app that streams text, shows a live region, and asks an approval prompt, and verify it runs interactively and headless (piped) with the documented behavior
+- [ ] 8.1 Build an `examples/` app that streams text, shows a live region, and asks an approval prompt, and verify it runs interactively and headless (piped) with the documented behavior, and that SIGTERM and SIGINT sent to it under a pty leave the terminal restored
 - [ ] 8.2 Run the native-image check from `termui-scaffold` (`bal test --graalvm`) and also build the example with `bal build --graalvm`, and record the result (pass or the first failure) in `design.md`; verify the outcome is reported without gating the build
 - [ ] 8.3 Re-measure startup and time-to-first-frame on the finished foundation and compare with the spike baseline, and verify the numbers are recorded and the startup budget in `design.md` is updated
 - [ ] 8.4 Run the full default and `tty` test suites in CI on Linux and macOS, and verify both are green
