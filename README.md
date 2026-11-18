@@ -64,17 +64,6 @@ creates a `release-<version>` branch, tags `v<version>`, publishes to Ballerina 
 GitHub release, and opens a sync pull request. **Publish to the Ballerina Dev/Stage Central** publishes
 a development version to the Dev or Stage Central without tagging.
 
-## Repository secrets
-
-The workflows read these secrets. `GITHUB_TOKEN` is provided automatically.
-
-| Secret | Used by |
-|---|---|
-| `CODECOV_TOKEN` | coverage upload in the build workflow |
-| `BALLERINA_BOT_USERNAME`, `BALLERINA_BOT_EMAIL`, `BALLERINA_BOT_TOKEN` | release: git identity, pushing the release branch and tag, GitHub release, sync PR, and the Maven package publish |
-| `BALLERINA_CENTRAL_ACCESS_TOKEN` | release: publishing to Ballerina Central |
-| `BALLERINA_CENTRAL_DEV_ACCESS_TOKEN`, `BALLERINA_CENTRAL_STAGE_ACCESS_TOKEN` | Dev/Stage Central publish |
-
 ## License
 
 Apache License 2.0. See [LICENSE](LICENSE).

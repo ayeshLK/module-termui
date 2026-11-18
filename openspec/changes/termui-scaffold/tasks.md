@@ -45,7 +45,7 @@
 
 - [x] 7.1 Add `.github/CODEOWNERS`, `.github/pull_request_template.md` (including the native-image checkbox), the Apache-2.0 `LICENSE`, and license headers on the build files, and verify each file exists and the headers match `module-arxiv`
 - [x] 7.2 Write `README.md` covering the project purpose, how to build and test, the `tty` test group, the native-image check, and the release process, and verify the documented build and test commands run as written
-- [x] 7.3 Document the secrets maintainers must provision (Ballerina bot username and token, Central release/dev/stage tokens, Codecov token) in the README, and verify the list matches every secret referenced in `.github/workflows/`
+- [x] 7.3 Keep secret names and setup out of the README (they are sensitive), and verify `README.md` contains no secrets section and no workflow-secret names
 - [ ] 7.4 Maintainer action: create the `ayeshLK/module-termui` GitHub repository, add it as `origin`, push `main`, provision those secrets, and verify `git remote -v` shows it and the pull-request and main workflows run end to end
 
 ## 8. Integration check

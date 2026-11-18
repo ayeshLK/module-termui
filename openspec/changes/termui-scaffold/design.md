@@ -71,5 +71,5 @@ Alternative considered: a plain `bal`-only repo with scripts. Rejected, because 
 - [The `jballerina-tools` distribution lacks the HTML coverage report tools] -> Verify that the XML coverage report is still produced (task 3.3).
 - [macOS runner cost and queue time] -> Restrict the macOS job to PR and main, and skip it for docs-only changes if cost becomes an issue.
 - [Native-image feature is experimental] -> The check is non-blocking, and failures are triaged rather than gated.
-- [Secrets are not yet provisioned] -> The scaffold documents the required secrets; CI cannot fully run until they exist. Local builds still work without them where possible.
+- [Secrets are not yet provisioned] -> The maintainer configures them on the repository (they are deliberately not documented in the README); CI cannot fully run until they exist. Local builds still work without them where possible.
 - [Ballerina version pin diverges from arxiv] -> Pin explicitly and let the daily build against the latest distribution catch drift.
