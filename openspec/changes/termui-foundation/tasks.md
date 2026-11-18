@@ -44,13 +44,13 @@ Depends on `termui-scaffold` for the build, test, and CI setup. Group 1 is a gat
 
 ## 6. MVU runtime (root module)
 
-- [ ] 6.1 Implement the lock-guarded event queue behind a small interface, and verify tests for ordered delivery and no dropped messages from concurrent producers
-- [ ] 6.2 Implement the single-owner loop with update, view, and frame coalescing, and verify a test applying fifty queued messages draws exactly one frame
-- [ ] 6.3 Implement effects that return messages (including streaming effects) with `readonly` messages and `isolated` effect functions, applying the spike's isolation findings, and verify tests that results arrive as messages and a mutable post is rejected
-- [ ] 6.4 Implement input, resize, and tick message sources, and verify a test shows keystrokes are delivered while a long effect runs
-- [ ] 6.5 Implement clean shutdown (stop sources, release the terminal, no further messages), and verify a test that quitting restores the terminal and stops delivery
-- [ ] 6.6 Implement the blocking `confirm` and `select` prompts over the loop, and verify scripted-input tests return the answer and clear the prompt from the live region
-- [ ] 6.7 Document the runtime (message loop, ownership rule, effects, prompts) in `Module.md` with a counter-style example, and verify the example runs against the fake backend as documented
+- [x] 6.1 Implement the lock-guarded event queue behind a small interface, and verify tests for ordered delivery and no dropped messages from concurrent producers
+- [x] 6.2 Implement the single-owner loop with update, view, and frame coalescing, and verify a test applying fifty queued messages draws exactly one frame
+- [x] 6.3 Implement effects that return messages (including streaming effects) with `readonly` messages and `isolated` effect functions, applying the spike's isolation findings, and verify tests that results arrive as messages and a mutable post is rejected
+- [x] 6.4 Implement input, resize, and tick message sources, and verify a test shows keystrokes are delivered while a long effect runs
+- [x] 6.5 Implement clean shutdown (stop sources, release the terminal, no further messages), and verify a test that quitting restores the terminal and stops delivery
+- [x] 6.6 Implement the blocking `confirm` and `select` prompts over the loop, and verify scripted-input tests return the answer and clear the prompt from the live region
+- [x] 6.7 Document the runtime (message loop, ownership rule, effects, prompts) in `Module.md` with a counter-style example, and verify the example runs against the fake backend as documented
 
 ## 7. Headless behavior
 

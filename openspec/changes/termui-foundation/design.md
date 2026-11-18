@@ -167,3 +167,11 @@ If a later task finds one of these assumptions false, the fallback is the JLine 
 - **Resize cannot be fully automatic.** The renderer cannot detect whether the terminal reflowed, so `InlineRenderer` takes a `reflow` option (default `true`); a wrong value leaves stale rows or clears too many. A cursor-position query could detect it later.
 - **Region rules:** it starts on a row at column 0, is clamped to the terminal height, and leaves the cursor at column 0 of its last row; `close` moves to a fresh line. Terminal height is passed in and updated by `resize`.
 - **Renderers are plain classes**, not isolated ones: the runtime's loop strand owns them, so locking would only add ceremony.
+
+## Findings while building the runtime
+
+- **The `Engine` is the unit.** `Engine.step()` applies every waiting message, carries out the commands they return, and draws at most one frame; `run` is a loop over it. Tests drive `step()` directly, which keeps them deterministic.
+- **Compile-time checks, shown on 2201.14.2:** passing a mutable `map<string>` to `Session.send` fails (`expected 'Message', found 'map<string>'`), and passing a non-isolated function to `effect` fails (`expected 'EffectFunction', found 'function (Session) returns (error?)'`). The runtime test also asserts that every delivered message, including terminal input, is readonly.
+- **The final frame is drawn on quit**, so the last state stays on screen.
+- **Prompts:** an effect asks through a one-slot board and polls for the answer; the loop shows the question below the view and routes keys to it. `choose` is the name of the pick-one method because `select` is reserved.
+- **Reserved words** hit again: `commit`, `select`, `start`, `by`, `order`.
