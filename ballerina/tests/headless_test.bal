@@ -419,3 +419,58 @@ function testTheRendererUsesTheRealTerminalSizeNotTheEnvironment() returns error
     check drawing.commitBlock([[{text: "x" + "y".padEnd(50, "y")}]]);
     test:assertEquals(terminal.screenLines()[1].length(), 51, "blocks are wrapped to the real width, not 80 columns' default");
 }
+
+// A pseudo-terminal that nobody sized (a CI job, `docker run -t`) reports 0 by 0.
+isolated class Unsized {
+    *term:CursorReporter;
+
+    private final term:FakeTerminal inner;
+
+    isolated function init(term:FakeTerminal inner) {
+        self.inner = inner;
+    }
+
+    public isolated function acquire() returns error? {
+        return self.inner.acquire();
+    }
+
+    public isolated function release() returns error? {
+        return self.inner.release();
+    }
+
+    public isolated function size() returns term:Size|error {
+        return {width: 0, height: 0};
+    }
+
+    public isolated function nextEvent() returns term:InputEvent|error? {
+        return self.inner.nextEvent();
+    }
+
+    public isolated function write(string data) returns error? {
+        return self.inner.write(data);
+    }
+
+    public isolated function queryCursor() returns term:CursorPosition|error? {
+        return self.inner.queryCursor();
+    }
+}
+
+@test:Config {}
+function testATerminalThatReportsNoSizeFallsBackToTheEnvironment() returns error? {
+    term:FakeTerminal screen = new (40, 10);
+    Interface ui = new (term:environmentFrom({COLUMNS: "40", LINES: "10"}, true, true, true), terminal = new Unsized(screen));
+    render:Renderer drawing = ui.renderer(anchorBottom = true);
+    check drawing.draw([[{text: "live"}]]);
+    check drawing.commitProse([[{text: "done"}]]);
+    test:assertEquals(screen.screenLines()[0], "done");
+    test:assertEquals(screen.screenLines()[9], "live", "the environment's 40x10 was used");
+}
+
+@test:Config {}
+function testRunningOnAnUnsizedTerminalDoesNotHang() returns error? {
+    term:FakeTerminal screen = new (80, 24);
+    screen.pushText("rq");
+    Interface ui = new (term:environmentFrom({}, true, true, true), terminal = new Unsized(screen));
+    check ui.run(new ResultProgram(ui));
+    test:assertTrue(screen.screenText().includes("live line"));
+}

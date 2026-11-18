@@ -72,10 +72,9 @@ public class Interface {
     }
 
     // The size of the terminal itself. COLUMNS and LINES are usually not exported by shells, so they are only the
-    // fallback for when the terminal cannot be asked.
+    // fallback for when the terminal cannot be asked or reports no size.
     private function terminalSize() returns term:Size {
-        term:Size|error size = self.terminal.size();
-        return size is term:Size ? size : {width: self.environment.width, height: self.environment.height};
+        return usableSize(self.terminal.size(), {width: self.environment.width, height: self.environment.height});
     }
 
     # A renderer that matches the mode: the inline interface on a terminal, plain text otherwise.

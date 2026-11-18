@@ -253,6 +253,15 @@ class Engine {
     }
 }
 
+// The size to draw with: what the terminal says, unless it cannot say or reports nothing usable (a
+// pseudo-terminal nobody sized reports 0 by 0), in which case the fallback is used.
+isolated function usableSize(term:Size|error reported, term:Size fallback) returns term:Size {
+    if reported is term:Size && reported.width > 0 && reported.height > 0 {
+        return reported;
+    }
+    return fallback;
+}
+
 # Runs a program on a terminal until it asks to quit.
 #
 # The terminal is acquired first and always released afterwards, also when the program fails. Input,
@@ -270,7 +279,7 @@ public function run(Program program, term:Terminal terminal, Options options = {
     error? failure = ();
     Engine? engine = ();
     do {
-        term:Size size = check terminal.size();
+        term:Size size = usableSize(terminal.size(), {width: 80, height: 24});
         render:Renderer drawing = renderer ?: new render:InlineRenderer(terminal, size.width, size.height, options.colors, options.reflow,
             options.anchorBottom && options.interactive);
         Engine running = new (program, terminal, drawing, options.interactive);
