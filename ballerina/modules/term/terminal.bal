@@ -44,3 +44,24 @@ public type Terminal isolated object {
     # + return - an error when the write fails
     public isolated function write(string data) returns error?;
 };
+
+# Where the cursor is, counted from zero.
+#
+# + row - the row, with 0 the top row of the screen
+# + col - the column, with 0 the leftmost column
+public type CursorPosition record {|
+    int row;
+    int col;
+|};
+
+# An optional capability of a `Terminal`: telling where its cursor is.
+#
+# A terminal that cannot ask (an output-only terminal, or a real terminal that never answers) simply does
+# not implement this, and callers treat the position as unknown. Test with `terminal is CursorReporter`.
+public type CursorReporter isolated object {
+    # Asks for the cursor position.
+    #
+    # + return - the position, `()` when it is unknown (the terminal does not answer), or an error when
+    #            the request could not be made
+    public isolated function queryCursor() returns CursorPosition|error?;
+};

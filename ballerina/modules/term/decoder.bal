@@ -18,14 +18,17 @@
 // cannot be told from the start of a sequence, so it stays pending until `giveUp` is set, which the
 // caller does after a short silence.
 
+// `report` is the cursor position reply found in the input, if one was expected and arrived.
 type DecodeResult record {|
     InputEvent[] events;
     int[] rest;
+    CursorPosition? report = ();
 |};
 
 type Parsed record {|
     int consumed;
     InputEvent? event = ();
+    CursorPosition? report = ();
 |};
 
 const int ESC_BYTE = 0x1B;
@@ -268,7 +271,7 @@ isolated function indexOfPasteEnd(int[] input, int searchFrom) returns int {
 
 // Parses what starts with ESC at index `begin`. A consumed count of 0 means the sequence is not
 // complete yet. With `giveUp` set, an incomplete sequence is given up on: the ESC alone is a key.
-isolated function parseEscape(int[] input, int begin, boolean giveUp) returns Parsed {
+isolated function parseEscape(int[] input, int begin, boolean giveUp, boolean awaitingCursor = false) returns Parsed {
     int count = input.length();
     Parsed incomplete = giveUp ? {consumed: 1, event: namedKey("escape")} : {consumed: 0};
     if begin + 1 >= count {
@@ -295,6 +298,14 @@ isolated function parseEscape(int[] input, int begin, boolean giveUp) returns Pa
                     }
                     string? text = decodeText(input.slice(begin + length, end));
                     return {consumed: end + PASTE_END.length() - begin, event: {kind: "paste", text: text ?: ""}};
+                }
+                if awaitingCursor && terminator == "R" {
+                    // ESC [ row ; col R, one-based: the answer to a cursor position request. The same bytes are
+                    // Ctrl+F3 when nothing was asked, so this is only recognized while a request is outstanding.
+                    int[] numbers = parseNumbers(params);
+                    if numbers.length() == 2 && re `[0-9]+;[0-9]+`.isFullMatch(params) {
+                        return {consumed: length, report: {row: int:max(0, numbers[0] - 1), col: int:max(0, numbers[1] - 1)}};
+                    }
                 }
                 return {consumed: length, event: csiEvent(params, terminator)};
             }
@@ -354,17 +365,26 @@ isolated function parseEscape(int[] input, int begin, boolean giveUp) returns Pa
 # + input - the bytes received so far, each 0 to 255
 # + giveUp - whether to give up on an incomplete escape sequence: set it after a short silence, so a
 #           lone Esc becomes an Escape key
-# + return - the events found and the bytes that are not yet a complete event
-isolated function decodeInput(int[] input, boolean giveUp) returns DecodeResult {
+# + awaitingCursor - whether a cursor position request is outstanding: the first `ESC [ row ; col R` is
+#                    then taken as the reply (in `report`) and not as a key
+# + return - the events found, the reply if one arrived, and the bytes that are not yet a complete event
+isolated function decodeInput(int[] input, boolean giveUp, boolean awaitingCursor = false) returns DecodeResult {
     InputEvent[] events = [];
+    CursorPosition? report = ();
+    boolean waiting = awaitingCursor;
     int count = input.length();
     int i = 0;
     while i < count {
         int code = input[i];
         if code == ESC_BYTE {
-            Parsed parsed = parseEscape(input, i, giveUp);
+            Parsed parsed = parseEscape(input, i, giveUp, waiting);
             if parsed.consumed == 0 {
                 break;
+            }
+            CursorPosition? found = parsed.report;
+            if found is CursorPosition {
+                report = found;
+                waiting = false; // one request, one reply
             }
             InputEvent? event = parsed.event;
             if event is InputEvent {
@@ -392,5 +412,5 @@ isolated function decodeInput(int[] input, boolean giveUp) returns DecodeResult 
             }
         }
     }
-    return {events, rest: input.slice(i)};
+    return {events, rest: input.slice(i), report};
 }

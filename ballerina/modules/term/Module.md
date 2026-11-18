@@ -8,6 +8,9 @@ The terminal the application draws on and reads input from.
 - **`FakeTerminal`** is an in-memory implementation for tests and non-interactive use. Script input
   with `pushText`, `pushKey`, and `pushEvent`; read the result back with `screenLines`, `screenText`,
   `scrollbackLines`, and `cursorPosition`; check how it was written with `writes`.
+- **`CursorReporter`** is an optional capability for asking where the cursor is (`queryCursor`). `FakeTerminal`
+  and `UnixTerminal` implement it; a terminal that does not is treated as not knowing. Test for it with
+  `terminal is term:CursorReporter`.
 - **`detectEnvironment`** reports whether standard input, output, and error are terminals and whether
   color may be used (`NO_COLOR`, `TERM=dumb`, and a non-terminal output all turn it off). It asks the
   operating system about its parent process, which costs one short `sh` process (about 25 ms), so call it
@@ -37,11 +40,37 @@ The terminal the application draws on and reads input from.
   UTF-8, and bracketed paste. A lone Esc is reported as the Escape key after 50 ms with nothing after
   it. After `release` the reader may take the first byte typed, because a blocked read cannot be
   cancelled; programs that exit after `release` are not affected.
+- **Cursor position.** `queryCursor` writes `ESC [ 6 n` and waits up to 200 ms for the terminal's reply, which
+  `nextEvent` picks out of the input, so `nextEvent` must be running on another strand (the runtime's input
+  loop does this). It returns `()` when the terminal does not answer; after the first silence it returns `()`
+  at once. The reply is only recognized while a request is outstanding, because `ESC [ 1 ; 5 R` is also the
+  Ctrl+F3 key. Keys typed during the wait are not lost.
 - **Resize.** Terminals that support in-band resize reports (DEC mode 2048) send an event as soon as the
   window changes. Otherwise the size is polled about once a second, which costs a short process each
   time (about 15 ms).
 - **Output.** `write` goes to the terminal device, not to standard output, so redirecting standard output
   does not disturb the interface. Each call is one write; writing frames costs about a millisecond each.
+
+### Asking for the cursor position
+
+```ballerina
+import ayesha/termui.term;
+
+function cursorRow(term:Terminal terminal) returns int? {
+    if terminal is term:CursorReporter {
+        term:CursorReporter reporter = terminal; // call through the capability type (see the note below)
+        term:CursorPosition|error? position = reporter.queryCursor();
+        if position is term:CursorPosition {
+            return position.row; // counted from zero
+        }
+    }
+    return (); // not offered, not answered, or failed: treat the position as unknown
+}
+```
+
+Call `queryCursor` through a variable of type `term:CursorReporter`, as above, rather than directly on the
+narrowed `terminal`: with Ballerina 2201.14.2 a method call on the narrowed `Terminal & CursorReporter` value
+crashes the compiler.
 
 ### Example
 

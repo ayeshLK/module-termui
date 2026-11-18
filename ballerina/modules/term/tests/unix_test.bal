@@ -377,3 +377,94 @@ function testReleaseDoesNotHangWhenTheTerminalHasGoneAway() returns error? {
     test:assertTrue(outcome is () || outcome is error);
     test:assertEquals(terminal.release(), (), "a second release is a no-op");
 }
+
+// Collects the events a terminal produces until the key `q`, the way the runtime's input loop pumps them.
+isolated class Collected {
+    private InputEvent[] events = [];
+
+    isolated function add(InputEvent event) {
+        lock {
+            self.events.push(event.clone());
+        }
+    }
+
+    isolated function all() returns InputEvent[] {
+        lock {
+            return self.events.clone();
+        }
+    }
+}
+
+function pumpUntilQ(UnixTerminal terminal, Collected collected) {
+    while true {
+        InputEvent|error? event = terminal.nextEvent();
+        if event is InputEvent {
+            collected.add(event);
+            if event is KeyEvent && event.key == "q" {
+                return;
+            }
+        } else {
+            return;
+        }
+    }
+}
+
+@test:Config {groups: ["tty"]}
+function testTheCursorPositionIsReadFromTheTerminal() returns error? {
+    string dir = check newWorkDir();
+    os:Process helper = check startHelper(dir, [
+        {op: "cpr", label: "asked", row: 7, col: 3},
+        {op: "send", hex: "6b71"}, // "k", then "q" to end the pump
+        {op: "wait", file: "finished"}
+    ]);
+    UnixTerminal terminal = new (check helperTty(dir));
+    check terminal.acquire();
+    Collected collected = new;
+    future<()> pump = start pumpUntilQ(terminal, collected);
+    CursorPosition? position = check terminal.queryCursor();
+    () _ = wait pump;
+    check terminal.release();
+    check touch(dir, "finished");
+    map<json> result = check finishHelper(helper, dir);
+
+    test:assertEquals(position, <CursorPosition>{row: 6, col: 2}, "the reply is one-based, the answer zero-based");
+    string asked = check drained(result, "asked");
+    test:assertTrue(asked.endsWith("\u{1b}[6n"), "the request ESC [ 6 n was written");
+    test:assertEquals(collected.all(), [<KeyEvent>{key: "k"}, <KeyEvent>{key: "q"}], "the reply is not a key");
+}
+
+@test:Config {groups: ["tty"]}
+function testASilentTerminalCostsOneTimeoutAndKeepsInput() returns error? {
+    string dir = check newWorkDir();
+    os:Process helper = check startHelper(dir, [
+        {op: "cpr", label: "asked", silent: true},
+        {op: "send", hex: "6b71"}, // typed while the request waits
+        {op: "wait", file: "finished"}
+    ]);
+    UnixTerminal terminal = new (check helperTty(dir));
+    check terminal.acquire();
+    Collected collected = new;
+    future<()> pump = start pumpUntilQ(terminal, collected);
+    time:Utc begin = time:utcNow();
+    CursorPosition? first = check terminal.queryCursor();
+    decimal firstTook = time:utcDiffSeconds(time:utcNow(), begin);
+    begin = time:utcNow();
+    CursorPosition? second = check terminal.queryCursor();
+    decimal secondTook = time:utcDiffSeconds(time:utcNow(), begin);
+    () _ = wait pump;
+    check terminal.release();
+    check touch(dir, "finished");
+    _ = check finishHelper(helper, dir);
+
+    test:assertEquals(first, ());
+    test:assertTrue(firstTook >= 0.19d, "a terminal that does not answer is waited for");
+    test:assertEquals(second, ());
+    test:assertTrue(secondTook < 0.05d, "an unsupported terminal is remembered");
+    test:assertEquals(collected.all(), [<KeyEvent>{key: "k"}, <KeyEvent>{key: "q"}], "typed input survives the wait");
+}
+
+@test:Config {}
+function testAnUnacquiredTerminalDoesNotKnowItsCursor() returns error? {
+    UnixTerminal terminal = new ("/dev/tty");
+    test:assertEquals(check terminal.queryCursor(), ());
+}

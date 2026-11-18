@@ -194,3 +194,50 @@ function testTheAlternateScreenRestoresTheMainScreen() returns error? {
     test:assertEquals(terminal.screenText(), "history\nline two");
     test:assertEquals(terminal.cursorPosition(), [1, 8]);
 }
+
+@test:Config {}
+function testTheFakeReportsItsCursor() returns error? {
+    FakeTerminal terminal = new (10, 4);
+    Terminal plain = terminal;
+    test:assertTrue(plain is CursorReporter, "the in-memory terminal offers the capability");
+    test:assertEquals(check terminal.queryCursor(), <CursorPosition>{row: 0, col: 0});
+    check terminal.write("ab\r\ncde");
+    test:assertEquals(check terminal.queryCursor(), <CursorPosition>{row: 1, col: 3});
+    check terminal.write("\u{1b}[2A\u{1b}[5G");
+    test:assertEquals(check terminal.queryCursor(), <CursorPosition>{row: 0, col: 4});
+}
+
+@test:Config {}
+function testTheReportedCursorFollowsScrolling() returns error? {
+    FakeTerminal terminal = new (10, 3);
+    check terminal.write("1\r\n2\r\n3\r\n4\r\n5");
+    test:assertEquals(check terminal.queryCursor(), <CursorPosition>{row: 2, col: 1});
+    test:assertEquals(terminal.scrollbackLines(), ["1", "2"]);
+}
+
+isolated class OutputOnly {
+    *Terminal;
+
+    public isolated function acquire() returns error? {
+    }
+
+    public isolated function release() returns error? {
+    }
+
+    public isolated function size() returns Size|error {
+        return {width: 80, height: 24};
+    }
+
+    public isolated function nextEvent() returns InputEvent|error? {
+        return ();
+    }
+
+    public isolated function write(string data) returns error? {
+    }
+}
+
+@test:Config {}
+function testATerminalWithoutTheCapabilityIsNotAReporter() {
+    Terminal output = new OutputOnly();
+    test:assertFalse(output is CursorReporter);
+}

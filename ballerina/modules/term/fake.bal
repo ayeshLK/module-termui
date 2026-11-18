@@ -20,6 +20,7 @@
 # see and how it was written.
 public isolated class FakeTerminal {
     *Terminal;
+    *CursorReporter;
 
     private InputEvent[] script = [];
     private int nextIndex = 0;
@@ -178,6 +179,15 @@ public isolated class FakeTerminal {
     public isolated function cursorPosition() returns [int, int] {
         lock {
             return [self.screen.row, self.screen.col];
+        }
+    }
+
+    # Where the cursor is on the virtual screen, as a real terminal would report it.
+    #
+    # + return - the position, never `()`
+    public isolated function queryCursor() returns CursorPosition|error? {
+        lock {
+            return {row: self.screen.row, col: self.screen.col};
         }
     }
 

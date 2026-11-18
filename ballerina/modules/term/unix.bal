@@ -31,6 +31,12 @@ const decimal RESIZE_POLL_INTERVAL = 1;
 // How long an Esc byte waits for the rest of a sequence before it is reported as the Escape key.
 const decimal ESCAPE_TIMEOUT = 0.05;
 
+// How long a cursor position request waits for the terminal's reply. Real terminals answer within a few
+// milliseconds (the slowest measured was 16 ms); a terminal that never answers costs this once.
+const decimal CURSOR_REPORT_TIMEOUT = 0.2;
+
+const string CURSOR_POSITION_REQUEST = "\u{1b}[6n";
+
 // Runs a shell command and returns what it printed; a non-zero exit status is an error.
 isolated function shell(string script) returns string|error {
     os:Process process = check os:exec({value: "sh", arguments: ["-c", script]});
@@ -78,6 +84,7 @@ isolated function shellQuote(string value) returns string {
 # does not disturb the interface.
 public isolated class UnixTerminal {
     *Terminal;
+    *CursorReporter;
 
     private final string ttyPath;
     private boolean acquired = false;
@@ -91,6 +98,9 @@ public isolated class UnixTerminal {
     private Size? lastSize = ();
     private decimal lastSizeCheck = 0;
     private boolean inBandResize = false;
+    private boolean cursorRequested = false;
+    private CursorPosition? cursorReply = ();
+    private boolean cursorUnsupported = false;
 
     # + ttyPath - the terminal device; the controlling terminal by default
     public isolated function init(string ttyPath = "/dev/tty") {
@@ -127,6 +137,9 @@ public isolated class UnixTerminal {
             self.ready = [];
             check io:fileWriteString(self.ttyPath, BRACKETED_PASTE_ON + RESIZE_REPORTS_ON, io:APPEND);
             self.inBandResize = false;
+            self.cursorRequested = false;
+            self.cursorReply = ();
+            self.cursorUnsupported = false;
             self.lastSize = initialSize;
             self.lastSizeCheck = time:monotonicNow();
             if !self.readerStarted {
@@ -156,6 +169,7 @@ public isolated class UnixTerminal {
                 return;
             }
             self.acquired = false;
+            self.cursorRequested = false;
             // One timed command: switch the reports off, then restore the saved settings. If the terminal
             // has gone away it is killed after a few seconds instead of blocking the process forever.
             string tty = shellQuote(self.ttyPath);
@@ -189,11 +203,11 @@ public isolated class UnixTerminal {
                 if fresh.length() > 0 {
                     self.pending.push(...fresh);
                     self.lastByteAt = time:monotonicNow();
-                    self.accept(decodeInput(self.pending, false).cloneReadOnly());
+                    self.accept(decodeInput(self.pending, false, self.cursorRequested).cloneReadOnly());
                     continue;
                 }
                 if self.pending.length() > 0 && time:monotonicNow() - self.lastByteAt >= ESCAPE_TIMEOUT {
-                    self.accept(decodeInput(self.pending, true).cloneReadOnly());
+                    self.accept(decodeInput(self.pending, true, self.cursorRequested).cloneReadOnly());
                     self.lastByteAt = time:monotonicNow();
                     continue;
                 }
@@ -220,6 +234,11 @@ public isolated class UnixTerminal {
     private isolated function accept(DecodeResult & readonly decoded) {
         lock {
             self.pending = [...decoded.rest];
+            CursorPosition? report = decoded.report;
+            if report is CursorPosition {
+                self.cursorReply = report.clone();
+                self.cursorRequested = false;
+            }
             foreach InputEvent event in decoded.events {
                 if event is ResizeEvent {
                     self.inBandResize = true;
@@ -239,6 +258,43 @@ public isolated class UnixTerminal {
                 self.ready.push({kind: "resize", width: current.width, height: current.height});
             }
         }
+    }
+
+    # Asks the terminal where its cursor is (`ESC [ 6 n`) and waits for the reply, which `nextEvent`
+    # picks out of the input, so `nextEvent` must be running on another strand (the runtime's input
+    # loop does this). A terminal that does not answer within a fifth of a second is remembered as not
+    # supporting it, so later calls return at once. Input that arrives meanwhile is kept.
+    #
+    # + return - the position, `()` when the terminal does not answer or is not acquired, or an error
+    #            when the request cannot be written
+    public isolated function queryCursor() returns CursorPosition|error? {
+        lock {
+            if !self.acquired || self.cursorUnsupported {
+                return ();
+            }
+            self.cursorReply = ();
+            self.cursorRequested = true;
+        }
+        error? sent = self.write(CURSOR_POSITION_REQUEST);
+        decimal waited = 0;
+        while sent is () && waited < CURSOR_REPORT_TIMEOUT {
+            lock {
+                CursorPosition? reply = self.cursorReply;
+                if reply is CursorPosition {
+                    self.cursorReply = ();
+                    return reply.clone();
+                }
+            }
+            runtime:sleep(0.002);
+            waited += 0.002d;
+        }
+        lock {
+            self.cursorRequested = false;
+            if sent is () {
+                self.cursorUnsupported = true;
+            }
+        }
+        return sent;
     }
 
     # Writes the data to the terminal device in one call.

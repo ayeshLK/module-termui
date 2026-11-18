@@ -196,3 +196,46 @@ function testTerminalRepliesAndMouseReportsAreNotInput() {
 function testManyEventsInOneRead() {
     test:assertEquals(decode([0x68, 0x1B, 0x5B, 0x41, 0x69, 0x0D]), [key("h"), key("up"), key("i"), key("enter")]);
 }
+
+@test:Config {}
+function testACursorReplyIsConsumedWhileARequestIsOutstanding() {
+    DecodeResult result = decodeInput([0x1B, 0x5B, 0x37, 0x3B, 0x33, 0x52], false, true);
+    test:assertEquals(result.report, <CursorPosition>{row: 6, col: 2}, "the reply is one-based, the position zero-based");
+    test:assertEquals(result.events, [], "a reply is not a key");
+    test:assertEquals(result.rest, []);
+}
+
+@test:Config {}
+function testTheSameBytesAreAKeyWhenNothingWasAsked() {
+    // ESC [ 1 ; 5 R is a reply from row 1, column 5, and also the Ctrl+F3 key
+    int[] bytes = [0x1B, 0x5B, 0x31, 0x3B, 0x35, 0x52];
+    DecodeResult asked = decodeInput(bytes, false, true);
+    test:assertEquals(asked.report, <CursorPosition>{row: 0, col: 4});
+    test:assertEquals(asked.events, []);
+    DecodeResult unasked = decodeInput(bytes, false);
+    test:assertEquals(unasked.report, ());
+    test:assertEquals(unasked.events, [key("f3", ctrl = true)]);
+}
+
+@test:Config {}
+function testOnlyTheFirstReplyCountsAndKeysAroundItSurvive() {
+    int[] bytes = [0x61, 0x1B, 0x5B, 0x32, 0x3B, 0x32, 0x52, 0x62, 0x1B, 0x5B, 0x31, 0x3B, 0x35, 0x52];
+    DecodeResult result = decodeInput(bytes, false, true);
+    test:assertEquals(result.report, <CursorPosition>{row: 1, col: 1});
+    test:assertEquals(result.events, [key("a"), key("b"), key("f3", ctrl = true)]);
+}
+
+@test:Config {}
+function testAPartialReplyWaitsForTheRest() {
+    DecodeResult partial = decodeInput([0x1B, 0x5B, 0x37, 0x3B], false, true);
+    test:assertEquals(partial.report, ());
+    test:assertEquals(partial.rest, [0x1B, 0x5B, 0x37, 0x3B]);
+    DecodeResult whole = decodeInput([...partial.rest, 0x33, 0x52], false, true);
+    test:assertEquals(whole.report, <CursorPosition>{row: 6, col: 2});
+}
+
+@test:Config {}
+function testOtherSequencesAreStillKeysWhileWaiting() {
+    test:assertEquals(decodeInput([0x1B, 0x5B, 0x41], false, true).events, [key("up")]);
+    test:assertEquals(decodeInput([0x1B, 0x5B, 0x52], false, true).events, []);
+}

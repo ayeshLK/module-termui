@@ -12,6 +12,9 @@ files, so no step depends on timing alone. The plan is a list of steps:
   {"op": "send", "hex": "1b5b41"}                write bytes to the master (as if typed)
   {"op": "drain", "label": "x", "seconds": 0.3}  read what the application wrote, store it as hex
   {"op": "drain", "label": "x", "until_file": "name"}  keep reading until <work-dir>/name exists, then a little longer
+  {"op": "cpr", "label": "x", "row": 5, "col": 1}      wait for a cursor position request (ESC [ 6 n), store what was read
+                                                        as hex, and answer ESC [ row ; col R (1-based, as a terminal does)
+  {"op": "cpr", "label": "x", "silent": true}           same, but never answer (a terminal without support)
   {"op": "sleep", "seconds": 0.1}
   {"op": "resize", "rows": 30, "cols": 100}
 
@@ -88,6 +91,22 @@ for step in plan:
                 except OSError:
                     break
         results["drains"][step["label"]] = data.hex()
+    elif op == "cpr":
+        request = b"\x1b[6n"
+        limit = time.time() + step.get("timeout", 30)
+        data = b""
+        while time.time() < limit and request not in data:
+            ready, _, _ = select.select([master], [], [], 0.05)
+            if ready:
+                try:
+                    data += os.read(master, 65536)
+                except OSError:
+                    break
+        results["drains"][step["label"]] = data.hex()
+        if request not in data:
+            results.setdefault("errors", []).append("no cursor position request for " + step["label"])
+        elif not step.get("silent", False):
+            os.write(master, b"\x1b[%d;%dR" % (step["row"], step["col"]))
     elif op == "sleep":
         time.sleep(step["seconds"])
     elif op == "resize":
