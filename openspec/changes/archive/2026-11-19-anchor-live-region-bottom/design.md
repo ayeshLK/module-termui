@@ -113,3 +113,7 @@ Gathered while applying group 1 (2026-11-18).
 
 - With Ballerina 2201.14.2, narrowing a `Terminal` to a separate capability type (`Terminal & CursorReporter`) and then using the value crashes the compiler (`Cannot read field "owner" because "symbol" is null`), or fails JVM generation across modules. `term:CursorReporter` therefore includes `*Terminal`, so narrowing yields `CursorReporter` itself and works. Decision 3 stands: it is still a separate, optional type that existing terminals need not implement.
 - The method is named `queryCursor` (not `cursorPosition`) because `FakeTerminal.cursorPosition()` already exists with a different return type; the record is `term:CursorPosition {row, col}`, counted from zero.
+
+## Real-terminal check (task 5.3)
+
+The maintainer ran `examples/agent-harness` with the option on in **macOS Terminal** and **iTerm2** and found it working, so those two terminals are covered by hand. Not covered: tmux and Linux terminals (the Linux pty run in CI exercises the same code path through an emulator, not a real terminal). Exact latencies from the spike (iTerm2: 0.3 to 16.2 ms) are recorded above.

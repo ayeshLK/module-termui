@@ -36,8 +36,8 @@ Group 1 is a gate: groups 2 onward build on its answers. If the cursor position 
 
 - [x] 5.1 Turn the option on in `examples/agent-harness` and extend its pty check so the driver answers the cursor query and feeds the output to a terminal emulator (`pyte`), asserting that the input line is on the last row at the first frame and the banner is still on screen after the first turn; verify the check passes locally and add `pyte` to the CI step and `CONTRIBUTING.md`
 - [x] 5.2 Re-record `docs/assets/harness-demo.gif` with the anchored input and check frames from the start, mid-answer, and the end for stray rows or a clipped banner; verify the frames by looking at them and update the README caption if needed
-- [ ] 5.3 Maintainer action: run the harness in at least two real terminals (for example macOS Terminal and iTerm2, or a Linux terminal) and in tmux, and record in `design.md` whether the cursor query is answered, whether anchoring looks right, and the scrollback after a long conversation; verify the notes are written
-- [ ] 5.4 Run the full default and `tty` suites and the harness check in CI on Linux and macOS; verify all are green
+- [x] 5.3 Maintainer action: run the harness in at least two real terminals (for example macOS Terminal and iTerm2, or a Linux terminal) and in tmux, and record in `design.md` whether the cursor query is answered, whether anchoring looks right, and the scrollback after a long conversation; verify the notes are written
+- [x] 5.4 Run the full default and `tty` suites and the harness check in CI on Linux and macOS; verify all are green
 
 ## Workflow follow-up
 
