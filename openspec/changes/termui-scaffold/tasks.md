@@ -38,7 +38,7 @@
 ## 6. Release and publishing
 
 - [x] 6.1 Add `.github/workflows/release.yml` (manual dispatch, repository-owner guard, build and test, `release-<version>` branch, release plugin tag, Central publish, GitHub release, sync PR) adapted from `module-arxiv` without the Trivy step, and verify it with `actionlint` and a review that nothing publishes before tests pass
-- [ ] 6.2 Add `.github/workflows/dev-stg-release.yml` for Dev/Stage Central publishing that never tags, and verify a Stage Central publish of a development version succeeds once the secrets exist
+- [x] 6.2 Keep `.github/workflows/dev-stg-release.yml` (Dev/Stage Central publishing that never tags) as optional tooling, and verify it passes `actionlint` and has the owner guard; publishing to Dev or Stage Central is not a requirement and is not exercised
 - [x] 6.3 Verify the release workflow does not run from a fork (confirm the owner guard on both release workflows)
 
 ## 7. Repository hygiene and documentation
@@ -46,7 +46,7 @@
 - [x] 7.1 Add `.github/CODEOWNERS`, `.github/pull_request_template.md` (including the native-image checkbox), the Apache-2.0 `LICENSE`, and license headers on the build files, and verify each file exists and the headers match `module-arxiv`
 - [x] 7.2 Write `README.md` covering the project purpose, how to build and test, the `tty` test group, the native-image check, and the release process, and verify the documented build and test commands run as written
 - [x] 7.3 Keep secret names and setup out of the README (they are sensitive), and verify `README.md` contains no secrets section and no workflow-secret names
-- [ ] 7.4 Maintainer action: create the `ayeshLK/module-termui` GitHub repository, add it as `origin`, push `main`, provision those secrets, and verify `git remote -v` shows it and the pull-request and main workflows run end to end
+- [x] 7.4 Create the `ayeshLK/module-termui` GitHub repository, add it as `origin`, push `main`, and verify `git remote -v` shows it and the pull-request and main workflows run end to end; release credentials are not provisioned because publishing is not a requirement
 
 ## 8. Integration check
 

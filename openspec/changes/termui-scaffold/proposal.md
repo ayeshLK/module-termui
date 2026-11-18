@@ -10,7 +10,7 @@
   - Gradle multi-project build with the `io.ballerina.plugin`, `ballerina/` as the package directory, and `gradle.properties` as the single source of truth for the package version and tool versions.
   - Templates under `build-config/resources/` that render `Ballerina.toml` and `version.bal`, so versions cannot drift.
   - `ayesha/termui` package metadata (Apache-2.0, `platform = "any"`, library rather than connector).
-- Add GitHub Actions workflows: pull-request build, main-branch build with coverage upload, daily build against the latest Ballerina, manual release (release branch, Central publish, GitHub release, sync PR), and Dev/Stage Central publish.
+- Add GitHub Actions workflows: pull-request build, main-branch build with coverage upload, daily build against the latest Ballerina, manual release (release branch, Central publish, GitHub release, sync PR). Publishing to Dev or Stage Central is optional tooling, not a requirement.
 - Add a test setup with two tiers: fake-backend unit tests that run anywhere, and a `tty` test group (disabled by default, enabled with `-Pgroups=tty`) that needs a real pseudo-terminal.
 - Run CI on Ubuntu and macOS, the two supported platforms.
 - Add a non-blocking native-image check (monthly and on demand) that runs the package's tests with `bal test --graalvm`, so native-hostile choices are caught early (a v1 goal, not a first-release gate), and `bal scan` static analysis on pull requests.
@@ -31,6 +31,6 @@ None.
 ## Impact
 
 - New repository files: root Gradle files, `ballerina/` package shell, `build-config/`, `.github/`, and the CI workflows.
-- Requires secrets on the new repo before CI can fully run: the Ballerina bot credentials, Central access tokens (release, dev, stage), and a Codecov token.
+- Builds, tests, and the example check need no secrets. Release credentials and a coverage token are only needed to publish a release or upload coverage, and are configured by the maintainer on the repository when needed.
 - No runtime behavior or public API yet. This change only prepares the delivery path for `termui-foundation`.
 - Org is `ayesha` (matching `module-arxiv`), package `termui`, repo `module-termui`.

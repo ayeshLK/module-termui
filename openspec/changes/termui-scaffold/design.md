@@ -48,7 +48,7 @@ Alternative considered: a plain `bal`-only repo with scripts. Rejected, because 
 
 **CI matrix.** Ubuntu and macOS for PR and main builds. `./gradlew build -x test` and `./gradlew test` run as separate steps, because the plugin only supports test-group selection with `gradlew test` (the official ballerina-library templates do the same). The daily build runs on Ubuntu only unless a regression suggests otherwise. It tracks the latest released Ballerina with `bal build` and `bal test` directly, using the JDK that line needs (the mapping used by `ballerina-platform/ballerina-library`), so it stays a canary for newer releases without being tied to the Gradle stack.
 
-**Workflow set.** Keep: pull-request, main build (with Codecov), daily build, release, Dev/Stage publish. Add: `native-check` (non-blocking, monthly and on demand). Drop for now: Trivy scan, because there is no `ballerina/lib` of Java dependencies.
+**Workflow set.** Keep: pull-request, main build (with Codecov), daily build, release. The Dev/Stage publish workflow stays as optional tooling that is linted but not exercised, because publishing there is not a requirement. Add: `native-check` (non-blocking, monthly and on demand). Drop for now: Trivy scan, because there is no `ballerina/lib` of Java dependencies.
 
 **Native-image check.** Follow the official GraalVM check: build with Gradle, then run `bal test --graalvm` from `ballerina/` with `setup-ballerina` and `setup-graalvm`. It runs monthly and on manual dispatch, can be skipped with a PR label, and is not a required check, so a failure is visible but not blocking. This implements the "v1 goal, not a first-release gate" decision and tests the package's own tests natively, which is more than building a sample app. Alternative: a gating job, or building an `examples/` app. Rejected for now: the feature is experimental, and the example app belongs to `termui-foundation`.
 
@@ -60,7 +60,7 @@ Alternative considered: a plain `bal`-only repo with scripts. Rejected, because 
 - Use a concurrency group that works for both push and pull_request events (`github.workflow` plus `github.ref`), not `github.head_ref`.
 - Keep the `repository_owner` guard on release and publish workflows.
 
-**Release flow.** Keep arxiv's shape: manual dispatch, build and test, create `release-<version>`, run the release plugin (tag `v<version>`), publish to Central, create the GitHub release, and open a sync PR. Dev/Stage publish stays separate and never tags.
+**Release flow.** Keep arxiv's shape: manual dispatch, build and test, create `release-<version>`, run the release plugin (tag `v<version>`), publish to Central, create the GitHub release, and open a sync PR. It has not been run, because no release has been requested. The Dev/Stage publish workflow is separate, never tags, and is optional.
 
 ## Risks / Trade-offs
 
@@ -71,5 +71,5 @@ Alternative considered: a plain `bal`-only repo with scripts. Rejected, because 
 - [The `jballerina-tools` distribution lacks the HTML coverage report tools] -> Verify that the XML coverage report is still produced (task 3.3).
 - [macOS runner cost and queue time] -> Restrict the macOS job to PR and main, and skip it for docs-only changes if cost becomes an issue.
 - [Native-image feature is experimental] -> The check is non-blocking, and failures are triaged rather than gated.
-- [Secrets are not yet provisioned] -> The maintainer configures them on the repository (they are deliberately not documented in the README); CI cannot fully run until they exist. Local builds still work without them where possible.
+- [Release credentials are not provisioned] -> Builds, tests, and the example check run without them (they use the automatic `GITHUB_TOKEN`); only releasing and the coverage upload need credentials, which the maintainer configures when needed and which are deliberately not documented in the README. Local builds still work without them where possible.
 - [Ballerina version pin diverges from arxiv] -> Pin explicitly and let the daily build against the latest distribution catch drift.

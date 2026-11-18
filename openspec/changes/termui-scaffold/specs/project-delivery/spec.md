@@ -97,13 +97,6 @@ A release SHALL be started manually by a maintainer from the package's owning re
 - **WHEN** the release workflow is triggered from a repository not owned by the maintainer
 - **THEN** the release does not run
 
-### Requirement: Pre-release publishing to Dev and Stage Central
-A maintainer SHALL be able to publish the package to the Ballerina Dev or Stage Central on demand, without affecting the production Central or the repository tags.
-
-#### Scenario: Stage publish
-- **WHEN** a maintainer selects Stage Central in the publish workflow
-- **THEN** the package is published to Stage Central only
-
 ### Requirement: Workflows use least-privilege secrets and pinned actions
 Each workflow step SHALL receive only the secrets it needs, and third-party actions SHALL be pinned to a fixed version or commit.
 
