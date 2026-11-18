@@ -2,15 +2,30 @@
 """Records the agent harness: a prompt typed by a person, a streamed answer, and two approvals.
 
 Usage: JAVA=/path/to/java25/bin/java python3 record_demo.py [output-directory]   (after `bal build`)
-Needs `agg` (https://github.com/asciinema/agg) to render the GIF; the .cast is written either way.
+Needs `agg` (https://github.com/asciinema/agg) to render the GIF; the .cast is written either way, and
+`pyte` (pip install pyte), which plays the terminal: it answers the app's cursor position request, as a
+real terminal does, so the interface is anchored to the bottom like it is for a user.
 """
 import fcntl, json, os, pty, select, shutil, struct, subprocess, sys, termios, time
+import pyte
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 OUT = os.path.abspath(sys.argv[1] if len(sys.argv) > 1 else os.path.join(HERE, "..", "..", "docs", "assets"))
 JAVA = os.environ.get("JAVA", "java")
 JAR = os.path.join(HERE, "target", "bin", "agent_harness.jar")
 COLS, ROWS = 92, 26
+
+class Emulator(pyte.Screen):
+    """A screen that answers the cursor position request (ESC [ 6 n) the way a terminal does."""
+
+    fd = None
+
+    def report_device_status(self, mode):
+        if mode == 6 and self.fd is not None:
+            os.write(self.fd, f"\x1b[{self.cursor.y + 1};{self.cursor.x + 1}R".encode())
+        else:
+            super().report_device_status(mode)
+
 
 events = []
 started = time.time()
@@ -26,8 +41,12 @@ def main():
     env = dict(os.environ, TERM="xterm-256color", COLUMNS=str(COLS), LINES=str(ROWS))
     pid, fd = pty.fork()
     if pid == 0:
+        fcntl.ioctl(0, termios.TIOCSWINSZ, struct.pack("HHHH", ROWS, COLS, 0, 0))
         os.execvpe(JAVA, [JAVA, "-jar", JAR], env)
     fcntl.ioctl(fd, termios.TIOCSWINSZ, struct.pack("HHHH", ROWS, COLS, 0, 0))
+    screen = Emulator(COLS, ROWS)
+    screen.fd = fd
+    stream = pyte.ByteStream(screen)
 
     def pump(seconds=0.05):
         global seen
@@ -39,6 +58,7 @@ def main():
                 return False
             if data:
                 seen += data
+                stream.feed(data)
                 events.append([round(now(), 4), "o", data.decode("utf-8", errors="replace")])
         return True
 

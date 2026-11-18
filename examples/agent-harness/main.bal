@@ -348,7 +348,7 @@ public function main() returns error? {
         ]),
         termui:every(0.1, {kind: "tick"})
     ]);
-    check ui.run(new Agent(), banner);
+    check ui.run(new Agent(), banner, anchorBottom = true);
 }
 
 function boxLine(string content, text:Style style) returns text:Span[] {
