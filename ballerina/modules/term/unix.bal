@@ -51,6 +51,17 @@ isolated function shellWithin(string script, int seconds) returns string|error {
     return shell(wrapped);
 }
 
+// Reads the output of `stty size`: "rows columns".
+isolated function parseSize(string output) returns Size|error {
+    string[] parts = re ` `.split(output.trim());
+    if parts.length() != 2 {
+        return error(string `unexpected stty size output: ${output}`);
+    }
+    int rows = check int:fromString(parts[0]);
+    int columns = check int:fromString(parts[1]);
+    return {width: columns, height: rows};
+}
+
 isolated function shellQuote(string value) returns string {
     return "'" + re `'`.replaceAll(value, "'\\''") + "'";
 }
@@ -99,8 +110,16 @@ public isolated class UnixTerminal {
                 return error(string `not a terminal device: ${self.ttyPath}`);
             }
             string tty = shellQuote(self.ttyPath);
-            string saved = (check shellWithin(string `stty -g < ${tty}`, 5)).trim();
-            _ = check shellWithin(string `stty raw -echo min 1 time 0 < ${tty}`, 5);
+            // One shell for all of it (each process spawn costs about 15 ms): save the settings, switch to
+            // raw mode, and read the size. The first line is the saved settings, the second "rows columns".
+            string output = check shellWithin(string `saved=$(stty -g < ${tty}) && stty raw -echo min 1 time 0 < ${tty} ` +
+                string `&& echo "$saved" && stty size < ${tty}`, 5);
+            string[] lines = re `\n`.split(output.trim());
+            if lines.length() != 2 {
+                return error(string `unexpected output while taking over the terminal: ${output}`);
+            }
+            string saved = lines[0].trim();
+            Size initialSize = check parseSize(lines[1]);
             self.savedSettings = saved;
             self.acquired = true;
             self.queue.clear();
@@ -108,7 +127,7 @@ public isolated class UnixTerminal {
             self.ready = [];
             check io:fileWriteString(self.ttyPath, BRACKETED_PASTE_ON + RESIZE_REPORTS_ON, io:APPEND);
             self.inBandResize = false;
-            self.lastSize = check self.size();
+            self.lastSize = initialSize;
             self.lastSizeCheck = time:monotonicNow();
             if !self.readerStarted {
                 self.readerStarted = true;
@@ -149,13 +168,7 @@ public isolated class UnixTerminal {
     # + return - the size, or an error when it cannot be read
     public isolated function size() returns Size|error {
         string output = (check shellWithin(string `stty size < ${shellQuote(self.ttyPath)}`, 2)).trim();
-        string[] parts = re ` `.split(output);
-        if parts.length() != 2 {
-            return error(string `unexpected stty size output: ${output}`);
-        }
-        int rows = check int:fromString(parts[0]);
-        int columns = check int:fromString(parts[1]);
-        return {width: columns, height: rows};
+        return parseSize(output);
     }
 
     # Waits for the next input event, decoding the bytes the reader strand received. A lone Esc byte is

@@ -122,7 +122,7 @@ Measured on Ballerina 2201.14.2 / JDK 25 / macOS, driving a throwaway Ballerina 
    | same, AppCDS archive (`-XX:SharedArchiveFile`) | 92 ms |
    | same, AppCDS and C1 only | 80 ms |
 
-   The three stdlib imports cost about 5 ms; the Ballerina runtime itself is the bulk of the gap above the JVM floor. **Proposed startup budget:** time to first frame of **250 ms or less** for a plain `java -jar` on a developer laptop (about 1.5x the measured 161 ms, leaving room for the foundation's own code), and **120 ms or less** with a documented AppCDS launcher (measured 92 ms). Task 8.3 re-measures on the finished foundation and confirms or revises these numbers.
+   The three stdlib imports cost about 5 ms; the Ballerina runtime itself is the bulk of the gap above the JVM floor. **Proposed startup budget (from the spike, revised in the final measurement below):** 250 ms for a plain `java -jar` and 120 ms with an AppCDS launcher.
 
 ## Go / no-go for the pure-Ballerina Unix backend (task 1.6)
 
@@ -189,3 +189,22 @@ If a later task finds one of these assumptions false, the fallback is the JLine 
 - **Submodules must be exported.** `Ballerina.toml` needs `export = [...]` listing every module; without it a consumer cannot import `termui.term`, `termui.text`, or `termui.render`, and nothing inside the package notices. The example found it, which is the argument for keeping a consumer-style example in CI.
 - **`Options.initialCommand`** lets a program start work (an effect, a timer) before any message arrives; `Interface.run` takes it as a second argument.
 - **End to end under a pty** (`examples/agent-demo/verify.py`, 19 checks): interactive question and answer with the terminal raw while running and restored after; output redirected to a file holds only the result while the interface stays on the terminal; headless output is plain, denies the question by default, and is byte-identical across runs; SIGTERM, SIGINT, and SIGHUP each leave the terminal restored.
+
+## Final startup measurement and budget (task 8.3)
+
+Measured on the finished foundation with the agent demo: process start to the first drawn frame, under a pty, 10 runs, medians, JDK 25 on this macOS machine.
+
+| Configuration | Spike hello-world | Finished demo (first build) | After fixing the probe |
+|---|---|---|---|
+| plain `java -jar` | 161 ms | 384 ms | **334 ms** |
+| C1 compiler only | 140 ms | 355 ms | 297 ms |
+| AppCDS archive | 92 ms | 285 ms | **226 ms** |
+| AppCDS and C1 | 80 ms | 273 ms | 217 ms |
+
+Where the time goes in the demo, from timing each phase in-process: the JVM and Ballerina runtime (about 160 ms, as in the spike); `detectEnvironment` (about 107 ms at first: the first process spawn in a JVM costs about 35 ms, the rest was three separate `lsof` calls at about 30 ms each, now one call, saving about 60 ms); creating the interface (18 ms); taking over the terminal (about 33 ms after merging three `stty` spawns into one shell, from 43 ms); and the first draw (12 ms).
+
+The spike's 250 ms and 120 ms were extrapolated from an empty program, and an application that also probes its environment, takes over the terminal, and draws cannot meet them on this stack. **Revised budget: first frame within 400 ms for a plain `java -jar` (measured 334 ms) and within 280 ms with an AppCDS launcher (measured 226 ms)**, about 20% above the measurements. Ideas if more is needed, none needed for the first release: run the environment probe and the terminal takeover in one shell, skip the probe when `TERM` is unset, and trim module initialization.
+
+## Native image results (task 8.2)
+
+In CI (GraalVM Community, JDK 21 line before the stack move, then JDK 25): the package's own tests pass under `bal test --graalvm` (about 85 s to build), and the agent demo builds as a native executable with `bal build --graalvm` (about 72 s). The native workflow also runs the executable headless and checks its output. This confirms that nothing in the foundation blocks native-image, which is the v1 goal; it is still not a gate.

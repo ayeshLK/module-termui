@@ -49,7 +49,8 @@ class TestProgram {
     public function update(Message message) returns Command? {
         self.seen.push(message);
         if message is term:KeyEvent {
-            match message.key {
+            string pressed = message.key;
+            match pressed {
                 "q" => {
                     return quit();
                 }
@@ -278,7 +279,7 @@ function testEveryMessageIsImmutable() returns error? {
         return countKind(program.seen, "part") == 3 && countKind(program.seen, "inputEnded") == 1;
     });
     foreach Message message in program.seen {
-        test:assertTrue(message.isReadOnly(), "messages from every source must be readonly");
+        test:assertTrue(message is readonly, "messages from every source must be readonly");
     }
 }
 

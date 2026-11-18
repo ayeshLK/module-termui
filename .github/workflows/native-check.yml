@@ -67,3 +67,15 @@ jobs:
       - name: Build the example as a native image
         working-directory: examples/agent-demo
         run: bal build --graalvm
+
+      # A build alone does not show that the binary works: run it with no terminal and check the result.
+      - name: Run the native example headless
+        working-directory: examples/agent-demo
+        run: |
+          started=$(date +%s%N)
+          ./target/bin/agent_demo < /dev/null > native-output.txt
+          finished=$(date +%s%N)
+          echo "native run took $(( (finished - started) / 1000000 )) ms"
+          cat native-output.txt
+          grep -q "approved=false" native-output.txt
+          ! grep -q $'\x1b' native-output.txt

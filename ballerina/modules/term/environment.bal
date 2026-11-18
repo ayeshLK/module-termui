@@ -43,11 +43,12 @@ public const int DEFAULT_HEIGHT = 24;
 
 // A child started with os:exec gets pipes for its own stdio, so it cannot ask whether the *parent's*
 // stdio is a terminal. It can ask the operating system about its parent instead: /proc/<pid>/fd on
-// Linux, lsof on macOS. Each line of output is "<fd> <target>", for example "1 /dev/ttys006".
-const string STDIO_PROBE_SCRIPT = "pid=$PPID; for fd in 0 1 2; do " +
-    "if [ -e /proc/$pid/fd/$fd ]; then target=$(readlink /proc/$pid/fd/$fd 2>/dev/null); " +
-    "else target=$(lsof -n -P -a -p $pid -d $fd -Fn 2>/dev/null | sed -n 's/^n//p' | head -n 1); fi; " +
-    "echo \"$fd $target\"; done";
+// Linux, lsof on macOS (one call for all three descriptors: each lsof costs about 30 ms). Each line of
+// output is "<fd> <target>", for example "1 /dev/ttys006".
+const string STDIO_PROBE_SCRIPT = "pid=$PPID; if [ -e /proc/$pid/fd/0 ]; then " +
+    "for fd in 0 1 2; do echo \"$fd $(readlink /proc/$pid/fd/$fd 2>/dev/null)\"; done; " +
+    "else lsof -n -P -a -p $pid -d 0,1,2 -Ff -Fn 2>/dev/null | " +
+    "awk '/^f/{fd=substr($0,2)} /^n/{print fd \" \" substr($0,2)}'; fi";
 
 # Whether a file path names an interactive terminal device.
 #
