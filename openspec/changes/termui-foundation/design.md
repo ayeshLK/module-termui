@@ -36,7 +36,7 @@ The foundation imports only `io`, `os`, `time`, and `lang.*`, so that heavy modu
 **Boundary: toolkit only.** The package exposes a message seam; the agent loop, tool registry, and permissions live in the application. Alternative: bundle harness primitives. Rejected: it would duplicate Ballerina's AI work and limit the toolkit's use for non-agent CLIs. A harness package can be layered on later.
 
 **Terminal backend: interface plus two implementations.** A small `Terminal` interface with (a) a pure-Ballerina Unix backend and (b) an in-memory fake. The Unix backend:
-- enters and leaves raw mode with `stty` run through `os:exec`, bound to `/dev/tty` (`stty -g` to save, restore on release), and reads and decodes bytes from the tty itself, using `min 0 time 1` style timeouts to distinguish a lone Esc from a sequence;
+- enters and leaves raw mode with `stty` run through `os:exec`, bound to `/dev/tty` (`stty -g` to save, restore on release), and reads bytes from the tty with blocking reads (`min 1 time 0`) and decodes them itself, telling a lone Esc from the start of a sequence with a short decoder-level timeout (a pending Esc is emitted as Esc if no further byte arrives within a few tens of milliseconds), because the tty's own read timeout (`min 0 time 1`) does not work with Ballerina's byte channel (see Spike results);
 - obtains the size from a cursor-position report (or `stty size`), detects resize by polling, and uses DEC mode 2048 notifications where a terminal supports them;
 - restores the terminal on normal exit, on catchable errors, and through `runtime:onGracefulStop`;
 - writes each frame in one flushed write.
@@ -73,10 +73,10 @@ Alternatives: JLine via a Java shim (mature, handles Windows and real signals, b
 
 These must be answered before building on the design; each has a fallback noted above.
 
-1. Can a byte channel on `/dev/tty` read raw keystrokes, and does a read timeout (`min 0 time 1`) work, or is a zero-byte read treated as end of input?
-2. Does a blocking read starve other strands, and does the reader need a dedicated thread?
-3. Does the compiler enforce `isolated` for `start`ed effect functions, or only hint?
-4. Does `runtime:onGracefulStop` fire on SIGINT and SIGTERM, including while the terminal is in raw mode?
+1. Can a byte channel on `/dev/tty` read raw keystrokes, and does a read timeout (`min 0 time 1`) work, or is a zero-byte read treated as end of input? (Answered below.)
+2. Does a blocking read starve other strands, and does the reader need a dedicated thread? (Answered below.)
+3. Does the compiler enforce `isolated` for `start`ed effect functions, or only hint? (Answered below.)
+4. Does `runtime:onGracefulStop` fire on SIGINT and SIGTERM, including while the terminal is in raw mode? (Answered below.)
 5. Is write throughput acceptable, and can a whole frame be flushed in one write without flicker?
 6. Baseline: hello-world startup and time-to-first-frame on the JVM.
 
@@ -86,3 +86,21 @@ These must be answered before building on the design; each has a fallback noted 
 - The message seam with Ballerina's AI module: deferred until widgets and an agent example exist.
 - The startup budget: set after the spike's baseline measurement.
 - Whether to add a JLine backend, and for which platforms: decided after the first release.
+
+## Spike results
+
+Measured on Ballerina 2201.14.2 / JDK 25 / macOS, driving a throwaway Ballerina program through a pseudo-terminal from a Python harness (the program is not in the repo).
+
+1. **Raw tty reads (task 1.1).**
+   - `stty raw -echo min 1 time 0 </dev/tty` through `os:exec`, then `io:openReadableFile("/dev/tty")` and `read(64)`, works: a read returns as soon as any bytes are available, not after 64. A typed `a` returned `[61]`, a lone Esc returned `[1b]` immediately, and an arrow-up sequence written by the terminal in one write returned `[1b 5b 41]` in a single read.
+   - **`min 0 time 1` does not work.** The first read returns 0 bytes after about 100 ms, and every later read fails immediately with `EoF when reading from the channel`, so a zero-byte read permanently puts the channel into end-of-input. Read timeouts therefore cannot come from the tty driver.
+   - **Consequence:** blocking reads plus a decoder-level Esc timeout (a trailing Esc waits a few tens of milliseconds for more bytes before it is reported as Esc). The decoder must also tolerate a sequence split across two reads, which can happen over slow links.
+
+2. **Blocking reads and strand starvation (task 1.2).** A 100 ms ticker strand (`start`, `runtime:sleep`) kept a steady cadence of about 106 ms through a 3 second blocked `/dev/tty` read on the main strand, and a key written at 3.0 s was read at 3.05 s with no added delay. Repeating the run with `BALLERINA_MAX_POOL_SIZE=1` and `=2` gave the same result, but I could not confirm that variable shrinks the pool, so a very small thread pool is not proven safe. **Consequence:** the reader can be an ordinary `start`ed strand that blocks on the read; no dedicated thread or `@strand` annotation was needed on an 11-core machine, and CI (2-4 cores) will confirm it.
+
+3. **Isolation enforcement (task 1.3).** Compiled on 2201.14.2 with throwaway samples:
+   - A plain `start effect()` where `effect` is a non-isolated function that mutates a module-level variable **compiles with no diagnostic**: `start` itself does not enforce isolation.
+   - The enforcement comes from types. A parameter typed `isolated function (...)` **rejects** a non-isolated function (`expected 'isolated function () returns ()', found 'function () returns ()'`), a parameter typed `Msg & readonly` **rejects** a mutable `Msg`, an `isolated` function that touches mutable module state is rejected (`invalid access of mutable storage in an 'isolated' function`), and an unlocked access to a mutable field of an `isolated` class is rejected.
+   - **Consequence:** the runtime's effect API must take `isolated function` parameters and `readonly` messages, and the event queue must be an `isolated` class that guards its state with `lock`; then the single-owner and immutable-message rules are compiler-checked for everything that goes through the API. Application code that calls `start` directly bypasses the check, which is documented as out of contract.
+
+4. **`onGracefulStop` on signals (task 1.4).** A handler registered with `runtime:onGracefulStop` that runs `stty <saved>` through `os:exec` ran and **restored the terminal (raw to cooked) on SIGTERM, SIGINT, and SIGHUP**, whether the main strand was sleeping or blocked in a `/dev/tty` read; the JVM then exited. SIGKILL cannot be handled, as expected. In raw mode Ctrl+C is the byte `0x03` and not a signal, so the application handles it as a key event; SIGINT only arrives from outside (for example `kill -INT`). **Caveat for tests:** when a harness signals a whole process group, the `bal run` launcher script dies at once while the JVM is still running its shutdown hook, so wait for the JVM itself (or signal only the JVM) before checking the terminal state. **Consequence:** the restore-on-exit plan stands; only SIGKILL leaves the terminal raw, which the README recovery note (`stty sane`) covers.
