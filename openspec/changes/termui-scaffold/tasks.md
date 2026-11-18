@@ -24,15 +24,15 @@
 
 - [ ] 4.1 Add `.github/workflows/pull-request.yml` with an Ubuntu and macOS matrix, pinned action versions, separate `./gradlew build -x test` and `./gradlew test` steps, per-step secrets only, a concurrency group keyed by workflow and ref, and the coverage upload; verify it with `actionlint` and with a green run on a pushed pull request on both OSes
 - [ ] 4.2 Add a CI step that runs the `tty` group on both OSes (pty via `script` on Linux and the BSD equivalent on macOS), and verify the step passes in the pull-request run
-- [ ] 4.3 Add `.github/workflows/ci.yml` for pushes to `main` with coverage upload, and verify a merge to `main` triggers a green run
-- [ ] 4.4 Add `.github/workflows/daily-build.yml` that builds and tests against the latest Ballerina distribution on Ubuntu, and verify a manual dispatch run completes and shows the Ballerina version used
+- [x] 4.3 Add `.github/workflows/ci.yml` for pushes to `main` with coverage upload, and verify a merge to `main` triggers a green run
+- [ ] 4.4 Add `.github/workflows/daily-build.yml` that builds and tests with `bal` against the latest Ballerina distribution (and the JDK it needs) on Ubuntu, and verify a manual dispatch run completes and shows the Ballerina version used
 - [x] 4.5 Verify no workflow exports the whole `secrets` object and that every third-party action is pinned (`grep` the workflows for `toJson(secrets)` and `@master`/`@main`)
 - [ ] 4.6 Add a `bal scan` step to the pull-request workflow and verify a pull request run shows the scan results (and that an injected finding appears)
 
 ## 5. Native-image check
 
 - [x] 5.1 Add `.github/workflows/native-check.yml` (monthly schedule and manual dispatch, skippable with a PR label) that builds with Gradle and then runs `bal test --graalvm` from `ballerina/` using `setup-ballerina` and `setup-graalvm`, is not a required check, and verify `actionlint` passes
-- [ ] 5.2 Run the workflow manually and verify it reports a clear pass or fail without blocking a pull request
+- [x] 5.2 Run the workflow manually and verify it reports a clear pass or fail without blocking a pull request
 
 ## 6. Release and publishing
 

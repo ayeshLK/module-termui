@@ -61,7 +61,7 @@ jobs:
           publishUser: ${{ secrets.BALLERINA_BOT_USERNAME }}
           publishPAT: ${{ secrets.BALLERINA_BOT_TOKEN }}
         run: |
-          ./gradlew clean release -Prelease.useAutomaticVersion=true
+          ./gradlew clean release -Prelease.useAutomaticVersion=true -PcommitToml
           ./gradlew -Pversion="${VERSION}" publish -x test -PpublishToCentral=true
 
       - name: Create the GitHub release and the sync PR

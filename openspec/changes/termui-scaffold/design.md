@@ -44,9 +44,9 @@ Alternative considered: a plain `bal`-only repo with scripts. Rejected, because 
 
 **Build path (verified).** Follow the `module-ballerinax-solace` wiring, not arxiv's. The Ballerina Gradle plugin is 4.0.0 (2.3.0 resolves `jballerina-tools:null` unless `isConnector = true`, which switches to a Docker-only build). The root `build.gradle` declares `jbalTools` (the pinned `jballerina-tools`) and `ballerinaStdLibs` for subprojects; `ballerina/build.gradle` sets `langVersion = ballerinaLangVersion` and makes `build` and `test` depend on `unpackJballerinaTools`, and `updateTomlFiles` on `copyStdlibs`. The stdlib closure for what the foundation imports is `io`, `os`, and `time`, with versions in `gradle.properties`. This path needs no Docker, so it runs on macOS and Linux runners and runs tty tests on a native terminal. Alternative: arxiv's `isConnector = true` (Docker) path. Rejected: macOS runners have no Docker and a pty is awkward inside a container.
 
-**`commitTomlFiles` only in CI.** The plugin runs it after every build, which makes an unwanted local git commit, so it is gated on `CI=true`.
+**`commitTomlFiles` only for releases.** The plugin runs it after every build, which makes an unwanted git commit (and fails without a git identity in CI), so it only runs with `-PcommitToml`, which the release workflow passes.
 
-**CI matrix.** Ubuntu and macOS for PR and main builds. `./gradlew build -x test` and `./gradlew test` run as separate steps, because the plugin only supports test-group selection with `gradlew test` (the official ballerina-library templates do the same). The daily build against the latest Ballerina runs on Ubuntu only unless a regression suggests otherwise.
+**CI matrix.** Ubuntu and macOS for PR and main builds. `./gradlew build -x test` and `./gradlew test` run as separate steps, because the plugin only supports test-group selection with `gradlew test` (the official ballerina-library templates do the same). The daily build against the latest Ballerina runs on Ubuntu only unless a regression suggests otherwise, and uses `bal build` and `bal test` directly with the JDK that Ballerina line needs (21 up to 2201.13, 25 from 2201.14): the pinned Gradle 8.10.1 cannot run on JDK 25, and moving the stack to Gradle 9 (as `module-ballerinax-solace` has) is deferred.
 
 **Workflow set.** Keep: pull-request, main build (with Codecov), daily build, release, Dev/Stage publish. Add: `native-check` (non-blocking, monthly and on demand). Drop for now: Trivy scan, because there is no `ballerina/lib` of Java dependencies.
 
@@ -66,6 +66,7 @@ Alternative considered: a plain `bal`-only repo with scripts. Rejected, because 
 
 - [pty tests flaky in CI] -> Keep the `tty` group small, run it separately from the default tests, and treat it as a distinct check so flakiness is isolated.
 - [The stdlib list in the root `build.gradle` can drift from the package's imports] -> Keep it next to the versions in `gradle.properties`, and let the PR build fail when an imported stdlib module is missing from the unpacked distribution.
+- [Gradle 8.10.1 and the copied `project.exec` code do not work on Gradle 9 or JDK 25, which Ballerina 2201.14+ needs] -> The pinned Ballerina stays on the 2201.13 line; upgrading to Gradle 9 (injected `ExecOperations`, newer release plugin) is a separate change, and the daily build already tracks newer Ballerina via `bal`.
 - [The `jballerina-tools` distribution lacks the HTML coverage report tools] -> Verify that the XML coverage report is still produced (task 3.3).
 - [macOS runner cost and queue time] -> Restrict the macOS job to PR and main, and skip it for docs-only changes if cost becomes an issue.
 - [Native-image feature is experimental] -> The check is non-blocking, and failures are triaged rather than gated.

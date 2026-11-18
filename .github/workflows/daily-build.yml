@@ -1,7 +1,8 @@
 name: Daily build
 
-# Builds and tests against the latest released Ballerina distribution, in addition to the
-# version pinned in gradle.properties, to catch breakage early.
+# Builds and tests the package against the latest released Ballerina distribution, in addition to the
+# version pinned in gradle.properties, to catch breakage early. This uses `bal` directly instead of
+# Gradle: newer Ballerina lines need a newer JDK (and so a newer Gradle) than the pinned build stack.
 on:
   workflow_dispatch:
   schedule:
@@ -15,30 +16,40 @@ jobs:
     name: Build with latest Ballerina
     runs-on: ubuntu-22.04
     if: github.event_name == 'workflow_dispatch' || github.repository_owner == 'ayeshLK'
-    env:
-      packageUser: ${{ github.actor }}
-      packagePAT: ${{ secrets.GITHUB_TOKEN }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
-      - name: Set up build with the latest Ballerina
-        uses: ./.github/actions/setup-build
+      - name: Set up the latest Ballerina
+        uses: ballerina-platform/setup-ballerina@585120e3f0e540bf127376ee6e75d39e8ce6aaa4 # v1.1.5
         with:
-          install-ballerina: "true"
-          ballerina-version: latest
+          version: latest
 
-      - name: Resolve the installed Ballerina version
+      - name: Resolve the installed Ballerina version and the JDK it needs
+        id: resolve
         run: |
           BAL_VERSION="$(bal version | head -n 1 | awk '{print $2}')"
-          echo "BAL_VERSION=${BAL_VERSION}" >> "${GITHUB_ENV}"
-          echo "Latest Ballerina: ${BAL_VERSION}"
+          MINOR="$(echo "${BAL_VERSION}" | cut -d. -f2)"
+          # Same mapping as ballerina-platform/ballerina-library's resolve-java-version action.
+          if [ "${MINOR}" -le 13 ]; then JAVA_VERSION=21; else JAVA_VERSION=25; fi
+          echo "bal-version=${BAL_VERSION}" >> "${GITHUB_OUTPUT}"
+          echo "java-version=${JAVA_VERSION}" >> "${GITHUB_OUTPUT}"
+          echo "Latest Ballerina: ${BAL_VERSION} (JDK ${JAVA_VERSION})"
+
+      - name: Set up JDK ${{ steps.resolve.outputs.java-version }}
+        uses: actions/setup-java@d1374f8ac74474200d16ef8ecee22c7ae7a51880 # v6.3.0
+        with:
+          distribution: temurin
+          java-version: ${{ steps.resolve.outputs.java-version }}
 
       - name: Build
-        run: ./gradlew build -x test -PballerinaLangVersion="${BAL_VERSION}"
+        working-directory: ballerina
+        run: bal build
 
       - name: Test (default group)
-        run: ./gradlew test -PballerinaLangVersion="${BAL_VERSION}"
+        working-directory: ballerina
+        run: bal test --disable-groups tty
 
       - name: Test (tty group)
-        run: ./gradlew test -Pgroups=tty -PballerinaLangVersion="${BAL_VERSION}"
+        working-directory: ballerina
+        run: bal test --groups tty
