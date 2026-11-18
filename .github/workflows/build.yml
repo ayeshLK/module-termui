@@ -52,14 +52,6 @@ jobs:
       - name: Point the examples at the package built here
         run: .github/scripts/point-examples-at-source.sh
 
-      - name: Build the example
-        working-directory: examples/agent-demo
-        run: bal build
-
-      - name: Verify the example end to end (pty)
-        working-directory: examples/agent-demo
-        run: JAVA="$(command -v java)" python3 verify.py
-
       - name: Build and verify the agent harness
         working-directory: examples/agent-harness
         run: |

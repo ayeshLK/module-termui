@@ -67,12 +67,11 @@ The examples depend on the version of termui published on Ballerina Central, so 
 (cd ballerina && bal pack && bal push --repository=local)
 .github/scripts/point-examples-at-source.sh          # edits the examples' Ballerina.toml: do not commit the result
 (cd examples/agent-harness && bal build && JAVA=$(which java) python3 verify.py)
-(cd examples/agent-demo && bal build && JAVA=$(which java) python3 verify.py)
 (cd examples/counter && bal build && JAVA=$(which java) python3 verify.py)
 git checkout examples                                  # back to the published dependency
 ```
 
-CI does the same on Linux and macOS, and `record_demo.py` in `examples/agent-demo` and `examples/agent-harness` regenerates the recordings used in the README (they need [`agg`](https://github.com/asciinema/agg)).
+CI does the same on Linux and macOS, and `examples/agent-harness/record_demo.py` regenerates the recording used in the README (it needs [`agg`](https://github.com/asciinema/agg)).
 
 ## How changes are planned
 

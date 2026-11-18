@@ -67,19 +67,19 @@ jobs:
       - name: Point the examples at the package built here
         run: .github/scripts/point-examples-at-source.sh
 
-      # Building the example natively shows whether a real application can ship as a native image.
-      - name: Build the example as a native image
-        working-directory: examples/agent-demo
+      # Building an example natively shows whether a real application can ship as a native image.
+      - name: Build the agent harness as a native image
+        working-directory: examples/agent-harness
         run: bal build --graalvm
 
       # A build alone does not show that the binary works: run it with no terminal and check the result.
-      - name: Run the native example headless
-        working-directory: examples/agent-demo
+      - name: Run the native agent harness headless
+        working-directory: examples/agent-harness
         run: |
           started=$(date +%s%N)
-          ./target/bin/agent_demo < /dev/null > native-output.txt
+          ./target/bin/agent_harness < /dev/null > native-output.txt
           finished=$(date +%s%N)
           echo "native run took $(( (finished - started) / 1000000 )) ms"
           cat native-output.txt
-          grep -q "approved=false" native-output.txt
+          grep -q "Welcome to Dummy Agent" native-output.txt
           ! grep -q $'\x1b' native-output.txt
