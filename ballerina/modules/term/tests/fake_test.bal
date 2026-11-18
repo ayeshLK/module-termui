@@ -130,3 +130,67 @@ function testResizeUpdatesTheSizeAndSendsAnEvent() returns error? {
     test:assertEquals(check terminal.size(), <Size>{width: 40, height: 10});
     test:assertEquals(check terminal.nextEvent(), <ResizeEvent>{width: 40, height: 10});
 }
+
+@test:Config {}
+function testNarrowingReflowsTextThatWrappedAutomatically() returns error? {
+    FakeTerminal terminal = new (10, 6);
+    check terminal.write("abcdefghijkl\r\nxy");
+    test:assertEquals(terminal.screenLines()[0], "abcdefghij");
+    test:assertEquals(terminal.screenLines()[1], "kl");
+    terminal.resize(4, 6);
+    test:assertEquals(terminal.screenLines().slice(0, 5), ["abcd", "efgh", "ijkl", "xy", ""]);
+}
+
+@test:Config {}
+function testWideningJoinsRowsThatWrappedAutomatically() returns error? {
+    FakeTerminal terminal = new (5, 6);
+    check terminal.write("abcdefgh\r\nxy");
+    terminal.resize(20, 6);
+    test:assertEquals(terminal.screenLines().slice(0, 3), ["abcdefgh", "xy", ""]);
+}
+
+@test:Config {}
+function testHardLineBreaksAreNotJoinedByReflow() returns error? {
+    FakeTerminal terminal = new (5, 6);
+    check terminal.write("abc\r\ndef");
+    terminal.resize(20, 6);
+    test:assertEquals(terminal.screenLines().slice(0, 3), ["abc", "def", ""]);
+}
+
+@test:Config {}
+function testWithoutReflowNarrowingCutsTheText() returns error? {
+    FakeTerminal terminal = new (10, 6);
+    check terminal.write("abcdefghijkl");
+    terminal.resize(4, 6, reflow = false);
+    test:assertEquals(terminal.screenLines().slice(0, 3), ["abcd", "kl", ""]);
+}
+
+@test:Config {}
+function testTheCursorStaysOnItsCharacterWhenReflowing() returns error? {
+    FakeTerminal terminal = new (10, 6);
+    check terminal.write("abcdefghijkl\r\nxy");
+    terminal.resize(4, 6);
+    test:assertEquals(terminal.cursorPosition(), [3, 2]);
+}
+
+@test:Config {}
+function testReflowPushesRowsThatNoLongerFitIntoTheScrollback() returns error? {
+    FakeTerminal terminal = new (10, 3);
+    check terminal.write("aaaaaaaaaa\r\nbbbbbbbbbb\r\ncc");
+    terminal.resize(5, 3);
+    test:assertEquals(terminal.scrollbackLines().length() > 0, true);
+    test:assertEquals(terminal.screenLines()[2], "cc");
+}
+
+@test:Config {}
+function testTheAlternateScreenRestoresTheMainScreen() returns error? {
+    FakeTerminal terminal = new (20, 4);
+    check terminal.write("history\r\nline two");
+    check terminal.write("\u{1b}[?1049h");
+    test:assertEquals(terminal.screenText(), "");
+    check terminal.write("full screen app");
+    test:assertEquals(terminal.screenText(), "full screen app");
+    check terminal.write("\u{1b}[?1049l");
+    test:assertEquals(terminal.screenText(), "history\nline two");
+    test:assertEquals(terminal.cursorPosition(), [1, 8]);
+}

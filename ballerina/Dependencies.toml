@@ -20,6 +20,7 @@ dependencies = [
 ]
 modules = [
 	{org = "ayesha", packageName = "termui", moduleName = "termui"},
+	{org = "ayesha", packageName = "termui", moduleName = "termui.render"},
 	{org = "ayesha", packageName = "termui", moduleName = "termui.term"},
 	{org = "ayesha", packageName = "termui", moduleName = "termui.text"}
 ]
@@ -124,7 +125,7 @@ modules = [
 [[package]]
 org = "ballerina"
 name = "time"
-version = "2.8.3"
+version = "2.8.4"
 dependencies = [
 	{org = "ballerina", name = "jballerina.java"}
 ]

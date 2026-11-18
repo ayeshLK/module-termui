@@ -34,13 +34,13 @@ Depends on `termui-scaffold` for the build, test, and CI setup. Group 1 is a gat
 
 ## 5. Renderer (`render` module)
 
-- [ ] 5.1 Implement the cell buffer and frame diffing, and verify tests that an unchanged frame writes nothing and a one-cell change writes only that cell
-- [ ] 5.2 Implement the inline viewport with variable region height, and verify tests on the fake backend that earlier content is untouched and no leftover rows remain after growing and shrinking
-- [ ] 5.3 Implement commit-above, with prose written as logical lines and structured blocks pre-wrapped, and verify tests show committed output above the live region and never redrawn
-- [ ] 5.4 Implement resize handling (compute the rows the old region now occupies, clear, and redraw), and verify fake-backend tests simulating reflowing and non-reflowing terminals leave no stale rows when narrowing and widening
-- [ ] 5.5 Implement alternate-screen mode, and verify a test that entering and leaving restores prior contents
-- [ ] 5.6 Implement the plain renderer and the testable-frame inspection, and verify tests that piped output has no escape sequences, spinners are not repeated, and a test can assert on text and styles
-- [ ] 5.7 Document the renderer (live region, commit-above, resize behavior and its limits) in `Module.md`, and verify the documented snippets compile
+- [x] 5.1 Implement the cell buffer and frame diffing, and verify tests that an unchanged frame writes nothing and a one-cell change writes only that cell
+- [x] 5.2 Implement the inline viewport with variable region height, and verify tests on the fake backend that earlier content is untouched and no leftover rows remain after growing and shrinking
+- [x] 5.3 Implement commit-above, with prose written as logical lines and structured blocks pre-wrapped, and verify tests show committed output above the live region and never redrawn
+- [x] 5.4 Implement resize handling (compute the rows the old region now occupies, clear, and redraw), and verify fake-backend tests simulating reflowing and non-reflowing terminals leave no stale rows when narrowing and widening
+- [x] 5.5 Implement alternate-screen mode, and verify a test that entering and leaving restores prior contents
+- [x] 5.6 Implement the plain renderer and the testable-frame inspection, and verify tests that piped output has no escape sequences, spinners are not repeated, and a test can assert on text and styles
+- [x] 5.7 Document the renderer (live region, commit-above, resize behavior and its limits) in `Module.md`, and verify the documented snippets compile
 
 ## 6. MVU runtime (root module)
 

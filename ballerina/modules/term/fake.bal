@@ -120,9 +120,11 @@ public isolated class FakeTerminal {
     #
     # + width - the new number of columns
     # + height - the new number of rows
-    public isolated function resize(int width, int height) {
+    # + reflow - whether the terminal re-wraps text that was wrapped automatically when the width
+    #            changes (most modern terminals do); with `false` the text is cut off instead
+    public isolated function resize(int width, int height, boolean reflow = true) {
         lock {
-            resizeScreen(self.screen, width, height);
+            resizeScreen(self.screen, width, height, reflow);
             self.script.push({kind: "resize", width, height});
         }
     }
