@@ -1,0 +1,10 @@
+[package]
+org = "ayesha"
+name = "agent_harness"
+version = "0.1.0"
+distribution = "2201.14.2"
+
+[[dependency]]
+org = "ayesha"
+name = "termui"
+version = "0.1.0"

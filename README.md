@@ -96,8 +96,13 @@ You write a `Program` with two methods: `update` is called for each message and 
 
 | Example | Shows |
 |---|---|
+| [`examples/agent-harness`](examples/agent-harness) | **A Claude-Code-style agent harness with a scripted "model":** a prompt with history, streamed answers with colored code blocks, tool calls with approval prompts, a status line with elapsed time and tokens, and Esc to interrupt |
+| [`examples/agent-demo`](examples/agent-demo) | The same program run three ways: interactively, with its output redirected, and with no terminal at all (the recording at the top) |
 | [`examples/counter`](examples/counter) | The smallest interactive program (the quickstart above); clone the repo and `bal run` in the folder |
-| [`examples/agent-demo`](examples/agent-demo) | An agent-style app: streamed text, a spinner and status line, an approval prompt, a result on standard output. Run it three ways, as in the recording above |
+
+![The agent harness: a prompt typed, a streamed answer with a code block, and two approval prompts](docs/assets/harness-demo.gif)
+
+<sub>The [agent harness](examples/agent-harness), recorded from the real program.</sub>
 
 ## Documentation
 
