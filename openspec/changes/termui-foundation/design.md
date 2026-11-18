@@ -123,3 +123,24 @@ Measured on Ballerina 2201.14.2 / JDK 25 / macOS, driving a throwaway Ballerina 
    | same, AppCDS and C1 only | 80 ms |
 
    The three stdlib imports cost about 5 ms; the Ballerina runtime itself is the bulk of the gap above the JVM floor. **Proposed startup budget:** time to first frame of **250 ms or less** for a plain `java -jar` on a developer laptop (about 1.5x the measured 161 ms, leaving room for the foundation's own code), and **120 ms or less** with a documented AppCDS launcher (measured 92 ms). Task 8.3 re-measures on the finished foundation and confirms or revises these numbers.
+
+## Go / no-go for the pure-Ballerina Unix backend (task 1.6)
+
+**Recommendation: GO.** All six spike questions were answered, and none requires the JLine/Java-shim fallback.
+
+| # | Question | Outcome | Adjustment to the design |
+|---|---|---|---|
+| 1 | Raw tty reads and read timeouts | Works with blocking reads; `min 0 time 1` fails (zero-byte read is a sticky EoF) | Esc versus sequence is decided by a decoder-level timeout; the decoder tolerates sequences split across reads |
+| 2 | Blocking read starving strands | No starvation observed | The reader is an ordinary `start`ed strand |
+| 3 | `isolated` enforcement | Enforced through types, not by `start` | Effect API takes `isolated function` and `readonly` messages; the queue is an `isolated` class with `lock` |
+| 4 | `onGracefulStop` on signals | Restores the terminal on SIGTERM, SIGINT, SIGHUP | None; only SIGKILL leaves the terminal raw (README documents `stty sane`) |
+| 5 | Write throughput and flushing | `io:print` flushes immediately; one write per frame is 4-6x faster than per row | One string and one print per frame; synchronized output where supported |
+| 6 | Startup | About 160 ms to first frame on the JVM, about 90 ms with AppCDS | Budget proposed: 250 ms (120 ms with an AppCDS launcher) |
+
+**Not covered by the spike (carried into later tasks):**
+- Everything was measured on macOS only; Linux behavior (pty, `stty`, signals) is confirmed by the `tty` group in CI (task 4.2 onward).
+- A very small thread pool is not proven safe for the blocking reader (task 1.2 caveat); CI runners (2-4 cores) will show it.
+- The cost of spawning `stty` through `os:exec` for resize polling was not measured; task 4.3 should measure it and prefer the cursor-position-report method or DEC mode 2048 if it is slow.
+- Windows remains out of scope.
+
+If a later task finds one of these assumptions false, the fallback is the JLine backend behind the same `Terminal` interface, as designed.
