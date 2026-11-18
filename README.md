@@ -1,17 +1,27 @@
-# termui
+<h1 align="center">termui</h1>
 
-**Build agent-style terminal apps in Ballerina: streaming output, a live region, and approval prompts that stay well-behaved in pipes and CI.**
+<p align="center">
+  <a href="https://github.com/ayeshLK/module-termui/actions/workflows/ci.yml"><img src="https://github.com/ayeshLK/module-termui/actions/workflows/ci.yml/badge.svg" alt="Build"></a>
+  <a href="LICENSE"><img src="https://img.shields.io/github/license/ayeshLK/module-termui" alt="License"></a>
+  <a href="https://central.ballerina.io/ayesha/termui/0.1.0"><img src="https://img.shields.io/badge/Ballerina%20Central-ayesha%2Ftermui-blue" alt="Ballerina Central"></a>
+  <a href="https://github.com/ayeshLK/module-termui/releases"><img src="https://img.shields.io/github/v/release/ayeshLK/module-termui" alt="Release"></a>
+  <img src="https://img.shields.io/badge/Ballerina-2201.14-blue" alt="Ballerina 2201.14">
+  <img src="https://img.shields.io/badge/status-experimental-orange" alt="Status: experimental">
+</p>
 
-[![Build](https://github.com/ayeshLK/module-termui/actions/workflows/ci.yml/badge.svg)](https://github.com/ayeshLK/module-termui/actions/workflows/ci.yml)
-[![License](https://img.shields.io/github/license/ayeshLK/module-termui)](LICENSE)
-[![Ballerina Central](https://img.shields.io/badge/Ballerina%20Central-ayesha%2Ftermui-blue)](https://central.ballerina.io/ayesha/termui/0.1.0)
-[![Release](https://img.shields.io/github/v/release/ayeshLK/module-termui)](https://github.com/ayeshLK/module-termui/releases)
-![Ballerina](https://img.shields.io/badge/Ballerina-2201.14-blue)
-![Status](https://img.shields.io/badge/status-experimental-orange)
+<br>
 
-![The agent harness: a prompt typed, a streamed answer with a code block, and two approval prompts](docs/assets/harness-demo.gif)
+<p align="center">
+  <b>Build agent-style terminal apps in Ballerina: streaming output, a live region, and approval prompts that stay well-behaved in pipes and CI.</b>
+</p>
 
-<sub>The [agent harness](examples/agent-harness), recorded from the real program: a prompt with history, a streamed answer with a colored code block, tool calls, and two approval prompts.</sub>
+<p align="center">
+  <img src="docs/assets/harness-demo.gif" alt="The agent harness: a prompt typed, a streamed answer with a code block, and two approval prompts" width="820">
+</p>
+
+<p align="center">
+  <sub>The <a href="examples/agent-harness">agent harness</a>, recorded from the real program: a prompt with history, a streamed answer with a colored code block, tool calls, and two approval prompts.</sub>
+</p>
 
 > **Status: experimental (0.1).** The API can still change before 1.0. macOS and Linux only.
 
