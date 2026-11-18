@@ -9,8 +9,8 @@ output, and non-blocking input. It is a UI/CLI toolkit only; agent logic stays i
 
 ## Requirements
 
-- JDK 21
-- Ballerina 2201.13.5 (the version pinned as `ballerinaLangVersion` in `gradle.properties`)
+- JDK 25 (Ballerina 2201.14 and later need it)
+- Ballerina 2201.14.2 (the version pinned as `ballerinaLangVersion` in `gradle.properties`)
 - macOS or Linux (Windows is not supported yet)
 - `python3` (used by the `tty` tests to allocate a pseudo-terminal)
 - `packageUser` and `packagePAT` environment variables: a GitHub user and a token that can read
@@ -18,6 +18,9 @@ output, and non-blocking input. It is a UI/CLI toolkit only; agent logic stays i
   even for builds that publish nothing.
 
 ## Build and test
+
+The build uses the Gradle wrapper (Gradle 9.5.1). Run it on JDK 25, for example with
+`JAVA_HOME` pointing at a JDK 25 install, because the Ballerina tools it unpacks need that Java.
 
 Build and test go through Gradle, not `bal` directly, because Gradle regenerates
 `ballerina/Ballerina.toml` and `ballerina/version.bal` from the templates in `build-config/`.

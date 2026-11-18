@@ -80,8 +80,15 @@ subprojects {
 
 def moduleVersion = project.version.replace("-SNAPSHOT", "")
 
-task build {
-    dependsOn(':termui-ballerina:build')
+// The release plugin may already provide a `build` lifecycle task, so extend it when it exists.
+if (!tasks.names.contains('build')) {
+    tasks.register('build') {
+        dependsOn(':termui-ballerina:build')
+    }
+} else {
+    tasks.named('build') {
+        dependsOn(':termui-ballerina:build')
+    }
 }
 
 release {

@@ -1,5 +1,5 @@
 name: Set up build
-description: Install JDK 21 and, optionally, the Ballerina distribution pinned in gradle.properties.
+description: Install the JDK that the pinned Ballerina line needs and, optionally, the Ballerina distribution itself.
 
 inputs:
   install-ballerina:
@@ -11,7 +11,7 @@ inputs:
     required: false
     default: ""
   install-jdk:
-    description: Install JDK 21 (turn off when GraalVM provides the JDK).
+    description: Install the JDK (turn off when GraalVM provides it).
     required: false
     default: "true"
 
@@ -19,6 +19,9 @@ outputs:
   ballerina-version:
     description: The Ballerina version that was resolved.
     value: ${{ steps.resolve.outputs.version }}
+  java-version:
+    description: The JDK major version that Ballerina line needs.
+    value: ${{ steps.resolve.outputs.java-version }}
 
 runs:
   using: composite
@@ -33,15 +36,26 @@ runs:
         if [ -z "${VERSION}" ]; then
           VERSION="$(grep -E '^ballerinaLangVersion=' gradle.properties | cut -d= -f2)"
         fi
+        # Same mapping as ballerina-platform/ballerina-library's resolve-java-version action:
+        # the minor version of 2201.<minor>.<patch> decides the JDK.
+        MINOR="$(echo "${VERSION}" | cut -d. -f2)"
+        if ! [[ "${MINOR}" =~ ^[0-9]+$ ]] || [ "${MINOR}" -ge 14 ]; then
+          JAVA_VERSION=25
+        elif [ "${MINOR}" -ge 11 ]; then
+          JAVA_VERSION=21
+        else
+          JAVA_VERSION=17
+        fi
         echo "version=${VERSION}" >> "${GITHUB_OUTPUT}"
-        echo "Ballerina version: ${VERSION}"
+        echo "java-version=${JAVA_VERSION}" >> "${GITHUB_OUTPUT}"
+        echo "Ballerina version: ${VERSION} (JDK ${JAVA_VERSION})"
 
-    - name: Set up JDK 21
+    - name: Set up JDK ${{ steps.resolve.outputs.java-version }}
       if: ${{ inputs.install-jdk == 'true' }}
       uses: actions/setup-java@d1374f8ac74474200d16ef8ecee22c7ae7a51880 # v6.3.0
       with:
         distribution: temurin
-        java-version: "21"
+        java-version: ${{ steps.resolve.outputs.java-version }}
 
     - name: Set up Ballerina
       if: ${{ inputs.install-ballerina == 'true' }}

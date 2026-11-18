@@ -29,6 +29,7 @@ jobs:
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       - name: Set up Ballerina
+        id: setup
         uses: ./.github/actions/setup-build
         with:
           install-ballerina: "true"
@@ -37,7 +38,7 @@ jobs:
       - name: Set up GraalVM
         uses: graalvm/setup-graalvm@60e76998d25690099182b796e99b8804da582d90 # v1.6.10
         with:
-          java-version: "21"
+          java-version: ${{ steps.setup.outputs.java-version }}
           distribution: graalvm-community
           set-java-home: "true"
           github-token: ${{ secrets.GITHUB_TOKEN }}

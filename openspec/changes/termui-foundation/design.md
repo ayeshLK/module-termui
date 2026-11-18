@@ -2,7 +2,7 @@
 
 ## Context
 
-See `proposal.md` - Why. The project is greenfield: no code exists yet. `termui-scaffold` supplies the build and CI. The toolchain is Ballerina 2201.13.5 on Java 21 with no GraalVM installed. Reference designs are Ratatui (cell buffer, diffing, inline viewport, `insert_before`) and Ink (declarative components, a `<Static>` region for committed output). The primary consumers are agentic CLIs that stream output while accepting input.
+See `proposal.md` - Why. The project is greenfield: no code exists yet. `termui-scaffold` supplies the build and CI. The toolchain is Ballerina 2201.14.2, which needs JDK 25 (and so Gradle 9); GraalVM `native-image` is not installed locally. Reference designs are Ratatui (cell buffer, diffing, inline viewport, `insert_before`) and Ink (declarative components, a `<Static>` region for committed output). The primary consumers are agentic CLIs that stream output while accepting input.
 
 Findings from inspecting the local distribution:
 - The standard library exposes `os:exec` (process spawn), `io` byte channels and stdout printing, `runtime:sleep`, and `runtime:onGracefulStop`.
