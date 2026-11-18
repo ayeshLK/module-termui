@@ -307,3 +307,101 @@ function testAResultOnTheTerminalDoesNotCorruptTheLiveRegion() returns error? {
     check ui.run(new ResultProgram(ui));
     test:assertEquals(terminal.screenLines().slice(0, 6), ["result 1", "result 2", "result 3", "live line", "| status", ""]);
 }
+
+// ---- bottom anchoring -------------------------------------------------------------------------------------
+
+function onlyText(string[] lines) returns string[] {
+    string[] out = [];
+    foreach string line in lines {
+        if line != "" {
+            out.push(line);
+        }
+    }
+    return out;
+}
+
+function runOnFake(boolean anchor, boolean useOptions) returns term:FakeTerminal|error {
+    term:FakeTerminal terminal = new (40, 10);
+    check terminal.write("banner\r\n");
+    term:Environment environment = term:environmentFrom({COLUMNS: "40", LINES: "10"}, true, true, true);
+    Interface ui = new (environment, terminal = terminal);
+    terminal.pushText("rq");
+    if useOptions {
+        Options options = ui.options();
+        options.anchorBottom = anchor;
+        check run(new ResultProgram(ui), terminal, options, ui.renderer(anchorBottom = anchor));
+    } else {
+        check ui.run(new ResultProgram(ui), anchorBottom = anchor);
+    }
+    return terminal;
+}
+
+@test:Config {}
+function testTheDefaultStartsTheRegionOnTheCursorRow() returns error? {
+    term:FakeTerminal terminal = check runOnFake(false, false);
+    test:assertEquals(terminal.screenLines().slice(0, 4), ["banner", "result 1", "live line", "| status"]);
+}
+
+@test:Config {}
+function testTheOptionPutsTheFirstFrameOnTheLastRows() returns error? {
+    foreach boolean viaInterface in [true, false] {
+        term:FakeTerminal terminal = check runOnFake(true, !viaInterface);
+        string[] seen = [...terminal.scrollbackLines(), ...terminal.screenLines()];
+        // a result is committed through the renderer only when the run goes through the interface
+        string[] expected = viaInterface ? ["banner", "result 1", "live line", "| status"] : ["banner", "live line", "| status"];
+        test:assertEquals(onlyText(seen), expected, "the same text, in the same order");
+        // the program quit, which moves to a fresh line below the region: one row of scroll
+        test:assertEquals(terminal.screenLines().slice(7), ["live line", "| status", ""]);
+    }
+}
+
+@test:Config {}
+function testTheOptionLeavesBlankRowsBetweenTheOutputAndTheRegion() returns error? {
+    term:FakeTerminal terminal = new (40, 10);
+    check terminal.write("banner\r\n");
+    render:Renderer drawing = new render:InlineRenderer(terminal, 40, 10, true, true, true);
+    check drawing.draw([[{text: "live"}]]);
+    test:assertEquals(terminal.screenLines(), ["banner", "", "", "", "", "", "", "", "", "live"]);
+}
+
+class OutputProgram {
+    *Program;
+
+    public function update(Message message) returns Command? {
+        if message is InputEnded {
+            return batch([commitProse([[{text: "one"}]]), commitBlock([[{text: "| two |"}]]), quit()]);
+        }
+        return ();
+    }
+
+    public function view() returns text:Span[][] {
+        return [[{text: "status"}]];
+    }
+}
+
+@test:Config {}
+function testNonInteractiveOutputDoesNotDependOnTheOption() returns error? {
+    string dir = check newWorkDir();
+    foreach boolean anchor in [false, true] {
+        Interface ui = new (env(false, false), "/dev/tty", dir + "/" + anchor.toString() + ".txt");
+        check ui.run(new OutputProgram(), anchorBottom = anchor);
+    }
+    test:assertEquals(check readFile(dir + "/true.txt"), check readFile(dir + "/false.txt"));
+    // the renderers an Interface hands out for headless modes ignore the option too
+    Interface ui = new (env(false, false));
+    test:assertTrue(ui.renderer(anchorBottom = true) is render:PlainRenderer);
+}
+
+@test:Config {}
+function testTheOptionIsIgnoredWhenTheRunIsNotInteractive() returns error? {
+    term:FakeTerminal plain = new (40, 10);
+    term:FakeTerminal anchored = new (40, 10);
+    foreach term:FakeTerminal terminal in [plain, anchored] {
+        check terminal.write("banner\r\n");
+        terminal.pushText("q");
+    }
+    check run(new ResultProgram(new Interface(env(true, true), terminal = plain)), plain, {interactive: false});
+    check run(new ResultProgram(new Interface(env(true, true), terminal = anchored)), anchored,
+            {interactive: false, anchorBottom: true});
+    test:assertEquals(anchored.screenLines(), plain.screenLines());
+}

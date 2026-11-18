@@ -51,6 +51,20 @@ is attached to and hands out the matching terminal, renderer, and options:
 
 Detecting the environment costs one short process (about 25 ms), so do it once at startup.
 
+### Keeping the input at the bottom
+
+By default the live region starts on the row where the program was started, so on a fresh screen the
+prompt sits at the top. Pass `anchorBottom = true` and it stays on the last rows of the terminal, like a
+chat input, while the blank rows above it are used for output before anything scrolls:
+
+```ballerina
+check ui.run(new Report(), anchorBottom = true);
+```
+
+It needs a terminal that reports its cursor position (most do; one that does not is drawn as without the
+option) and has no effect when the output is not an interactive terminal. With `termui:run` directly, set
+`anchorBottom` in `Options`. The details and limits are in the `termui.render` module's documentation.
+
 ### Example
 
 ```ballerina

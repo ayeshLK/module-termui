@@ -37,6 +37,9 @@ public type Program object {
 #
 # + colors - whether to write color sequences
 # + reflow - whether the terminal re-wraps text when it is resized (see `render:InlineRenderer`)
+# + anchorBottom - whether to keep the live region on the last rows of the terminal, using the blank rows
+#                  above it before the screen scrolls (see `render:InlineRenderer`); off by default, and
+#                  ignored when `interactive` is `false`
 # + pollInterval - seconds the loop sleeps when there is nothing to do
 # + interactive - whether a user can answer questions; when `false`, `confirm` and `choose` return
 #                 their default or a `NoTerminal` error at once
@@ -45,6 +48,7 @@ public type Program object {
 public type Options record {|
     boolean colors = true;
     boolean reflow = true;
+    boolean anchorBottom = false;
     decimal pollInterval = 0.005;
     boolean interactive = true;
     Command? initialCommand = ();
@@ -267,7 +271,8 @@ public function run(Program program, term:Terminal terminal, Options options = {
     Engine? engine = ();
     do {
         term:Size size = check terminal.size();
-        render:Renderer drawing = renderer ?: new render:InlineRenderer(terminal, size.width, size.height, options.colors, options.reflow);
+        render:Renderer drawing = renderer ?: new render:InlineRenderer(terminal, size.width, size.height, options.colors, options.reflow,
+            options.anchorBottom && options.interactive);
         Engine running = new (program, terminal, drawing, options.interactive);
         engine = running;
         running.launch(options.initialCommand);

@@ -45,6 +45,12 @@ answer it instead of reaching the program (`y`, `n`, Enter for the default, Esc 
 Enter, Esc for a choice). They return an error when the program ends first or the user cancels a choice.
 (The method is `choose` because `select` is a reserved word.)
 
+### Where the interface sits
+
+`Options.anchorBottom` (and the `anchorBottom` parameter of `Interface.run`) keeps the live region on the last
+rows of the terminal instead of where the program was started. It is off by default; see the `termui.render`
+module for how it behaves and where it does not apply. It is ignored when `interactive` is `false`.
+
 ### Example
 
 ```ballerina

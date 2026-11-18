@@ -28,9 +28,9 @@ Group 1 is a gate: groups 2 onward build on its answers. If the cursor position 
 
 ## 4. Runtime plumbing
 
-- [ ] 4.1 Add `Options.anchorBottom` (default `false`) and pass it to the renderer that `run` creates; verify runtime tests on `FakeTerminal` that the default output is unchanged and that with the option on the first frame is on the last rows
-- [ ] 4.2 Add `anchorBottom` to `Interface.renderer` and `Interface.run`, ignored in the non-interactive modes; verify tests that plain, piped, and headless output is byte-identical with the option on and off
-- [ ] 4.3 Document the option in `Package.md` and the root `Module.md`; verify the documented snippets compile
+- [x] 4.1 Add `Options.anchorBottom` (default `false`) and pass it to the renderer that `run` creates; verify runtime tests on `FakeTerminal` that the default output is unchanged and that with the option on the first frame is on the last rows
+- [x] 4.2 Add `anchorBottom` to `Interface.renderer` and `Interface.run`, ignored in the non-interactive modes; verify tests that plain, piped, and headless output is byte-identical with the option on and off
+- [x] 4.3 Document the option in `Package.md` and the root `Module.md`; verify the documented snippets compile
 
 ## 5. Example, recording, and integration
 

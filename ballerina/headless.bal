@@ -74,11 +74,13 @@ public class Interface {
     # A renderer that matches the mode: the inline interface on a terminal, plain text otherwise.
     #
     # + reflow - whether the terminal re-wraps text on resize (see `render:InlineRenderer`)
+    # + anchorBottom - whether to keep the live region on the last rows of the terminal; ignored unless the
+    #                  interface is drawn on a terminal
     # + return - the renderer
-    public function renderer(boolean reflow = true) returns render:Renderer {
+    public function renderer(boolean reflow = true, boolean anchorBottom = false) returns render:Renderer {
         if self.mode == "interactive" || self.mode == "pipedOutput" {
             return new render:InlineRenderer(self.terminal, self.environment.width, self.environment.height,
-                self.colorsOnTerminal(), reflow);
+                self.colorsOnTerminal(), reflow, anchorBottom);
         }
         return new render:PlainRenderer(self.terminal, self.environment.width);
     }
@@ -115,11 +117,14 @@ public class Interface {
     #
     # + program - the application
     # + initialCommand - a command to carry out before the first message, for example to start an effect
+    # + anchorBottom - whether to keep the live region on the last rows of the terminal (see
+    #                  `render:InlineRenderer`); ignored unless the interface is drawn on a terminal
     # + return - an error when the terminal cannot be used or drawing fails
-    public function run(Program program, Command? initialCommand = ()) returns error? {
+    public function run(Program program, Command? initialCommand = (), boolean anchorBottom = false) returns error? {
         Options options = self.options();
         options.initialCommand = initialCommand;
-        render:Renderer drawing = self.renderer();
+        options.anchorBottom = anchorBottom;
+        render:Renderer drawing = self.renderer(anchorBottom = anchorBottom);
         self.active = drawing;
         error? outcome = run(program, self.terminal, options, drawing);
         self.active = ();
