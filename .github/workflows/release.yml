@@ -1,0 +1,75 @@
+name: Publish Release
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  release:
+    name: Release package
+    runs-on: ubuntu-22.04
+    if: github.repository_owner == 'ayeshLK'
+    env:
+      packageUser: ${{ github.actor }}
+      packagePAT: ${{ secrets.GITHUB_TOKEN }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          token: ${{ secrets.BALLERINA_BOT_TOKEN }}
+
+      - name: Set up build
+        uses: ./.github/actions/setup-build
+        with:
+          install-ballerina: "true"
+
+      - name: Configure git
+        env:
+          BOT_USERNAME: ${{ secrets.BALLERINA_BOT_USERNAME }}
+          BOT_EMAIL: ${{ secrets.BALLERINA_BOT_EMAIL }}
+        run: |
+          git config --global user.name "${BOT_USERNAME}"
+          git config --global user.email "${BOT_EMAIL}"
+
+      - name: Build without tests
+        run: ./gradlew build -x test
+
+      - name: Test (default group)
+        run: ./gradlew test
+
+      - name: Test (tty group)
+        run: ./gradlew test -Pgroups=tty
+
+      - name: Resolve the release version
+        run: |
+          VERSION="$(grep -E '^version=' gradle.properties | cut -d= -f2 | sed 's/-SNAPSHOT$//')"
+          echo "VERSION=${VERSION}" >> "${GITHUB_ENV}"
+          echo "Release version: ${VERSION}"
+
+      - name: Create the release branch
+        run: git checkout -b "release-${VERSION}"
+
+      - name: Remove build output
+        run: rm -rf ballerina/target ballerina/build
+
+      - name: Publish the package
+        env:
+          GITHUB_TOKEN: ${{ secrets.BALLERINA_BOT_TOKEN }}
+          BALLERINA_CENTRAL_ACCESS_TOKEN: ${{ secrets.BALLERINA_CENTRAL_ACCESS_TOKEN }}
+          publishUser: ${{ secrets.BALLERINA_BOT_USERNAME }}
+          publishPAT: ${{ secrets.BALLERINA_BOT_TOKEN }}
+        run: |
+          ./gradlew clean release -Prelease.useAutomaticVersion=true
+          ./gradlew -Pversion="${VERSION}" publish -x test -PpublishToCentral=true
+
+      - name: Create the GitHub release and the sync PR
+        env:
+          GITHUB_TOKEN: ${{ secrets.BALLERINA_BOT_TOKEN }}
+          BASE_BRANCH: ${{ github.ref_name }}
+        run: |
+          gh release create "v${VERSION}" --title "module-termui-v${VERSION}"
+          gh pr create --base "${BASE_BRANCH}" \
+            --title "[Automated] Sync ${BASE_BRANCH} after ${VERSION} release" \
+            --body "Sync ${BASE_BRANCH} after ${VERSION} release"

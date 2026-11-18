@@ -1,0 +1,44 @@
+name: Daily build
+
+# Builds and tests against the latest released Ballerina distribution, in addition to the
+# version pinned in gradle.properties, to catch breakage early.
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "30 2 * * *"
+
+permissions:
+  contents: read
+
+jobs:
+  latest-ballerina:
+    name: Build with latest Ballerina
+    runs-on: ubuntu-22.04
+    if: github.event_name == 'workflow_dispatch' || github.repository_owner == 'ayeshLK'
+    env:
+      packageUser: ${{ github.actor }}
+      packagePAT: ${{ secrets.GITHUB_TOKEN }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Set up build with the latest Ballerina
+        uses: ./.github/actions/setup-build
+        with:
+          install-ballerina: "true"
+          ballerina-version: latest
+
+      - name: Resolve the installed Ballerina version
+        run: |
+          BAL_VERSION="$(bal version | head -n 1 | awk '{print $2}')"
+          echo "BAL_VERSION=${BAL_VERSION}" >> "${GITHUB_ENV}"
+          echo "Latest Ballerina: ${BAL_VERSION}"
+
+      - name: Build
+        run: ./gradlew build -x test -PballerinaLangVersion="${BAL_VERSION}"
+
+      - name: Test (default group)
+        run: ./gradlew test -PballerinaLangVersion="${BAL_VERSION}"
+
+      - name: Test (tty group)
+        run: ./gradlew test -Pgroups=tty -PballerinaLangVersion="${BAL_VERSION}"

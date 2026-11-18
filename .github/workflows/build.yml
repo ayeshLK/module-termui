@@ -1,0 +1,47 @@
+name: Build and test
+
+# Reusable build used by the pull-request and main-branch workflows.
+on:
+  workflow_call:
+    secrets:
+      CODECOV_TOKEN:
+        required: false
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    name: Build on ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-22.04, macos-latest]
+    env:
+      packageUser: ${{ github.actor }}
+      packagePAT: ${{ secrets.GITHUB_TOKEN }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Set up build
+        uses: ./.github/actions/setup-build
+
+      # Build and test run separately: the Ballerina Gradle plugin only supports test-group
+      # selection with `gradlew test`, not with `gradlew build`.
+      - name: Build
+        run: ./gradlew build -x test
+
+      - name: Test (default group)
+        run: ./gradlew test
+
+      - name: Test (tty group, real pseudo-terminal)
+        run: ./gradlew test -Pgroups=tty
+
+      - name: Upload coverage
+        if: ${{ matrix.os == 'ubuntu-22.04' }}
+        uses: codecov/codecov-action@303a32d7a59b442fa8d48b6a1cc6825c09c847a5 # v7.1.1
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          fail_ci_if_error: false

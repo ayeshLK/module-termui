@@ -1,0 +1,50 @@
+name: Set up build
+description: Install JDK 21 and, optionally, the Ballerina distribution pinned in gradle.properties.
+
+inputs:
+  install-ballerina:
+    description: Install the Ballerina distribution (needed by bal scan and bal test --graalvm).
+    required: false
+    default: "false"
+  ballerina-version:
+    description: Ballerina version to install; defaults to ballerinaLangVersion from gradle.properties.
+    required: false
+    default: ""
+  install-jdk:
+    description: Install JDK 21 (turn off when GraalVM provides the JDK).
+    required: false
+    default: "true"
+
+outputs:
+  ballerina-version:
+    description: The Ballerina version that was resolved.
+    value: ${{ steps.resolve.outputs.version }}
+
+runs:
+  using: composite
+  steps:
+    - name: Resolve Ballerina version
+      id: resolve
+      shell: bash
+      env:
+        REQUESTED_VERSION: ${{ inputs.ballerina-version }}
+      run: |
+        VERSION="${REQUESTED_VERSION}"
+        if [ -z "${VERSION}" ]; then
+          VERSION="$(grep -E '^ballerinaLangVersion=' gradle.properties | cut -d= -f2)"
+        fi
+        echo "version=${VERSION}" >> "${GITHUB_OUTPUT}"
+        echo "Ballerina version: ${VERSION}"
+
+    - name: Set up JDK 21
+      if: ${{ inputs.install-jdk == 'true' }}
+      uses: actions/setup-java@d1374f8ac74474200d16ef8ecee22c7ae7a51880 # v6.3.0
+      with:
+        distribution: temurin
+        java-version: "21"
+
+    - name: Set up Ballerina
+      if: ${{ inputs.install-ballerina == 'true' }}
+      uses: ballerina-platform/setup-ballerina@585120e3f0e540bf127376ee6e75d39e8ce6aaa4 # v1.1.5
+      with:
+        version: ${{ steps.resolve.outputs.version }}

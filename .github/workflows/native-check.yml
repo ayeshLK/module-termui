@@ -1,0 +1,57 @@
+name: GraalVM Check
+
+# Runs the package's tests as a GraalVM native image. This is a v1 goal and is not a required check:
+# a failure is visible here but does not block merging or releasing.
+on:
+  workflow_dispatch:
+  pull_request:
+  schedule:
+    - cron: "30 18 1 * *"
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.run_id }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  native:
+    name: Test with GraalVM native image
+    runs-on: ubuntu-22.04
+    # Add the "Skip GraalVM Check" label to a pull request to opt out.
+    if: ${{ github.event_name != 'pull_request' || !contains(github.event.pull_request.labels.*.name, 'Skip GraalVM Check') }}
+    env:
+      packageUser: ${{ github.actor }}
+      packagePAT: ${{ secrets.GITHUB_TOKEN }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Set up Ballerina
+        uses: ./.github/actions/setup-build
+        with:
+          install-ballerina: "true"
+          install-jdk: "false"
+
+      - name: Set up GraalVM
+        uses: graalvm/setup-graalvm@60e76998d25690099182b796e99b8804da582d90 # v1.6.10
+        with:
+          java-version: "21"
+          distribution: graalvm-community
+          set-java-home: "true"
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Check the GraalVM installation
+        run: native-image --version
+
+      - name: Build the package
+        run: ./gradlew build
+
+      - name: Remove the JVM build output
+        run: rm -rf ballerina/target
+
+      # The tty group needs a pseudo-terminal helper that is not part of the native check.
+      - name: Test with GraalVM
+        working-directory: ballerina
+        run: bal test --graalvm --disable-groups tty

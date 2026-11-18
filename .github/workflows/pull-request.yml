@@ -1,0 +1,36 @@
+name: PR Build
+
+on: pull_request
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.run_id }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    name: Build
+    uses: ./.github/workflows/build.yml
+    secrets:
+      CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
+
+  scan:
+    name: Static analysis (bal scan)
+    runs-on: ubuntu-22.04
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Set up build
+        uses: ./.github/actions/setup-build
+        with:
+          install-ballerina: "true"
+
+      - name: Install bal scan
+        run: bal tool pull scan
+
+      - name: Scan the package
+        working-directory: ballerina
+        run: bal scan

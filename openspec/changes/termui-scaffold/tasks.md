@@ -26,25 +26,25 @@
 - [ ] 4.2 Add a CI step that runs the `tty` group on both OSes (pty via `script` on Linux and the BSD equivalent on macOS), and verify the step passes in the pull-request run
 - [ ] 4.3 Add `.github/workflows/ci.yml` for pushes to `main` with coverage upload, and verify a merge to `main` triggers a green run
 - [ ] 4.4 Add `.github/workflows/daily-build.yml` that builds and tests against the latest Ballerina distribution on Ubuntu, and verify a manual dispatch run completes and shows the Ballerina version used
-- [ ] 4.5 Verify no workflow exports the whole `secrets` object and that every third-party action is pinned (`grep` the workflows for `toJson(secrets)` and `@master`/`@main`)
+- [x] 4.5 Verify no workflow exports the whole `secrets` object and that every third-party action is pinned (`grep` the workflows for `toJson(secrets)` and `@master`/`@main`)
 - [ ] 4.6 Add a `bal scan` step to the pull-request workflow and verify a pull request run shows the scan results (and that an injected finding appears)
 
 ## 5. Native-image check
 
-- [ ] 5.1 Add `.github/workflows/native-check.yml` (monthly schedule and manual dispatch, skippable with a PR label) that builds with Gradle and then runs `bal test --graalvm` from `ballerina/` using `setup-ballerina` and `setup-graalvm`, is not a required check, and verify `actionlint` passes
+- [x] 5.1 Add `.github/workflows/native-check.yml` (monthly schedule and manual dispatch, skippable with a PR label) that builds with Gradle and then runs `bal test --graalvm` from `ballerina/` using `setup-ballerina` and `setup-graalvm`, is not a required check, and verify `actionlint` passes
 - [ ] 5.2 Run the workflow manually and verify it reports a clear pass or fail without blocking a pull request
 
 ## 6. Release and publishing
 
-- [ ] 6.1 Add `.github/workflows/release.yml` (manual dispatch, repository-owner guard, build and test, `release-<version>` branch, release plugin tag, Central publish, GitHub release, sync PR) adapted from `module-arxiv` without the Trivy step, and verify it with `actionlint` and a review that nothing publishes before tests pass
+- [x] 6.1 Add `.github/workflows/release.yml` (manual dispatch, repository-owner guard, build and test, `release-<version>` branch, release plugin tag, Central publish, GitHub release, sync PR) adapted from `module-arxiv` without the Trivy step, and verify it with `actionlint` and a review that nothing publishes before tests pass
 - [ ] 6.2 Add `.github/workflows/dev-stg-release.yml` for Dev/Stage Central publishing that never tags, and verify a Stage Central publish of a development version succeeds once the secrets exist
-- [ ] 6.3 Verify the release workflow does not run from a fork (confirm the owner guard on both release workflows)
+- [x] 6.3 Verify the release workflow does not run from a fork (confirm the owner guard on both release workflows)
 
 ## 7. Repository hygiene and documentation
 
-- [ ] 7.1 Add `.github/CODEOWNERS`, `.github/pull_request_template.md` (including the native-image checkbox), the Apache-2.0 `LICENSE`, and license headers on the build files, and verify each file exists and the headers match `module-arxiv`
-- [ ] 7.2 Write `README.md` covering the project purpose, how to build and test, the `tty` test group, the native-image check, and the release process, and verify the documented build and test commands run as written
-- [ ] 7.3 Document the secrets maintainers must provision (Ballerina bot username and token, Central release/dev/stage tokens, Codecov token) in the README, and verify the list matches every secret referenced in `.github/workflows/`
+- [x] 7.1 Add `.github/CODEOWNERS`, `.github/pull_request_template.md` (including the native-image checkbox), the Apache-2.0 `LICENSE`, and license headers on the build files, and verify each file exists and the headers match `module-arxiv`
+- [x] 7.2 Write `README.md` covering the project purpose, how to build and test, the `tty` test group, the native-image check, and the release process, and verify the documented build and test commands run as written
+- [x] 7.3 Document the secrets maintainers must provision (Ballerina bot username and token, Central release/dev/stage tokens, Codecov token) in the README, and verify the list matches every secret referenced in `.github/workflows/`
 - [ ] 7.4 Maintainer action: create the `ayeshLK/module-termui` GitHub repository, add it as `origin`, push `main`, provision those secrets, and verify `git remote -v` shows it and the pull-request and main workflows run end to end
 
 ## 8. Integration check
