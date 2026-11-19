@@ -97,7 +97,9 @@
 }
 .dg-focus > .dg-pill {
 	font-weight: 600;
-	box-shadow: 0 0 0 2px var(--dg-runtime-bg), 0 0 0 3px var(--dg-runtime);
+	/* the emphasis is drawn inside the box, so nothing reaches past its edge and an arrow never starts
+	   or ends inside a ring */
+	box-shadow: inset 0 0 0 2px var(--dg-runtime-bg), inset 0 0 0 3px var(--dg-runtime);
 }
 /* legend swatches */
 .dg-swatch.dg-outside {
