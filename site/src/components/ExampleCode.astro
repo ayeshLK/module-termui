@@ -1,0 +1,27 @@
+---
+// Shows source from a file in the repository, so a page cannot show code that is not in a program
+// that CI compiles. `file` is relative to the repository root. The leading comment block (licence
+// and notes) is dropped; `start` and `end` (1-based, inclusive, counted after that) pick an excerpt.
+import { Code } from '@astrojs/starlight/components';
+import { readFileSync } from 'node:fs';
+import { resolve } from 'node:path';
+
+interface Props {
+	file: string;
+	start?: number;
+	end?: number;
+	title?: string;
+	lang?: string;
+}
+
+const { file, start, end, title, lang = 'ballerina' } = Astro.props;
+const repoRoot = resolve(process.cwd(), '..');
+const raw = readFileSync(resolve(repoRoot, file), 'utf8').split('\n');
+let first = 0;
+while (first < raw.length && (raw[first].startsWith('//') || raw[first].trim() === '')) first++;
+const lines = raw.slice(first);
+if (lines.length && lines[lines.length - 1] === '') lines.pop();
+const picked = lines.slice((start ?? 1) - 1, end ?? lines.length);
+---
+
+<Code code={picked.join('\n')} lang={lang} title={title ?? file} />

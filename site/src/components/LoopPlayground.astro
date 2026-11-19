@@ -1,0 +1,153 @@
+---
+// An illustration of the update/view loop for the counter. It is written in JavaScript and models only
+// the shape of the loop (message, update, view, frame); it is not the termui runtime. The runnable
+// program is examples/counter.
+const example = 'https://github.com/ayeshLK/module-termui/tree/main/examples/counter';
+---
+
+<div class="loop" data-loop>
+	<p class="loop-note">
+		An illustration in JavaScript of the shape of the loop, not the termui runtime. The real program is
+		<a href={example}>examples/counter</a>.
+	</p>
+	<noscript>
+		<p class="loop-fallback">This illustration needs scripts. The counter program above shows the same loop.</p>
+	</noscript>
+	<div class="loop-grid" hidden data-live>
+		<section>
+			<h4>1. Send a message</h4>
+			<div class="loop-keys">
+				<button type="button" data-key="+">press +</button>
+				<button type="button" data-key="-">press -</button>
+				<button type="button" data-key="x">press x</button>
+				<button type="button" data-key="q">press q</button>
+			</div>
+			<p class="loop-hint">Each press is a <code>KeyEvent</code> message put on the queue.</p>
+		</section>
+		<section>
+			<h4>2. update(message)</h4>
+			<pre data-update>waiting for a message</pre>
+			<h4>State</h4>
+			<pre data-state>count = 0</pre>
+		</section>
+		<section>
+			<h4>3. view() &rarr; frame</h4>
+			<pre class="loop-frame" data-frame></pre>
+			<p class="loop-hint" data-hint></p>
+		</section>
+	</div>
+</div>
+
+<script>
+	for (const root of document.querySelectorAll<HTMLElement>('[data-loop]')) {
+		const live = root.querySelector<HTMLElement>('[data-live]')!;
+		const updateEl = root.querySelector<HTMLElement>('[data-update]')!;
+		const stateEl = root.querySelector<HTMLElement>('[data-state]')!;
+		const frameEl = root.querySelector<HTMLElement>('[data-frame]')!;
+		const hintEl = root.querySelector<HTMLElement>('[data-hint]')!;
+		const buttons = root.querySelectorAll<HTMLButtonElement>('button[data-key]');
+		let count = 0;
+		let quit = false;
+		let lastFrame: string[] = [];
+
+		const view = () => [`count: ${count}`, '+ and - change it, q quits'];
+		const draw = () => {
+			const frame = view();
+			const changed = frame.filter((line, i) => line !== lastFrame[i]).length;
+			frameEl.textContent = frame.join('\n');
+			hintEl.textContent = lastFrame.length === 0
+				? 'The first frame draws every cell.'
+				: changed === 0
+					? 'The frame is unchanged, so nothing is written.'
+					: 'Only the cells that changed are written.';
+			lastFrame = frame;
+		};
+		const send = (key: string) => {
+			if (quit) return;
+			let note: string;
+			if (key === '+') {
+				count += 1;
+				note = 'count += 1\nreturns ()';
+			} else if (key === '-') {
+				count -= 1;
+				note = 'count -= 1\nreturns ()';
+			} else if (key === 'q') {
+				quit = true;
+				note = 'returns quit()';
+			} else {
+				note = 'not a key it knows\nreturns ()';
+			}
+			updateEl.textContent = `update(KeyEvent "${key}")\n${note}`;
+			stateEl.textContent = `count = ${count}`;
+			if (quit) {
+				frameEl.textContent += '\n(program ended)';
+				hintEl.textContent = 'quit() ends the loop and releases the terminal.';
+				buttons.forEach((b) => (b.disabled = true));
+				return;
+			}
+			draw();
+		};
+		buttons.forEach((b) => b.addEventListener('click', () => send(b.dataset.key!)));
+		live.hidden = false;
+		draw();
+	}
+</script>
+
+<style>
+	.loop {
+		border: 1px solid var(--sl-color-gray-5);
+		border-radius: 0.5rem;
+		padding: 1rem;
+		margin: 1.5rem 0;
+	}
+	.loop-note,
+	.loop-hint,
+	.loop-fallback {
+		font-size: var(--sl-text-sm);
+		color: var(--sl-color-gray-3);
+		margin: 0.5rem 0;
+	}
+	.loop-grid {
+		display: grid;
+		grid-template-columns: repeat(auto-fit, minmax(14rem, 1fr));
+		gap: 1rem;
+	}
+	.loop-grid[hidden] {
+		display: none;
+	}
+	h4 {
+		margin: 0 0 0.4rem;
+		font-size: var(--sl-text-sm);
+	}
+	pre {
+		background: var(--sl-color-gray-6);
+		border-radius: 0.3rem;
+		padding: 0.6rem;
+		margin: 0 0 0.8rem;
+		min-height: 3.2rem;
+		white-space: pre-wrap;
+		font-size: var(--sl-text-sm);
+	}
+	.loop-frame {
+		background: #111;
+		color: #eee;
+	}
+	.loop-keys {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 0.4rem;
+	}
+	button {
+		font: inherit;
+		padding: 0.3rem 0.7rem;
+		border: 1px solid var(--sl-color-gray-4);
+		border-radius: 0.3rem;
+		background: var(--sl-color-bg);
+		color: var(--sl-color-text);
+		cursor: pointer;
+	}
+	button:disabled {
+		opacity: 0.5;
+		cursor: default;
+	}
+</style>

@@ -1,0 +1,32 @@
+---
+title: termui
+description: Build agent-style terminal apps in Ballerina.
+template: splash
+hero:
+  tagline: Streaming output, a live region and approval prompts that stay well-behaved in pipes and CI.
+  actions:
+    - text: Start here
+      link: start/install/
+      icon: right-arrow
+    - text: Build a harness
+      link: tutorial/
+      variant: minimal
+---
+
+import { Card, CardGrid } from '@astrojs/starlight/components';
+
+<CardGrid stagger>
+	<Card title="Inline, not full-screen" icon="terminal">
+		A small live region is redrawn in place at the bottom. Finished output goes into your normal
+		scrollback.
+	</Card>
+	<Card title="Safe in pipes and CI" icon="approve-check">
+		The same program runs interactively, with output redirected, and with no terminal at all.
+	</Card>
+	<Card title="Testable without a terminal" icon="open-book">
+		Script keys against a virtual screen and assert on what was drawn.
+	</Card>
+	<Card title="Concurrency the compiler checks" icon="setting">
+		State lives on one strand. Effects are `isolated` and report back with immutable messages.
+	</Card>
+</CardGrid>

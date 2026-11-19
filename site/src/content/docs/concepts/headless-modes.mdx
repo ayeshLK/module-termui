@@ -1,0 +1,77 @@
+---
+title: Modes and headless operation
+description: The same program in a terminal, in a pipe and in CI.
+sidebar:
+  order: 4
+---
+
+The same program works interactively, in a pipe and in a script. `Interface` looks at what the process
+is attached to and hands out the matching terminal, renderer and options.
+
+| Standard input | Standard output | Mode | What happens |
+|---|---|---|---|
+| terminal | terminal | `interactive` | The inline interface on the terminal. |
+| terminal | redirected | `pipedOutput` | The interface is still drawn on the terminal. **Results go to standard output and nothing else does**, so the next program in the pipe gets clean data. |
+| redirected | terminal | `pipedInput` | Plain text, no colors or cursor control. Nobody can answer questions. |
+| redirected | redirected | `headless` | Plain text, as for `pipedInput`. |
+
+```ballerina
+termui:Interface ui = new (term:detectEnvironment());
+check ui.run(new Report());
+```
+
+Detecting the environment costs one short process (about 25 ms), so do it once at startup.
+
+## What your program can rely on
+
+- **Results.** `ui.result(text)` is for what a caller or a pipe is waiting for. With output redirected
+  it writes a line to standard output and never to the terminal the interface is drawn on. When standard
+  output is the terminal itself, it is committed above the live region like other finished output.
+- **Questions never hang.** Without a terminal, `session.confirm` and `session.choose` do not wait. They
+  return the default you gave, or a `NoTerminal` error when there is none. Decide what "no answer" means
+  for your program, for example deny by default, as the harness does.
+- **Size.** In every mode the first message a program receives is a `term:ResizeEvent` with the size it
+  is drawn with, so it can lay out to the right width from its first `view`. When the terminal cannot
+  report a size, the size is `COLUMNS` and `LINES`, or 80 by 24.
+- **Plain output.** Committed output is written as lines with no styling, escape sequences or carriage
+  returns. The live region is not repeated: only its final state is written, once, when the program
+  ends. Text is wrapped at `COLUMNS`, or 80 columns when that is unknown.
+- **Repeatable.** Two runs with the same input produce identical bytes, as long as the program does not
+  put timing-dependent content, such as an animation frame or a clock, in the live region. Stop
+  animating when `ui.interactive` is `false`.
+- **Color.** `NO_COLOR` (set and not empty) and `TERM=dumb` turn color off, also on a terminal.
+
+## An example
+
+A program that ends when its input does:
+
+```ballerina
+class Report {
+    *termui:Program;
+
+    public function update(termui:Message message) returns termui:Command? {
+        if message is termui:InputEnded {
+            return termui:batch([
+                termui:commitProse([[{text: "report ready"}]]),
+                termui:quit()
+            ]);
+        }
+        return ();
+    }
+
+    public function view() returns text:Span[][] {
+        return [[{text: "working..."}]];
+    }
+}
+```
+
+With neither input nor output on a terminal (`bal run < /dev/null > out.txt`), `out.txt` contains
+exactly:
+
+```
+report ready
+working...
+```
+
+The same class, unchanged, draws a live "working..." line on a terminal. Only the renderer differs.
+That is also what makes it [testable without a terminal](../../best-practices/testing/).

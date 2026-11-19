@@ -1,0 +1,68 @@
+---
+title: Inline rendering
+description: The live region, committed output and anchoring.
+sidebar:
+  order: 3
+---
+
+import CastPlayer from '../../../components/CastPlayer.astro';
+
+termui does not take over the screen. It draws a small **live region** at the bottom, redraws it in
+place, and writes finished output **above** it, once, into your normal scrollback.
+
+<CastPlayer cast="harness-demo.cast" caption="The agent harness, recorded from the real program: a prompt with history, a streamed answer with a colored code block, tool calls and two approval prompts." />
+
+## Live region and committed output
+
+```
+   committed output       written once, never redrawn
+   committed output       (selectable, searchable, in your history)
+   ------------------
+   live region            what view() returned, redrawn in place
+```
+
+- The region is what `view` returns. The renderer writes only the cells that changed, with relative
+  cursor movement and one write per frame.
+- `commitProse` and `commitBlock` write finished output above the region and draw the region again
+  below it. Committed output is never redrawn.
+- A line of the live region wider than the terminal is **cut off** at the right edge, not wrapped. Wrap
+  it first with `text:wrap`. The line editor does this for you.
+
+### Prose or block
+
+- `commitProse` writes each paragraph as one logical line, so the terminal wraps it and, in terminals
+  that re-wrap on resize, can wrap it again later.
+- `commitBlock` wraps each line to the width at that moment, for output whose layout cannot be
+  re-wrapped: tables, boxes, diffs.
+
+## Anchoring to the bottom
+
+By default the region starts on the row where the program was started, so on a fresh screen the
+prompt sits at the top. Pass `anchorBottom = true` and it stays on the last rows of the terminal, like a
+chat input:
+
+```
+   existing output          rows above the region, left alone
+   blank rows (the gap)     used before anything scrolls
+   live region              always ends on the last row
+```
+
+The renderer asks the terminal once where its cursor is, puts the region on the last rows, and scrolls
+the screen by exactly the rows it lacks, never overwriting anything. Committed output is then written
+into the gap, a growing region grows upward into it, and when the gap is used up the screen scrolls
+exactly as it does without the option. Everything that scrolls off the top stays in the terminal's
+scrollback, and no blank row is ever written into it.
+
+Limits:
+
+- It has no effect when the terminal does not report its cursor. The region is drawn as usual.
+- A header pinned at the top is not possible, because that needs a scroll region, which loses the
+  native scrollback. Use full-screen mode for such an interface.
+- Other programs writing to the terminal while the renderer runs are not accounted for.
+
+## Resize
+
+When the window changes size the program receives a `ResizeEvent`, the old region is cleared and the
+region is anchored again at the next draw. Committed history is never re-laid out: terminals that
+reflow re-wrap prose, and blocks keep the width they were written at. The renderer needs to know whether
+your terminal re-wraps, which is the `reflow` option (on by default, as most terminals behave).

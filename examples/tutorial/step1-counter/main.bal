@@ -1,0 +1,50 @@
+// Copyright (c) 2026, Ayesh Almeida.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing,
+// software distributed under the License is distributed on an
+// "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND,
+// either express or implied. See the License for the specific
+// language governing permissions and limitations under the License.
+
+// Step 1 of the documentation site tutorial: the smallest interactive program. CI builds this file.
+
+import ayesha/termui;
+import ayesha/termui.term;
+import ayesha/termui.text;
+
+class Counter {
+    *termui:Program;
+
+    int count = 0;
+
+    public function update(termui:Message message) returns termui:Command? {
+        if message is term:KeyEvent {
+            if message.key == "+" {
+                self.count += 1;
+            } else if message.key == "-" {
+                self.count -= 1;
+            } else if message.key == "q" {
+                return termui:quit();
+            }
+        }
+        return ();
+    }
+
+    public function view() returns text:Span[][] {
+        return [
+            [{text: "count: " + self.count.toString(), style: {bold: true}}],
+            [{text: "+ and - change it, q quits", style: {dim: true}}]
+        ];
+    }
+}
+
+public function main() returns error? {
+    termui:Interface ui = new (term:detectEnvironment());
+    check ui.run(new Counter());
+}
