@@ -3,7 +3,7 @@
 <p align="center">
   <a href="https://github.com/ayeshLK/module-termui/actions/workflows/ci.yml"><img src="https://github.com/ayeshLK/module-termui/actions/workflows/ci.yml/badge.svg" alt="Build"></a>
   <a href="LICENSE"><img src="https://img.shields.io/github/license/ayeshLK/module-termui" alt="License"></a>
-  <a href="https://central.ballerina.io/ayesha/termui/0.3.0"><img src="https://img.shields.io/badge/Ballerina%20Central-ayesha%2Ftermui-blue" alt="Ballerina Central"></a>
+  <a href="https://central.ballerina.io/ayesha/termui/0.4.0"><img src="https://img.shields.io/badge/Ballerina%20Central-ayesha%2Ftermui-blue" alt="Ballerina Central"></a>
   <a href="https://github.com/ayeshLK/module-termui/releases"><img src="https://img.shields.io/github/v/release/ayeshLK/module-termui" alt="Release"></a>
   <img src="https://img.shields.io/badge/Ballerina-2201.14-blue" alt="Ballerina 2201.14">
   <img src="https://img.shields.io/badge/status-experimental-orange" alt="Status: experimental">
@@ -35,13 +35,13 @@
 
 ## Quickstart
 
-termui is on [Ballerina Central](https://central.ballerina.io/ayesha/termui/0.3.0). Import it and Ballerina fetches it on the next build; to pin a version, add it to your package's `Ballerina.toml`:
+termui is on [Ballerina Central](https://central.ballerina.io/ayesha/termui/0.4.0). Import it and Ballerina fetches it on the next build; to pin a version, add it to your package's `Ballerina.toml`:
 
 ```toml
 [[dependency]]
 org = "ayesha"
 name = "termui"
-version = "0.3.0"
+version = "0.4.0"
 ```
 
 A counter, in `main.bal` ([`examples/counter`](examples/counter) is this file, built in CI):

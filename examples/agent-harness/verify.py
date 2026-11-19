@@ -142,6 +142,15 @@ app.send(b"\x15\x7f\x15\x0b")  # Ctrl+U, Backspace, Ctrl+U, Ctrl+K: what is left
 app.pump(0.3)
 check("Ctrl+U, Ctrl+K and Backspace clear the input again",
       app.rows()[ROWS - 2].rstrip() == "❯" and "ctrl+d to quit" in app.rows()[ROWS - 1], repr(app.rows()[-4:]))
+# long input wraps at the terminal width (the first message told the program), with the second row indented
+app.type("x" * (COLS + 20))
+app.pump(0.3)
+rows = app.rows()
+check("long input wraps at the terminal width, under the prompt",
+      any(r.startswith("❯ " + "x" * (COLS - 2)) for r in rows) and any(r.startswith("  " + "x" * 22) for r in rows)
+      and "ctrl+d to quit" in rows[ROWS - 1], repr(rows[-5:]))
+app.send(b"\x15")
+app.pump(0.3)
 app.type("fix the bug in the handler")
 app.send(b"\r")
 check("asks before editing a file", app.wait_for("Allow Edit(src/handler.bal)?"), app.text()[-300:])

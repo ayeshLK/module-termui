@@ -12,7 +12,7 @@
 
 ## 3. After the release
 
-- [ ] 3.1 Once the release is published, change `examples/agent-harness` to pass the real width to `LineEditor.render` (remove `NO_WRAP`), extend `verify.py` to check that long input wraps with an indented continuation row, and bump the examples' pin; verify with `verify.py` on the pty
+- [x] 3.1 Once the release is published, change `examples/agent-harness` to pass the real width to `LineEditor.render` (remove `NO_WRAP`), extend `verify.py` to check that long input wraps with an indented continuation row, and bump the examples' pin; verify with `verify.py` on the pty
 
 ## Workflow follow-up
 

@@ -32,7 +32,6 @@ final text:Style GREEN = {fg: "green"};
 final text:Style RED = {fg: "red"};
 final text:Style CODE = {fg: "yellow"};
 
-const int NO_WRAP = 10000;
 
 function sp(string t, text:Style style = {}) returns text:Span {
     return {text: t, style};
@@ -43,6 +42,7 @@ class Agent {
 
     // the prompt: cursor, editing keys, multi-line input, paste and history
     private input:LineEditor editor = new;
+    private int width = 80;   // the first message tells the real one
 
     // turn state
     private boolean busy = false;
@@ -63,6 +63,10 @@ class Agent {
         if message is Tick {
             self.frame = (self.frame + 1) % SPINNER.length();
             self.ticks += 1;
+            return;
+        }
+        if message is term:ResizeEvent {
+            self.width = message.width;
             return;
         }
         if message is term:KeyEvent {
@@ -135,8 +139,7 @@ class Agent {
                 sp(string `(${secs}s · ↓ ${self.tokens} tokens · esc to interrupt)`, DIM)
             ]);
         }
-        // a width no line reaches, so the terminal wraps long input itself
-        text:Span[][] prompt = self.editor.render(NO_WRAP, "❯ ");
+        text:Span[][] prompt = self.editor.render(self.width, "❯ ");
         prompt[0][0] = sp("❯ ", ACCENT);
         lines.push(...prompt);
         lines.push([sp(string `  ${MODEL} · ${self.totalTokens + self.tokens} tokens · /help for commands · ctrl+d to quit`, DIM)]);
