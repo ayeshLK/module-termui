@@ -8,10 +8,10 @@
 
 ## 2. Step 2: a prompt
 
-- [ ] 2.1 Create `examples/tutorial/step2-prompt` (extends step 1: a `LineEditor`, history, `commitProse` of the submitted line, Ctrl+C quits) pinned to termui 1.0.0; verify `bal build` succeeds
-- [ ] 2.2 Add tests with a `FakeTerminal` (a typed line is shown in the region; Enter commits it above and clears the editor; Up recalls it; Ctrl+C quits) and add the package to `examples/check.sh`; verify `bal test` passes and `examples/check.sh` runs it
-- [ ] 2.3 Write `tutorial/02-prompt` with a "What changed" section, regions from the program, and a "Try this" list whose suggestions were each run; verify the page builds and every "Try this" step works on the program
-- [ ] 2.4 Link step 1's "Next" and the tutorial index to step 2; verify the links resolve in the built site
+- [x] 2.1 Create `examples/tutorial/step2-prompt` (extends step 1: a `LineEditor`, history, `commitProse` of the submitted line, Ctrl+C quits) pinned to termui 1.0.0; verify `bal build` succeeds
+- [x] 2.2 Add tests with a `FakeTerminal` (a typed line is shown in the region; Enter commits it above and clears the editor; Up recalls it; Ctrl+C quits) and add the package to `examples/check.sh`; verify `bal test` passes and `examples/check.sh` runs it
+- [x] 2.3 Write `tutorial/02-prompt` with a "What changed" section, regions from the program, and a "Try this" list whose suggestions were each run; verify the page builds and every "Try this" step works on the program
+- [x] 2.4 Link step 1's "Next" and the tutorial index to step 2; verify the links resolve in the built site
 
 ## 3. Step 3: streaming output
 
