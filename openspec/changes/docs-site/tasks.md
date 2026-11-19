@@ -44,9 +44,9 @@
 
 ## 7. Publish and link
 
-- [ ] 7.1 Maintainer: enable GitHub Pages with the GitHub Actions source in repository settings; verify the Pages settings page shows that source
-- [ ] 7.2 Merge to `main` and verify the deploy workflow succeeds and the site loads at its address, including an inner page and a cast
-- [ ] 7.3 Add the site link to `README.md` and `ballerina/Package.md` and add a CHANGELOG "Unreleased" note; verify the links resolve to the live site
+- [x] 7.1 Maintainer: enable GitHub Pages with the GitHub Actions source in repository settings; verify the Pages settings page shows that source
+- [x] 7.2 Merge to `main` and verify the deploy workflow succeeds and the site loads at its address, including an inner page and a cast
+- [x] 7.3 Add the site link to `README.md` and `ballerina/Package.md` and add a CHANGELOG "Unreleased" note; verify the links resolve to the live site
 
 ## Workflow follow-up
 

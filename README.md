@@ -112,6 +112,7 @@ You write a `Program` with two methods: `update` is called for each message and 
 
 ## Documentation
 
+- **[Documentation site](https://ayeshlk.github.io/module-termui/):** how the pieces work (the update and view loop, commands, inline rendering, modes, the line editor, idle cost), best practices (strands and isolation, testing, compatibility), and a tutorial that builds a small agent harness step by step.
 - **[Package guide](ballerina/Package.md):** the modes (interactive, piped output, piped input, headless), what each guarantees, and the plain-output rules.
 - **Module references:** the `Module.md` files linked above.
 - **[Compatibility and versioning](COMPATIBILITY.md):** what is public API, what a patch, minor or major release may change, how deprecation works, and the supported platforms.
