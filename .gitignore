@@ -53,3 +53,6 @@ examples/**/Dependencies.toml
 
 CLAUDE.md
 .claude-tasks/
+
+# The quick-start example saves its list here when run from its folder.
+examples/**/todos.json

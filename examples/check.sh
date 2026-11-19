@@ -3,7 +3,7 @@
 # and runs the tests of those that have them. CI runs this; run it from anywhere after installing Ballerina.
 set -e
 cd "$(dirname "$0")"
-for dir in counter tutorial/step1-counter tutorial/step2-prompt tutorial/step3-streaming tutorial/step4-status tutorial/step5-approval tutorial/step6-testing best-practices; do
+for dir in counter tutorial/step1-counter tutorial/step2-prompt tutorial/step3-streaming tutorial/step4-status tutorial/step5-approval tutorial/step6-testing best-practices quick-start; do
     echo "== $dir"
     (cd "$dir" && bal build)
     if [ -d "$dir/tests" ]; then
