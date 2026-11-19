@@ -26,7 +26,7 @@
 - [x] 5.1 Add `bench/idle_cpu.py` and `bench/latency.py` (pseudo-terminal harness, warm-up, CPU over a window, bytes and RSS; first-output latency after short and long gaps) and a short `bench/README.md`; verify they run against the counter example and the harness
 - [x] 5.2 Run them before and after the change on the counter and the harness, record the numbers and the first-key latency by idle duration in design.md, and check the targets (idle under 3% for a program without a fast timer, median first key about 50 ms or less after a pause of up to a second)
 - [x] 5.3 Document the backoff, the new option, its default and the first-key trade-off in `Module.md`, `Package.md`, `modules/term/Module.md` and the README limits, add `maxPollInterval` to the defaults in `COMPATIBILITY.md` and the changelog's Unreleased section, and describe the measurements in `CONTRIBUTING.md`; verify the pages agree and `bal doc` has no warnings
-- [ ] 5.4 Run the whole suite, the harness check on the pty and the tmux check script; verify all pass and CI is green on Linux and macOS
+- [x] 5.4 Run the whole suite, the harness check on the pty and the tmux check script; verify all pass and CI is green on Linux and macOS
 
 ## Workflow follow-up
 
