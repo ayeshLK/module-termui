@@ -8,17 +8,29 @@ pyte plays the terminal: it answers the program's cursor position request the wa
 does, so a program that anchors to the bottom is drawn as a user would see it. This is an author-time
 tool; CI does not run it. Add a script for a new step to SCRIPTS.
 """
-import fcntl, json, os, pty, select, struct, sys, termios, time
+import fcntl, json, os, pty, select, shutil, struct, sys, tempfile, termios, time
 import pyte
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 JAVA = os.environ.get("JAVA", "java")
 COLS, ROWS = 90, 14
-SIZES = {"step5-approval": (90, 18)}   # steps that need more rows than the default
+SIZES = {"step5-approval": (90, 18), "quick-start": (70, 10)}   # programs that need other than the default size
+# Programs that do not live in a tutorial step directory, relative to this file. They also run in an empty
+# folder, so a program that saves a file starts from nothing and leaves no file in the repository.
+ELSEWHERE = {"quick-start": "../quick-start"}
 
 # ("wait", text): wait for text to appear. ("idle", seconds): let time pass. ("type", text): type it like a
 # person. ("key", bytes): send one key. The last step should end the program.
 SCRIPTS = {
+    "quick-start": [
+        ("wait", "Nothing to do"), ("idle", 1.2),
+        ("key", b"a"), ("idle", 0.4), ("type", "buy milk"), ("idle", 0.4), ("key", b"\r"), ("idle", 0.8),
+        ("key", b"a"), ("idle", 0.4), ("type", "write the docs"), ("idle", 0.4), ("key", b"\r"), ("idle", 0.8),
+        ("key", b"a"), ("idle", 0.4), ("type", "call mum"), ("idle", 0.4), ("key", b"\r"), ("idle", 1.0),
+        ("key", b"d"), ("idle", 1.0),            # delete "call mum"; the selection moves up to "write the docs"
+        ("key", b" "), ("idle", 1.2),            # mark it done
+        ("key", b"q"), ("idle", 1.0),            # quit: the list stays in the scrollback
+    ],
     "step3-streaming": [
         ("wait", "❯ "), ("idle", 1.2),
         ("type", "what is termui?"), ("idle", 0.5), ("key", b"\r"),
@@ -66,16 +78,18 @@ def main():
     global COLS, ROWS
     COLS, ROWS = SIZES.get(step, (COLS, ROWS))
     out_dir = os.path.abspath(sys.argv[2] if len(sys.argv) > 2 else os.path.join(HERE, "..", "..", "site", "public", "casts"))
-    step_dir = os.path.join(HERE, step)
+    step_dir = os.path.normpath(os.path.join(HERE, ELSEWHERE.get(step, step)))
     jars = [f for f in os.listdir(os.path.join(step_dir, "target", "bin"))] if os.path.isdir(os.path.join(step_dir, "target", "bin")) else []
     if not jars:
         sys.exit(f"build {step} first: (cd {step_dir} && bal build)")
     jar = os.path.join(step_dir, "target", "bin", jars[0])
 
+    workdir = tempfile.mkdtemp(prefix="record-")
     env = dict(os.environ, TERM="xterm-256color", COLUMNS=str(COLS), LINES=str(ROWS))
     pid, fd = pty.fork()
     if pid == 0:
         fcntl.ioctl(0, termios.TIOCSWINSZ, struct.pack("HHHH", ROWS, COLS, 0, 0))
+        os.chdir(workdir)
         os.execvpe(JAVA, [JAVA, "-jar", jar], env)
     fcntl.ioctl(fd, termios.TIOCSWINSZ, struct.pack("HHHH", ROWS, COLS, 0, 0))
     screen = Emulator(COLS, ROWS)
@@ -138,6 +152,7 @@ def main():
                             "env": {"TERM": "xterm-256color", "SHELL": "/bin/sh"}}) + "\n")
         for event in events:
             f.write(json.dumps(event) + "\n")
+    shutil.rmtree(workdir, ignore_errors=True)
     print(f"wrote {cast} ({events[-1][0]:.1f} s)")
 
 
