@@ -21,9 +21,9 @@
 
 ## 4. The layers list and the stepper
 
-- [ ] 4.1 Build `Layers` and use it for the four layers on "Testing it"; verify it renders as a numbered list and the page builds
-- [ ] 4.2 Build `StepList` (an ordered list of single-link rows with number, title, what you build and "you learn" chips, a connecting line on wide screens, focus and hover styles that respect reduced motion) and a "Start with step 1" button; verify there are no nested links, the whole row is clickable and focusable in order, and the layout stacks at phone width
-- [ ] 4.3 Replace the table on the tutorial index; verify the six links resolve (`npm run check-links`), the chips match the old "You learn" column, and the page looks right in light and dark mode
+- [x] 4.1 Build `Layers` and use it for the four layers on "Testing it"; verify it renders as a numbered list and the page builds
+- [x] 4.2 Build `StepList` (an ordered list of single-link rows with number, title, what you build and "you learn" chips, a connecting line on wide screens, focus and hover styles that respect reduced motion) and a "Start with step 1" button; verify there are no nested links, the whole row is clickable and focusable in order, and the layout stacks at phone width
+- [x] 4.3 Replace the table on the tutorial index; verify the six links resolve (`npm run check-links`), the chips match the old "You learn" column, and the page looks right in light and dark mode
 
 ## 5. README and Module.md
 

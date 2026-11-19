@@ -5,18 +5,25 @@ sidebar:
   order: 0
 ---
 
+import { LinkButton } from '@astrojs/starlight/components';
+import StepList from '../../../components/diagrams/StepList.astro';
+
 This tutorial builds a small agent-style harness: a prompt, streamed answers, tool calls with
 approval, and a status line. Every step is a complete program that compiles and runs, and each one
 extends the one before it.
 
-| Step | You build | You learn |
-|---|---|---|
-| [1. A counter](./01-counter/) | The smallest interactive program | `Program`, `update`, `view`, `run` |
-| [2. A prompt](./02-prompt/) | A text input with history | `LineEditor`, `commitProse` |
-| [3. Streaming output](./03-streaming/) | An answer that arrives in pieces | Effects, messages, `commitBlock`, `anchorBottom` |
-| [4. Status and interrupt](./04-status/) | A live status line and Esc to stop | Timers, quiet ticks, idle cost, a cancel flag |
-| [5. Tool calls](./05-approval/) | An approval prompt | `confirm`, the default answer, headless |
-| [6. Testing it](./06-testing/) | The harness under a fake terminal | `FakeTerminal`, a gated terminal, headless |
+<LinkButton href="./01-counter/" variant="primary">Start with step 1</LinkButton>
+
+<StepList
+	steps={[
+		{title: 'A counter', href: './01-counter/', build: 'The smallest interactive program', learn: [{text: 'Program', code: true}, {text: 'update', code: true}, {text: 'view', code: true}, {text: 'run', code: true}]},
+		{title: 'A prompt', href: './02-prompt/', build: 'A text input with history', learn: [{text: 'LineEditor', code: true}, {text: 'commitProse', code: true}]},
+		{title: 'Streaming output', href: './03-streaming/', build: 'An answer that arrives in pieces', learn: [{text: 'Effects'}, {text: 'messages'}, {text: 'commitBlock', code: true}, {text: 'anchorBottom', code: true}]},
+		{title: 'Status and interrupt', href: './04-status/', build: 'A live status line and Esc to stop', learn: [{text: 'Timers'}, {text: 'quiet ticks'}, {text: 'idle cost'}, {text: 'a cancel flag'}]},
+		{title: 'Tool calls', href: './05-approval/', build: 'An approval prompt', learn: [{text: 'confirm', code: true}, {text: 'the default answer'}, {text: 'headless'}]},
+		{title: 'Testing it', href: './06-testing/', build: 'The harness under a fake terminal', learn: [{text: 'FakeTerminal', code: true}, {text: 'a gated terminal'}, {text: 'headless'}]},
+	]}
+/>
 
 Each step has a recording or a test you can run, and the programs are the files CI builds, in
 [`examples/tutorial`](https://github.com/ayeshLK/module-termui/tree/main/examples/tutorial). The tutorial

@@ -1,0 +1,180 @@
+---
+// The steps of a tutorial as an ordered list of cards. Each row is ONE link to the step's page, so the whole
+// row is the click target and there are no links inside links. A row has the step's number, its title, a line on
+// what you build, and chips for what you learn. Plain HTML and CSS (no script). The hover lift only happens
+// when the reader has not asked for reduced motion, and keyboard focus shows a clear outline.
+//
+//   <StepList steps={[{title: 'A counter', href: './01-counter/', build: '...', learn: [{text: 'Program', code: true}]}]} />
+interface Chip {
+	text: string;
+	code?: boolean;
+}
+interface Step {
+	title: string;
+	href: string;
+	build: string;
+	learn: Chip[];
+}
+interface Props {
+	steps: Step[];
+}
+const { steps } = Astro.props;
+---
+
+<div class="dg-steps-box not-content">
+<ol class="dg-steps">
+	{
+		steps.map((step, i) => (
+			<li class="dg-step">
+				<a href={step.href}>
+					<span class="dg-step-num" aria-hidden="true">{i + 1}</span>
+					<span class="dg-step-body">
+						<span class="dg-step-title">
+							<span class="dg-sr">Step {i + 1}: </span>
+							{step.title}
+						</span>
+						<span class="dg-step-build">{step.build}</span>
+						<ul class="dg-chips" aria-label="You learn">
+							{step.learn.map((c) => (
+								<li>{c.code ? <code>{c.text}</code> : c.text}</li>
+							))}
+						</ul>
+					</span>
+					<span class="dg-step-go" aria-hidden="true" />
+				</a>
+			</li>
+		))
+	}
+</ol>
+</div>
+
+<style>
+	.dg-steps-box {
+		container-type: inline-size;
+		margin: 1.5rem 0;
+	}
+	.dg-steps {
+		margin: 0;
+		padding: 0;
+		list-style: none;
+	}
+	.dg-step {
+		position: relative;
+		margin: 0;
+		padding: 0;
+		list-style: none;
+	}
+	.dg-step + .dg-step {
+		margin-top: 0.8rem;
+	}
+	/* the line that joins the numbers: from under one number to the top of the next */
+	.dg-step:not(:last-child)::before {
+		content: '';
+		position: absolute;
+		left: calc(1.1rem + 1.2rem); /* the centre of the number: the card's padding plus half its width; the card's 1px border centres the 2px line */
+		top: calc(1.1rem + 2.4rem);
+		bottom: calc(-0.8rem - 1.1rem);
+		border-left: 2px solid var(--dg-line);
+		z-index: 0;
+	}
+	.dg-step a {
+		position: relative;
+		z-index: 1;
+		display: grid;
+		grid-template-columns: 2.4rem minmax(0, 1fr) auto;
+		gap: 1rem;
+		align-items: start;
+		padding: 1.1rem 1rem 1.1rem 1.1rem;
+		border: 1px solid var(--dg-border);
+		border-radius: 0.7rem;
+		background: var(--sl-color-bg);
+		color: var(--dg-text);
+		text-decoration: none;
+	}
+	.dg-step-num {
+		display: grid;
+		place-items: center;
+		width: 2.4rem;
+		height: 2.4rem;
+		border-radius: 50%;
+		border: 1px solid var(--dg-runtime);
+		background: var(--dg-runtime-bg);
+		color: var(--dg-runtime-text);
+		font-weight: 700;
+	}
+	.dg-step-body {
+		display: grid;
+		gap: 0.35rem;
+		min-width: 0;
+	}
+	.dg-step-title {
+		font-size: var(--sl-text-lg);
+		font-weight: 600;
+		color: var(--dg-text);
+	}
+	.dg-step-build {
+		color: var(--dg-muted);
+	}
+	.dg-chips {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 0.35rem;
+		margin: 0.2rem 0 0;
+		padding: 0;
+		list-style: none;
+	}
+	.dg-chips li {
+		margin: 0;
+		padding: 0.1rem 0.55rem;
+		border: 1px solid var(--dg-border);
+		border-radius: 999px;
+		background: var(--dg-panel);
+		font-size: var(--sl-text-xs);
+		color: var(--dg-muted);
+	}
+	.dg-chips code {
+		background: none;
+		border: 0;
+		padding: 0;
+		font-size: inherit;
+		color: var(--dg-text);
+	}
+	/* an arrow at the right edge that says the row goes somewhere */
+	.dg-step-go {
+		align-self: center;
+		width: 0.6rem;
+		height: 0.6rem;
+		border-top: 2px solid var(--dg-line);
+		border-right: 2px solid var(--dg-line);
+		transform: rotate(45deg);
+	}
+	.dg-step a:hover,
+	.dg-step a:focus-visible {
+		border-color: var(--dg-runtime);
+	}
+	.dg-step a:hover .dg-step-go,
+	.dg-step a:focus-visible .dg-step-go {
+		border-color: var(--dg-runtime);
+	}
+	.dg-step a:focus-visible {
+		outline: 2px solid var(--dg-runtime);
+		outline-offset: 3px;
+	}
+	@media (prefers-reduced-motion: no-preference) {
+		.dg-step a {
+			transition: transform 120ms ease, border-color 120ms ease, box-shadow 120ms ease;
+		}
+		.dg-step a:hover {
+			transform: translateY(-2px);
+			box-shadow: 0 4px 14px rgba(0, 0, 0, 0.12);
+		}
+	}
+	@container (max-width: 30rem) {
+		.dg-step a {
+			grid-template-columns: 2.4rem minmax(0, 1fr);
+		}
+		.dg-step-go {
+			display: none;
+		}
+	}
+</style>

@@ -6,20 +6,22 @@ sidebar:
 ---
 
 import ExampleCode from '../../../components/ExampleCode.astro';
+import Layers from '../../../components/diagrams/Layers.astro';
 
 The harness is finished. This step does not change the program: it is step 5, unchanged. What it adds is
 a `tests/` folder, and a way of thinking about testing a terminal program, which is normally awkward. It
 is not awkward here, because the program never talks to a terminal. It returns lines from `view` and
 commands from `update`, and a renderer and a terminal do the rest. A test swaps those two for fakes.
 
-```
- what you test                          how
- -------------                          ---
- 1. update and view                     call them directly
- 2. the whole program, scripted keys    FakeTerminal, run to the end
- 3. a question that needs an answer     a terminal that answers when asked
- 4. what a script or CI would see       an Interface with no terminal, plain output
-```
+<Layers
+	items={[
+		{what: 'update and view', how: 'call them directly'},
+		{what: 'the whole program, scripted keys', how: 'FakeTerminal, run to the end'},
+		{what: 'a question that needs an answer', how: 'a terminal that answers when asked'},
+		{what: 'what a script or CI would see', how: 'an Interface with no terminal, plain output'},
+	]}
+	caption="Four layers of testing, from calling update and view to running the whole program headless."
+/>
 
 The package is `examples/tutorial/step6-testing`. CI builds it and runs its tests with
 `examples/check.sh`.
