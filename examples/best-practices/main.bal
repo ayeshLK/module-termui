@@ -57,6 +57,7 @@ class Job {
         return ();
     }
 
+    // region start-work
     function startWork() returns termui:Command? {
         self.status = "working";
         if self.blocking {
@@ -71,6 +72,7 @@ class Job {
             session.send({kind: "worked"});
         });
     }
+    // endregion start-work
 
     public function view() returns text:Span[][] {
         return [[{text: self.status}]];

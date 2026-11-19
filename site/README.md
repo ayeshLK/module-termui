@@ -32,10 +32,22 @@ The sidebar is generated from these folders. Order pages with `sidebar.order` in
 
 ## Writing pages
 
-- **Code comes from files.** Show a program with `<ExampleCode file="examples/..." />` (optionally
-  `start` and `end` lines), never by pasting it. CI compiles everything under `examples/`, so a page
-  cannot show code that does not build. Short inline snippets inside prose are fine; a full program is
-  always included.
+- **Code comes from files.** Show a program with `<ExampleCode file="examples/..." />`, never by pasting
+  it. To show part of a file, mark it in the source with comment lines and name the region:
+
+  ```ballerina
+  // region update
+  public function update(termui:Message message) returns termui:Command? { ... }
+  // endregion update
+  ```
+
+  ```mdx
+  <ExampleCode file="examples/counter/main.bal" region="update" />
+  ```
+
+  The marker lines are not shown, and a missing or unclosed region fails the site build, so editing an
+  example cannot silently change a page. CI compiles everything under `examples/`, so a page cannot show
+  code that does not build. Short inline snippets inside prose are fine; a full program is always included.
 - **Link, do not copy, symbol docs.** Name a type or function and link to the API reference on
   [Ballerina Central](https://central.ballerina.io/ayesha/termui/1.0.0).
 - **Use only released API** in tutorial programs, so a page matches what a reader can install.

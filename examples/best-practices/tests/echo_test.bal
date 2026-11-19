@@ -15,6 +15,7 @@ import ayesha/termui;
 import ayesha/termui.term;
 import ballerina/test;
 
+// region tests
 @test:Config {}
 function testTypedTextIsShownInTheLiveRegion() returns error? {
     term:FakeTerminal terminal = new (30, 4);
@@ -32,3 +33,4 @@ function testASubmittedLineIsCommittedAboveTheRegion() returns error? {
     check termui:run(new Echo(), terminal);
     test:assertEquals(terminal.screenLines(), ["you said: hi", ">", "", ""]);
 }
+// endregion tests

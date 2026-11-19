@@ -1,27 +1,56 @@
 ---
 // Shows source from a file in the repository, so a page cannot show code that is not in a program
 // that CI compiles. `file` is relative to the repository root. The leading comment block (licence
-// and notes) is dropped; `start` and `end` (1-based, inclusive, counted after that) pick an excerpt.
+// and notes) is dropped, and so are all `// region` and `// endregion` marker lines.
+//
+// `region="name"` shows only the lines between `// region name` and `// endregion name`. A region that
+// is missing or not closed fails the build, so editing an example cannot silently change a page.
 import { Code } from '@astrojs/starlight/components';
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 
 interface Props {
 	file: string;
-	start?: number;
-	end?: number;
+	region?: string;
 	title?: string;
 	lang?: string;
 }
 
-const { file, start, end, title, lang = 'ballerina' } = Astro.props;
+const { file, region, title, lang = 'ballerina' } = Astro.props;
 const repoRoot = resolve(process.cwd(), '..');
 const raw = readFileSync(resolve(repoRoot, file), 'utf8').split('\n');
+
+const marker = /^\s*\/\/\s*(region|endregion)\s+(\S+)\s*$/;
+
 let first = 0;
-while (first < raw.length && (raw[first].startsWith('//') || raw[first].trim() === '')) first++;
-const lines = raw.slice(first);
+while (
+	first < raw.length &&
+	!marker.test(raw[first]) &&
+	(raw[first].startsWith('//') || raw[first].trim() === '')
+)
+	first++;
+let lines = raw.slice(first);
+
+if (region !== undefined) {
+	const startAt = lines.findIndex((l) => {
+		const m = marker.exec(l);
+		return m !== null && m[1] === 'region' && m[2] === region;
+	});
+	if (startAt < 0) {
+		throw new Error(`ExampleCode: region "${region}" not found in ${file}`);
+	}
+	const endAt = lines.findIndex((l, i) => {
+		const m = marker.exec(l);
+		return i > startAt && m !== null && m[1] === 'endregion' && m[2] === region;
+	});
+	if (endAt < 0) {
+		throw new Error(`ExampleCode: region "${region}" in ${file} has no "// endregion ${region}"`);
+	}
+	lines = lines.slice(startAt + 1, endAt);
+}
+
+lines = lines.filter((l) => !marker.test(l));
 if (lines.length && lines[lines.length - 1] === '') lines.pop();
-const picked = lines.slice((start ?? 1) - 1, end ?? lines.length);
 ---
 
-<Code code={picked.join('\n')} lang={lang} title={title ?? file} />
+<Code code={lines.join('\n')} lang={lang} title={title ?? file} />

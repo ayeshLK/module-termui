@@ -18,6 +18,7 @@ import ayesha/termui;
 import ayesha/termui.term;
 import ayesha/termui.text;
 
+// region echo
 class Echo {
     *termui:Program;
 
@@ -44,3 +45,4 @@ class Echo {
         return [[{text: "> " + self.typed}]];
     }
 }
+// endregion echo

@@ -41,22 +41,22 @@ Notice that after the first frame only the digit that changed is written.
 
 Reading it from the top:
 
-<ExampleCode file="examples/counter/main.bal" start={5} end={8} title="State and the contract" />
+<ExampleCode file="examples/counter/main.bal" region="state" title="State and the contract" />
 
 `*termui:Program` says the class is a program. Its state, `count`, is an ordinary field. Only
 `update` changes it, because only `update` runs on the program's strand.
 
-<ExampleCode file="examples/counter/main.bal" start={10} end={21} title="update" />
+<ExampleCode file="examples/counter/main.bal" region="update" title="update" />
 
 `update` receives every message. A key press is a `term:KeyEvent`, so the program checks the type
 first and ignores anything else by returning `()`. Returning `termui:quit()` ends the program.
 
-<ExampleCode file="examples/counter/main.bal" start={23} end={28} title="view" />
+<ExampleCode file="examples/counter/main.bal" region="view" title="view" />
 
 `view` returns lines, and each line is a list of styled spans. Nothing here talks to the terminal.
 The runtime decides what has to be redrawn.
 
-<ExampleCode file="examples/counter/main.bal" start={31} end={34} title="Running it" />
+<ExampleCode file="examples/counter/main.bal" region="main" title="Running it" />
 
 `term:detectEnvironment()` looks at what the process is attached to and picks the terminal, the
 renderer and the options. [Headless mode](../headless-modes/) explains what changes when there is no

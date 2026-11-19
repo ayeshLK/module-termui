@@ -16,11 +16,11 @@ tests: it is an in-memory screen that you feed keys and read back.
 A tiny prompt that echoes what is typed. Typing shows in the live region, Enter commits a line above
 it, and `!` quits.
 
-<ExampleCode file="examples/best-practices/echo.bal" start={5} end={30} title="Echo" />
+<ExampleCode file="examples/best-practices/echo.bal" region="echo" title="Echo" />
 
 ## Tests
 
-<ExampleCode file="examples/best-practices/tests/echo_test.bal" start={5} end={21} title="Two tests with a FakeTerminal" />
+<ExampleCode file="examples/best-practices/tests/echo_test.bal" region="tests" title="Two tests with a FakeTerminal" />
 
 - `pushText` and `pushKey` queue input. The terminal answers from that queue, so a test needs no timing.
 - `termui:run(program, terminal)` runs the real loop until the program quits, so end your script with
