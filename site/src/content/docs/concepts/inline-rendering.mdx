@@ -6,6 +6,7 @@ sidebar:
 ---
 
 import CastPlayer from '../../../components/CastPlayer.astro';
+import Screen from '../../../components/diagrams/Screen.astro';
 
 termui does not take over the screen. It draws a small **live region** at the bottom, redraws it in
 place, and writes finished output **above** it, once, into your normal scrollback.
@@ -14,12 +15,20 @@ place, and writes finished output **above** it, once, into your normal scrollbac
 
 ## Live region and committed output
 
-```
-   committed output       written once, never redrawn
-   committed output       (selectable, searchable, in your history)
-   ------------------
-   live region            what view() returned, redrawn in place
-```
+<Screen
+	rows={[
+		{kind: 'committed', text: '❯ what is termui?'},
+		{kind: 'committed', text: 'You asked: what is termui?'},
+		{kind: 'committed', text: '● Bash(bal test)'},
+		{kind: 'live', text: '⠋ Responding… (2s · esc to interrupt)'},
+		{kind: 'prompt', text: '❯ '},
+	]}
+	groups={[
+		{from: 0, to: 2, kind: 'committed', label: 'Committed output', detail: 'Written once, never redrawn. Selectable, searchable, and in your terminal\'s history.'},
+		{from: 3, to: 4, kind: 'live', label: 'Live region', detail: 'What view() returned, redrawn in place.'},
+	]}
+	caption="The live region sits at the bottom. Finished output is written above it, once."
+/>
 
 - The region is what `view` returns. The renderer writes only the cells that changed, with relative
   cursor movement and one write per frame.
@@ -41,11 +50,23 @@ By default the region starts on the row where the program was started, so on a f
 prompt sits at the top. Pass `anchorBottom = true` and it stays on the last rows of the terminal, like a
 chat input:
 
-```
-   existing output          rows above the region, left alone
-   blank rows (the gap)     used before anything scrolls
-   live region              always ends on the last row
-```
+<Screen
+	rows={[
+		{kind: 'existing', text: '$ ls'},
+		{kind: 'existing', text: 'README.md  main.bal'},
+		{kind: 'gap'},
+		{kind: 'gap'},
+		{kind: 'gap'},
+		{kind: 'live', text: '⠋ Responding… (2s)'},
+		{kind: 'prompt', text: '❯ '},
+	]}
+	groups={[
+		{from: 0, to: 1, kind: 'existing', label: 'Existing output', detail: 'Rows above the region, left alone.'},
+		{from: 2, to: 4, kind: 'gap', label: 'The gap', detail: 'Blank rows, used before anything scrolls.'},
+		{from: 5, to: 6, kind: 'live', label: 'Live region', detail: 'Always ends on the last row.'},
+	]}
+	caption="With anchorBottom, the region keeps the last rows and the gap above it is used first."
+/>
 
 The renderer asks the terminal once where its cursor is, puts the region on the last rows, and scrolls
 the screen by exactly the rows it lacks, never overwriting anything. Committed output is then written

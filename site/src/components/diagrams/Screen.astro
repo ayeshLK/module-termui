@@ -1,0 +1,222 @@
+---
+// A mock terminal that shows what is on screen, row by row, with notes that say what each run of rows is.
+// Plain HTML and CSS, no script. The terminal is dark in both themes on purpose: it depicts a terminal.
+//
+//   <Screen
+//     rows={[
+//       {kind: 'committed', text: 'You asked: what is termui?'},
+//       {kind: 'live', text: '⠋ Responding… (2s)'},
+//       {kind: 'prompt', text: '❯ '},
+//     ]}
+//     groups={[
+//       {from: 0, to: 0, kind: 'committed', label: 'Committed output', detail: 'Written once, never redrawn.'},
+//       {from: 1, to: 2, kind: 'live', label: 'Live region', detail: 'What view() returned.'},
+//     ]}
+//     caption="..." />
+//
+// Row kinds: existing (output from before the program, dim), committed (written once), gap (blank rows the
+// region has not used yet), live (the live region), prompt (a live row with the cursor).
+// `from` and `to` are 0-based row numbers, inclusive. Wide: each note sits beside its rows with a bracket.
+// Narrow: the notes follow the terminal as a list. Every row is a list item with its kind in words, so the
+// screen reads in order for a screen reader.
+type Kind = 'existing' | 'committed' | 'gap' | 'live' | 'prompt';
+interface Row {
+	kind: Kind;
+	text?: string;
+}
+interface Group {
+	from: number;
+	to: number;
+	kind: Kind;
+	label: string;
+	detail?: string;
+}
+interface Props {
+	rows: Row[];
+	groups: Group[];
+	caption?: string;
+}
+
+const { rows, groups, caption } = Astro.props;
+const words: Record<Kind, string> = {
+	existing: 'existing output',
+	committed: 'committed output',
+	gap: 'blank row',
+	live: 'live region',
+	prompt: 'live region, the prompt',
+};
+const groupKind = (k: Kind) => (k === 'prompt' ? 'live' : k);
+// grid rows: 1 = title bar, 2 .. n+1 = the screen rows, n+2 = bottom padding
+const n = rows.length;
+---
+
+<figure class="dg-figure dg-panel dg-screen not-content">
+	<div class="dg-screen-grid" style={`--n: ${n}`}>
+		<div class="dg-term-bg" aria-hidden="true" style={`grid-row: 1 / ${n + 3}`}>
+			<span class="dg-term-dots"><i></i><i></i><i></i></span>
+		</div>
+		<ol class="dg-term" style={`grid-row: 2 / ${n + 2}`}>
+			{
+				rows.map((r) => (
+					<li class={`dg-row dg-row-${r.kind}`}>
+						<span class="dg-sr">{words[r.kind]}: </span>
+						<span class="dg-row-text">
+							{r.text ?? ''}
+							{r.kind === 'prompt' && <span class="dg-cursor" aria-hidden="true" />}
+						</span>
+					</li>
+				))
+			}
+		</ol>
+		<ul class="dg-notes">
+			{
+				groups.map((g) => (
+					<li class={`dg-note dg-note-${groupKind(g.kind)}`} style={`grid-row: ${g.from + 2} / ${g.to + 3}`}>
+						<strong>{g.label}</strong>
+						{g.detail && <span>{g.detail}</span>}
+					</li>
+				))
+			}
+		</ul>
+	</div>
+	{caption && <figcaption>{caption}</figcaption>}
+</figure>
+
+<style>
+	.dg-screen-grid {
+		--row-h: 1.7rem;
+		display: grid;
+		grid-template-columns: minmax(0, 25rem) minmax(0, 1fr);
+		grid-template-rows: 1.9rem repeat(var(--n), var(--row-h)) 0.7rem;
+		column-gap: 1.6rem;
+	}
+
+	/* the terminal window: a dark surface in both themes, with a title bar */
+	.dg-term-bg {
+		grid-column: 1;
+		border-radius: 0.6rem;
+		background: #14161b;
+		border: 1px solid #2c303a;
+		box-shadow: 0 1px 2px rgba(0, 0, 0, 0.25);
+	}
+	.dg-term-dots {
+		display: flex;
+		gap: 0.4rem;
+		padding: 0.6rem 0.8rem;
+	}
+	.dg-term-dots i {
+		width: 0.55rem;
+		height: 0.55rem;
+		border-radius: 50%;
+		background: #3a3f4b;
+	}
+	.dg-term {
+		grid-column: 1;
+		display: grid;
+		grid-template-rows: subgrid;
+		position: relative;
+		z-index: 1;
+		padding: 0 0.9rem;
+		font-family: var(--sl-font-mono);
+		font-size: 0.78rem;
+		color: #dfe3ea;
+	}
+	.dg-row {
+		display: flex;
+		align-items: center;
+		min-width: 0;
+		margin: 0 -0.9rem;
+		padding: 0 0.9rem;
+		border-left: 3px solid transparent;
+	}
+	.dg-row-text {
+		white-space: pre;
+		overflow: hidden;
+		text-overflow: ellipsis;
+	}
+	.dg-row-existing {
+		color: #7b8394;
+	}
+	.dg-row-gap {
+		background: repeating-linear-gradient(135deg, transparent 0 6px, rgba(255, 255, 255, 0.05) 6px 7px);
+	}
+	.dg-row-live,
+	.dg-row-prompt {
+		background: rgba(108, 140, 255, 0.14);
+		border-left-color: #6c8cff;
+	}
+	.dg-cursor {
+		display: inline-block;
+		width: 0.55em;
+		height: 1.05em;
+		margin-left: 0.1em;
+		vertical-align: text-bottom;
+		background: #dfe3ea;
+	}
+
+	/* the notes: a bracket beside the rows each one describes */
+	.dg-notes {
+		grid-column: 2;
+		grid-row: 1 / -1;
+		display: grid;
+		grid-template-rows: subgrid;
+	}
+	.dg-note {
+		display: flex;
+		flex-direction: column;
+		justify-content: center;
+		gap: 0.1rem;
+		margin: 0.15rem 0;
+		padding-left: 0.9rem;
+		border-left: 3px solid var(--dg-line);
+		font-size: var(--sl-text-sm);
+		line-height: 1.35;
+		color: var(--dg-muted);
+		min-width: 0;
+	}
+	.dg-note strong {
+		color: var(--dg-text);
+		font-weight: 600;
+	}
+	.dg-note-live {
+		border-left-color: #6c8cff;
+	}
+	.dg-note-gap {
+		border-left-style: dashed;
+	}
+	.dg-note-existing {
+		border-left-color: var(--dg-border);
+	}
+
+	/* narrow: the terminal on top, the notes as a list below */
+	@container (max-width: 40rem) {
+		.dg-screen-grid {
+			display: block;
+		}
+		.dg-term-bg {
+			position: relative;
+			height: 1.9rem;
+			border-bottom-left-radius: 0;
+			border-bottom-right-radius: 0;
+			border-bottom: 0;
+		}
+		.dg-term {
+			display: block;
+			padding: 0.2rem 0.9rem 0.7rem;
+			background: #14161b;
+			border: 1px solid #2c303a;
+			border-top: 0;
+			border-radius: 0 0 0.6rem 0.6rem;
+		}
+		.dg-row {
+			height: var(--row-h);
+		}
+		.dg-notes {
+			display: block;
+			margin-top: 1rem;
+		}
+		.dg-note {
+			margin: 0 0 0.7rem;
+		}
+	}
+</style>
