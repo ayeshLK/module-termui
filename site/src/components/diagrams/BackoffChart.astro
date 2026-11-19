@@ -1,0 +1,167 @@
+---
+// The idle backoff as a chart: how long the loop sleeps between checks, against how long the program has been
+// idle. Both axes are logarithmic, because the sleep doubles every step, so each step has the same width and
+// height and the doubling reads as a staircase. The numbers come from the source (see src/lib/backoff.ts).
+// Inline SVG, no script. Two drawings are made from the same data, a wide one and a narrow one with fewer
+// labels, and the container decides which is shown; each has a title and a description, and the figure's
+// caption states the same numbers in words.
+import { backoffSchedule } from '../../lib/backoff';
+
+const s = backoffSchedule();
+const ms = (x: number) => `${+(x * 1000).toPrecision(3)} ms`;
+const secs = (x: number) => `${+x.toPrecision(3)} s`;
+const sleeps = s.steps.slice(0, -1).map((st) => +(st.sleep * 1000).toPrecision(3));
+const summary =
+	`The sleep between checks starts at ${ms(s.base)} and doubles after every ${s.checksPerStep} checks that find nothing ` +
+	`(${sleeps.join(', ')} ms), then stays at the ${ms(s.ceiling)} ceiling, which it reaches after about ${secs(s.reachedAt)} of idleness. ` +
+	`Any message returns it to ${ms(s.base)} at once.`;
+
+const log = Math.log10;
+function drawing(wide: boolean) {
+	const W = wide ? 640 : 310;
+	const H = wide ? 290 : 300;
+	const m = { l: wide ? 84 : 66, r: wide ? 16 : 12, t: wide ? 22 : 24, b: wide ? 46 : 46 };
+	const pw = W - m.l - m.r;
+	const ph = H - m.t - m.b;
+	const [xMin, xMax, yMin, yMax] = [0.05, 30, 0.003, 0.8];
+	const x = (t: number) => m.l + ((log(Math.max(t, xMin)) - log(xMin)) / (log(xMax) - log(xMin))) * pw;
+	const y = (v: number) => m.t + ph - ((log(v) - log(yMin)) / (log(yMax) - log(yMin))) * ph;
+	const fs = wide ? 12 : 11;
+
+	// the staircase: each step at its sleep, joined by risers, then on at the ceiling to the right edge
+	let d = `M ${x(0)} ${y(s.steps[0].sleep)}`;
+	s.steps.forEach((st, i) => {
+		const end = i === s.steps.length - 1 ? xMax : st.to;
+		d += ` H ${x(end)}`;
+		if (i < s.steps.length - 1) d += ` V ${y(s.steps[i + 1].sleep)}`;
+	});
+	const area = `${d} V ${y(yMin)} H ${x(0)} Z`;
+
+	const xt = [0.1, 1, 10];
+	const yt = [0.005, 0.05, 0.5];
+	let out = `<svg class="c-svg" viewBox="0 0 ${W} ${H}" role="img" aria-labelledby="t-${wide ? 'w' : 'n'} d-${wide ? 'w' : 'n'}">`;
+	out += `<title id="t-${wide ? 'w' : 'n'}">The idle backoff</title><desc id="d-${wide ? 'w' : 'n'}">${summary}</desc>`;
+	// grid and tick labels
+	xt.forEach((t) => {
+		out += `<line class="c-grid" x1="${x(t)}" x2="${x(t)}" y1="${m.t}" y2="${m.t + ph}"/>`;
+		out += `<text class="c-tick" x="${x(t)}" y="${m.t + ph + fs + 5}" text-anchor="middle" font-size="${fs}">${t} s</text>`;
+	});
+	yt.forEach((v) => {
+		out += `<line class="c-grid" x1="${m.l}" x2="${m.l + pw}" y1="${y(v)}" y2="${y(v)}"/>`;
+		out += `<text class="c-tick" x="${m.l - 7}" y="${y(v) + 4}" text-anchor="end" font-size="${fs}">${+(v * 1000).toPrecision(3)} ms</text>`;
+	});
+	out += `<line class="c-axis" x1="${m.l}" x2="${m.l + pw}" y1="${m.t + ph}" y2="${m.t + ph}"/><line class="c-axis" x1="${m.l}" x2="${m.l}" y1="${m.t}" y2="${m.t + ph}"/>`;
+	// axis titles
+	out += `<text class="c-title" x="${m.l + pw / 2}" y="${H - 6}" text-anchor="middle" font-size="${fs}">${wide ? 'time idle (log scale)' : 'idle time (log)'}</text>`;
+	out += `<text class="c-title" transform="translate(${wide ? 14 : 13} ${m.t + ph / 2}) rotate(-90)" text-anchor="middle" font-size="${fs}">${wide ? 'sleep between checks (log scale)' : 'sleep (log)'}</text>`;
+	// the ceiling and the moment it is reached
+	out += `<line class="c-ceiling" x1="${m.l}" x2="${m.l + pw}" y1="${y(s.ceiling)}" y2="${y(s.ceiling)}"/>`;
+	out += `<text class="c-ceiling-label" x="${m.l + pw}" y="${y(s.ceiling) - 6}" text-anchor="end" font-size="${fs}">${wide ? `maxPollInterval = ${secs(s.ceiling)}` : `ceiling ${secs(s.ceiling)}`}</text>`;
+	out += `<line class="c-reach" x1="${x(s.reachedAt)}" x2="${x(s.reachedAt)}" y1="${y(s.ceiling)}" y2="${m.t + ph}"/>`;
+	out += `<circle class="c-dot" cx="${x(s.reachedAt)}" cy="${y(s.ceiling)}" r="4"/>`;
+	// narrow: the marker is close to the right edge, so the label goes to its left
+	out += `<text class="c-note" x="${wide ? x(s.reachedAt) + 7 : x(s.reachedAt) - 7}" y="${m.t + ph - 7}" text-anchor="${wide ? 'start' : 'end'}" font-size="${fs}">≈ ${secs(s.reachedAt)}</text>`;
+	// the staircase
+	out += `<path class="c-area" d="${area}"/><path class="c-line" d="${d}"/>`;
+	if (wide) {
+		s.steps.slice(0, -1).forEach((st, i) => {
+			const next = s.steps[i + 1];
+			const mid = Math.sqrt(Math.max(st.from, xMin) * st.to);
+			out += `<text class="c-step" x="${x(mid)}" y="${y(st.sleep) - 7}" text-anchor="middle" font-size="${fs - 1}">${+(st.sleep * 1000).toPrecision(3)} ms</text>`;
+		});
+		// any message: back to the shortest sleep
+		const rx = x(xMax * 0.8);
+		out += `<line class="c-reset" x1="${rx}" x2="${rx}" y1="${y(s.ceiling) + 4}" y2="${y(s.base) - 6}" marker-end="url(#c-arrow)"/>`;
+		out += `<text class="c-note" x="${rx - 8}" y="${(y(s.ceiling) + y(s.base)) / 2}" text-anchor="end" font-size="${fs}">any message: back to ${ms(s.base)}</text>`;
+		out += `<defs><marker id="c-arrow" viewBox="0 0 8 8" refX="7" refY="4" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0 L8 4 L0 8" fill="none" class="c-reset-head"/></marker></defs>`;
+	}
+	return out + '</svg>';
+}
+---
+
+<figure class="dg-figure dg-panel dg-chart not-content">
+	<div class="c-wide" set:html={drawing(true)} />
+	<div class="c-narrow" set:html={drawing(false)} />
+	<figcaption>{summary}</figcaption>
+</figure>
+
+<style>
+	.c-wide {
+		display: block;
+	}
+	.c-narrow {
+		display: none;
+	}
+	@container (max-width: 34rem) {
+		.c-wide {
+			display: none;
+		}
+		.c-narrow {
+			display: block;
+		}
+	}
+	.dg-chart :global(.c-svg) {
+		display: block;
+		width: 100%;
+		height: auto;
+	}
+	.dg-chart :global(.c-grid) {
+		stroke: var(--dg-border);
+		stroke-width: 1;
+		opacity: 0.7;
+	}
+	.dg-chart :global(.c-axis) {
+		stroke: var(--dg-line);
+		stroke-width: 1.5;
+	}
+	.dg-chart :global(.c-tick),
+	.dg-chart :global(.c-title),
+	.dg-chart :global(.c-note),
+	.dg-chart :global(.c-step) {
+		fill: var(--dg-muted);
+		font-family: var(--sl-font-system);
+	}
+	.dg-chart :global(.c-title) {
+		fill: var(--dg-text);
+	}
+	.dg-chart :global(.c-step) {
+		fill: var(--dg-runtime-text);
+	}
+	.dg-chart :global(.c-line) {
+		fill: none;
+		stroke: var(--dg-runtime);
+		stroke-width: 2.5;
+		stroke-linejoin: round;
+	}
+	.dg-chart :global(.c-area) {
+		fill: var(--dg-runtime-bg);
+		opacity: 0.55;
+	}
+	.dg-chart :global(.c-ceiling) {
+		stroke: var(--sl-color-orange);
+		stroke-width: 1.5;
+		stroke-dasharray: 5 4;
+	}
+	.dg-chart :global(.c-ceiling-label) {
+		fill: var(--sl-color-orange-high);
+		font-family: var(--sl-font-mono);
+	}
+	.dg-chart :global(.c-reach) {
+		stroke: var(--dg-muted);
+		stroke-width: 1;
+		stroke-dasharray: 2 3;
+	}
+	.dg-chart :global(.c-dot) {
+		fill: var(--sl-color-orange);
+		stroke: var(--dg-panel);
+		stroke-width: 2;
+	}
+	.dg-chart :global(.c-reset) {
+		stroke: var(--dg-muted);
+		stroke-width: 1.5;
+	}
+	.dg-chart :global(.c-reset-head) {
+		stroke: var(--dg-muted);
+		stroke-width: 1.5;
+	}
+</style>
