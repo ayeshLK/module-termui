@@ -15,7 +15,7 @@
 # Where messages wait until the loop applies them. The loop is the only reader; any strand may push.
 # It is an interface so the mechanism can change (for example from polling to a blocking queue)
 # without touching the loop.
-public type Queue isolated object {
+type Queue isolated object {
     # Adds a message to the end.
     #
     # + message - the message

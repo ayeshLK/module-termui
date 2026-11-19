@@ -36,10 +36,10 @@ public type Environment record {|
 |};
 
 # The width assumed when no better value is known.
-public const int DEFAULT_WIDTH = 80;
+const int DEFAULT_WIDTH = 80;
 
 # The height assumed when no better value is known.
-public const int DEFAULT_HEIGHT = 24;
+const int DEFAULT_HEIGHT = 24;
 
 // A child started with os:exec gets pipes for its own stdio, so it cannot ask whether the *parent's*
 // stdio is a terminal. It can ask the operating system about its parent instead: /proc/<pid>/fd on
@@ -54,7 +54,7 @@ const string STDIO_PROBE_SCRIPT = "pid=$PPID; if [ -e /proc/$pid/fd/0 ]; then " 
 #
 # + path - the target of a standard file descriptor
 # + return - `true` for tty, pty, and console devices
-public isolated function isTerminalPath(string path) returns boolean {
+isolated function isTerminalPath(string path) returns boolean {
     return path.startsWith("/dev/tty") || path.startsWith("/dev/pts/") || path == "/dev/console";
 }
 
@@ -63,7 +63,7 @@ public isolated function isTerminalPath(string path) returns boolean {
 # + output - lines of the form `<fd> <target>`
 # + return - whether standard input, output, and error are terminals; a descriptor that is missing or
 #            unknown counts as not a terminal
-public isolated function parseStdioProbe(string output) returns [boolean, boolean, boolean] {
+isolated function parseStdioProbe(string output) returns [boolean, boolean, boolean] {
     boolean[] terminal = [false, false, false];
     foreach string line in re `\n`.split(output) {
         string trimmed = line.trim();
@@ -81,7 +81,7 @@ public isolated function parseStdioProbe(string output) returns [boolean, boolea
 # Asks the operating system whether this process's standard streams are terminals.
 #
 # + return - whether standard input, output, and error are terminals, or an error when the probe cannot run
-public isolated function probeStdio() returns [boolean, boolean, boolean]|error {
+isolated function probeStdio() returns [boolean, boolean, boolean]|error {
     os:Process process = check os:exec({value: "sh", arguments: ["-c", STDIO_PROBE_SCRIPT]});
     byte[] output = check process.output();
     _ = check process.waitForExit();

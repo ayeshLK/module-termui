@@ -18,6 +18,10 @@ import ayesha/termui.text as txt;
 # Something the application draws on: a live region that is redrawn, and finished output that is
 # committed once. `InlineRenderer` is the interactive one; `PlainRenderer` is for output that is not
 # a terminal.
+#
+# The five methods below are the whole contract: an implementation of only those works with the
+# runtime. Further abilities are separate capability types that a renderer may also implement, so a
+# new ability never adds a required method here.
 public type Renderer object {
     # Replaces the live region with these lines.
     #
@@ -196,6 +200,10 @@ public class InlineRenderer {
         return self.previous;
     }
 
+    # Draws the live region (see `Renderer.draw`).
+    #
+    # + lines - the lines of the live region, one per row
+    # + return - an error when the terminal cannot be written
     public function draw(txt:Span[][] lines) returns error? {
         string out = self.fullScreen ? self.drawFullScreen(lines) : self.drawInline(lines);
         if out != "" {
@@ -363,6 +371,10 @@ public class InlineRenderer {
         return out;
     }
 
+    # Commits paragraphs above the live region (see `Renderer.commitProse`).
+    #
+    # + paragraphs - the paragraphs
+    # + return - an error when the terminal cannot be written
     public function commitProse(txt:Span[][] paragraphs) returns error? {
         string[] rendered = [];
         foreach txt:Span[] paragraph in paragraphs {
@@ -371,6 +383,10 @@ public class InlineRenderer {
         check self.writeAbove(rendered);
     }
 
+    # Commits a block above the live region (see `Renderer.commitBlock`).
+    #
+    # + lines - the lines of the block
+    # + return - an error when the terminal cannot be written
     public function commitBlock(txt:Span[][] lines) returns error? {
         string[] rendered = [];
         foreach txt:Span[] line in lines {
@@ -459,6 +475,11 @@ public class InlineRenderer {
         check self.terminal.write(out);
     }
 
+    # Handles a change of window size (see `Renderer.resize`).
+    #
+    # + width - the new number of columns
+    # + height - the new number of rows
+    # + return - an error when the terminal cannot be written
     public function resize(int width, int height) returns error? {
         string out = "";
         if self.fullScreen {
@@ -523,6 +544,9 @@ public class InlineRenderer {
         check self.terminal.write(ESC + "[?1049l");
     }
 
+    # Finishes and leaves the cursor on a fresh line (see `Renderer.close`).
+    #
+    # + return - an error when the terminal cannot be written
     public function close() returns error? {
         if self.fullScreen {
             check self.leaveFullScreen();
@@ -559,10 +583,18 @@ public class PlainRenderer {
         self.width = width;
     }
 
+    # Draws the live region (see `Renderer.draw`).
+    #
+    # + lines - the lines of the live region, one per row
+    # + return - an error when the terminal cannot be written
     public function draw(txt:Span[][] lines) returns error? {
         self.latest = lines;
     }
 
+    # Commits paragraphs above the live region (see `Renderer.commitProse`).
+    #
+    # + paragraphs - the paragraphs
+    # + return - an error when the terminal cannot be written
     public function commitProse(txt:Span[][] paragraphs) returns error? {
         string out = "";
         foreach txt:Span[] paragraph in paragraphs {
@@ -573,6 +605,10 @@ public class PlainRenderer {
         }
     }
 
+    # Commits a block above the live region (see `Renderer.commitBlock`).
+    #
+    # + lines - the lines of the block
+    # + return - an error when the terminal cannot be written
     public function commitBlock(txt:Span[][] lines) returns error? {
         string out = "";
         foreach txt:Span[] line in lines {
@@ -585,10 +621,18 @@ public class PlainRenderer {
         }
     }
 
+    # Handles a change of window size (see `Renderer.resize`).
+    #
+    # + width - the new number of columns
+    # + height - the new number of rows
+    # + return - an error when the terminal cannot be written
     public function resize(int width, int height) returns error? {
         self.width = width;
     }
 
+    # Finishes and leaves the cursor on a fresh line (see `Renderer.close`).
+    #
+    # + return - an error when the terminal cannot be written
     public function close() returns error? {
         txt:Span[][] last = self.latest;
         self.latest = [];

@@ -51,6 +51,14 @@ Enter, Esc for a choice). They return an error when the program ends first or th
 rows of the terminal instead of where the program was started. It is off by default; see the `termui.render`
 module for how it behaves and where it does not apply. It is ignored when `interactive` is `false`.
 
+### Stability
+
+The supported API of this module is `Program`, `run`, `Options`, `Interface`, `Session`, `Message`,
+`Command` with its helpers (`quit`, `effect`, `commitProse`, `commitBlock`, `every`, `batch`) and the
+message types the runtime sends. New messages and commands are added in minor releases, so handle the
+ones you know and ignore the rest. The run settings keep their defaults for the whole major version:
+`colors` and `reflow` on, `anchorBottom` off, `interactive` on, `pollInterval` 0.005 seconds.
+
 ### Example
 
 ```ballerina

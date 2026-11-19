@@ -22,6 +22,14 @@ messages. It is a UI toolkit only: agent logic stays in your application.
 
 Each module's `Module.md` has the details.
 
+## Stability
+
+Everything documented in the module pages is supported API; symbols described there as low-level may
+change in a minor release. `Renderer` and `Terminal` have a fixed set of required methods, and later
+abilities arrive as separate optional capability types, so an implementation you write keeps working.
+The run settings keep their defaults for the whole major version: colors and reflow on, bottom
+anchoring off, interactive on.
+
 ## Running without a terminal
 
 The same program works interactively, in a pipe, and in a script. `Interface` looks at what the process

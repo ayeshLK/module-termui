@@ -20,7 +20,7 @@ import ballerina/lang.runtime;
 # + question - the question
 # + options - the options of a `select`
 # + defaultAnswer - the answer chosen by Enter in a `confirm`; none when absent
-public type PromptRequest record {|
+type PromptRequest record {|
     "confirm"|"select" kind;
     string question;
     string[] options = [];

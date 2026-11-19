@@ -17,6 +17,10 @@
 # There is a Unix implementation that drives a real terminal and an in-memory `FakeTerminal` for tests
 # and non-interactive use. `nextEvent` blocks, so an implementation must not hold a lock while it
 # waits: other strands call `write` and `size` at the same time.
+#
+# The five methods below are the whole contract: an implementation of only those works with the
+# runtime. Further abilities are separate capability types (see `CursorReporter`) that a terminal may
+# also implement, so a new ability never adds a required method here.
 public type Terminal isolated object {
     # Takes the terminal over (raw input mode for a real terminal). Fails if it is already acquired.
     #

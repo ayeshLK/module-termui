@@ -67,6 +67,16 @@ function cursorRow(term:Terminal terminal) returns int? {
 }
 ```
 
+### Stability
+
+Supported: the `Terminal` type, the `CursorReporter` capability, the input events and keys,
+`UnixTerminal`, `StreamTerminal`, `FakeTerminal`, `Environment`, `detectEnvironment`, `selectMode` and
+`environmentFrom` (the way to build an `Environment` for a test). The five methods of `Terminal`
+(`acquire`, `release`, `size`, `nextEvent`, `write`) are the whole contract: a terminal that implements
+only those works. New abilities arrive as separate capability types, as `CursorReporter` did, and the
+runtime uses one only when the terminal also implements it. New event kinds and keys are added in minor
+releases, so ignore the ones you do not know.
+
 ### Example
 
 ```ballerina

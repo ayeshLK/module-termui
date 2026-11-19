@@ -86,6 +86,14 @@ short moment with no region.
 `enterFullScreen` switches to the alternate screen, where `draw` fills the whole terminal and `commit*`
 is not available. `leaveFullScreen` restores the normal screen as it was, including the inline region.
 
+### Stability
+
+Supported: the `Renderer` type, `InlineRenderer`, `PlainRenderer`, and the cell buffer (`Buffer`, `Cell`,
+`newBuffer`, `bufferFromLines`, `bufferLines`, `cellAt`), which is the way to inspect a rendered frame,
+including each cell's style, in a test. The five methods of `Renderer` (`draw`, `commitProse`,
+`commitBlock`, `resize`, `close`) are the whole contract: a renderer that implements only those works
+with the runtime. Later abilities arrive as separate capability types that a renderer may also implement.
+
 ### Example
 
 ```ballerina

@@ -16,6 +16,13 @@ Styled terminal text: styles and spans, display width, and wrapping. Everything 
   hanging (continuation) indent. Spaces at a wrap point are dropped, spaces at the start of the text
   or after a newline are kept, a newline forces a break, and a tab counts as one space.
 
+### Stability
+
+Supported: `Span`, `Style` and the color types, `displayWidth`, `wrap`, `wrapText`, `plainText` and
+`toAnsi`. `sgr` is low-level: it is public because the renderer in another module of this package
+needs it, so prefer `toAnsi`. Low-level symbols may change in a minor release, with a note in the
+changelog.
+
 ### Example
 
 ```ballerina
