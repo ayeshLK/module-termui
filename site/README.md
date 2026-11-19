@@ -13,6 +13,7 @@ npm ci
 npm run dev        # live preview at http://localhost:4321/module-termui/
 npm run build      # the same build CI runs; output in dist/
 npm run check-links  # after a build: every internal link and #fragment must resolve (CI runs it too)
+npm test            # the tests of the site's own logic (node --test); CI runs them before the build
 npm run preview    # serve dist/ to check the built site
 ```
 
@@ -26,6 +27,7 @@ src/content/docs/
   best-practices/    what to do and avoid
   tutorial/          build a harness, step by step
 src/components/      ExampleCode.astro (and the interactive components)
+src/lib/             logic the components use (the backoff schedule, the loop walk), with its tests
 public/casts/        asciinema recordings
 ```
 

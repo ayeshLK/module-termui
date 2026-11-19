@@ -43,6 +43,11 @@ jobs:
         working-directory: site
         run: npm ci
 
+      # The model behind the interactive loop diagram, and a check that the counter it mirrors has not changed.
+      - name: Test
+        working-directory: site
+        run: npm test
+
       - name: Build
         working-directory: site
         run: npm run build
