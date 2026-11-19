@@ -15,10 +15,10 @@
 
 ## 3. Step 3: streaming output
 
-- [ ] 3.1 Create `examples/tutorial/step3-streaming` with `model.bal` (a scripted model of at most 60 lines whose delays are constructor arguments) and a program that runs it as an effect, commits finished lines and shows the partial line live, and anchors to the bottom; verify `bal build` succeeds
-- [ ] 3.2 Add tests (zero-delay model: the answer is committed in order, the partial line is live while streaming, a second question after the first answer works) and wire into `examples/check.sh`; verify `bal test` passes several times in a row
-- [ ] 3.3 Add the shared recorder `examples/tutorial/record.py` (scripted keys into a built step on a pseudo-terminal, answers cursor reports) and record `step3-streaming.cast` into `site/public/casts/`; verify the cast plays in the built site
-- [ ] 3.4 Write `tutorial/03-streaming` with "What changed", the cast, and a "Connecting a real model" note beside the effect (what to replace, what to keep); verify the page builds and the note refers only to released API
+- [x] 3.1 Create `examples/tutorial/step3-streaming` with `model.bal` (a scripted model of at most 60 lines whose delays are constructor arguments) and a program that runs it as an effect, commits finished lines and shows the partial line live, and anchors to the bottom; verify `bal build` succeeds
+- [x] 3.2 Add tests (zero-delay model: the answer is committed in order, the partial line is live while streaming, a second question after the first answer works) and wire into `examples/check.sh`; verify `bal test` passes several times in a row
+- [x] 3.3 Add the shared recorder `examples/tutorial/record.py` (scripted keys into a built step on a pseudo-terminal, answers cursor reports) and record `step3-streaming.cast` into `site/public/casts/`; verify the cast plays in the built site
+- [x] 3.4 Write `tutorial/03-streaming` with "What changed", the cast, and a "Connecting a real model" note beside the effect (what to replace, what to keep); verify the page builds and the note refers only to released API
 
 ## 4. Step 4: status and interrupt
 
