@@ -20,7 +20,7 @@
 ## 4. In a program
 
 - [x] 4.1 Add a test running a small program that feeds `LineEditor` from its messages on the in-memory terminal (type, paste, edit, submit, history), as in the "Works in a program" scenario; verify the test passes
-- [ ] 4.2 Once the release containing the editor is published (the examples build against the published package), replace the hand-written input in `examples/agent-harness/main.bal` with `LineEditor`, keeping its commands and history behaviour; verify with `verify.py` on the pty and re-record the demo only if it changed visibly
+- [x] 4.2 Once the release containing the editor is published (the examples build against the published package), replace the hand-written input in `examples/agent-harness/main.bal` with `LineEditor`, keeping its commands and history behaviour; verify with `verify.py` on the pty and re-record the demo only if it changed visibly
 - [x] 4.3 Document the module in a new `modules/input/Module.md` (keys table, the macOS Option note, the limits), the README module table and `Package.md`; verify the example in the page is covered by a doc test like the other modules
 
 ## Workflow follow-up

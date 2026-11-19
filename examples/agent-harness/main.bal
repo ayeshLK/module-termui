@@ -13,6 +13,7 @@
 // language governing permissions and limitations under the License.
 
 import ayesha/termui;
+import ayesha/termui.input;
 import ayesha/termui.term;
 import ayesha/termui.text;
 import ballerina/lang.runtime;
@@ -31,6 +32,8 @@ final text:Style GREEN = {fg: "green"};
 final text:Style RED = {fg: "red"};
 final text:Style CODE = {fg: "yellow"};
 
+const int NO_WRAP = 10000;
+
 function sp(string t, text:Style style = {}) returns text:Span {
     return {text: t, style};
 }
@@ -38,10 +41,8 @@ function sp(string t, text:Style style = {}) returns text:Span {
 class Agent {
     *termui:Program;
 
-    // input state
-    private string input = "";
-    private string[] history = [];
-    private int historyPos = -1;
+    // the prompt: cursor, editing keys, multi-line input, paste and history
+    private input:LineEditor editor = new;
 
     // turn state
     private boolean busy = false;
@@ -68,7 +69,7 @@ class Agent {
             return self.onKey(message);
         }
         if message is term:PasteEvent {
-            self.input += message.text.trim();
+            input:EditResult _ = self.editor.handleEvent(message);
             return;
         }
         if message is termui:InputEnded {
@@ -134,7 +135,10 @@ class Agent {
                 sp(string `(${secs}s · ↓ ${self.tokens} tokens · esc to interrupt)`, DIM)
             ]);
         }
-        lines.push([sp("❯ ", ACCENT), sp(self.input), sp("█", {fg: "brightBlack"})]);
+        // a width no line reaches, so the terminal wraps long input itself
+        text:Span[][] prompt = self.editor.render(NO_WRAP, "❯ ");
+        prompt[0][0] = sp("❯ ", ACCENT);
+        lines.push(...prompt);
         lines.push([sp(string `  ${MODEL} · ${self.totalTokens + self.tokens} tokens · /help for commands · ctrl+d to quit`, DIM)]);
         return lines;
     }
@@ -156,44 +160,21 @@ class Agent {
             }
             return;
         }
-        if key.key == "enter" {
-            return self.submit();
+        if self.busy && key.key == "enter" {
+            return; // keep what is typed until the answer is finished
         }
-        if key.key == "backspace" {
-            if self.input.length() > 0 {
-                self.input = self.input.substring(0, self.input.length() - 1);
-            }
-            return;
-        }
-        if key.key == "up" && self.history.length() > 0 {
-            self.historyPos = self.historyPos < 0 ? self.history.length() - 1 : int:max(0, self.historyPos - 1);
-            self.input = self.history[self.historyPos];
-            return;
-        }
-        if key.key == "down" && self.historyPos >= 0 {
-            self.historyPos += 1;
-            if self.historyPos >= self.history.length() {
-                self.historyPos = -1;
-                self.input = "";
-            } else {
-                self.input = self.history[self.historyPos];
-            }
-            return;
-        }
-        if !key.ctrl && !key.alt && key.key is string:Char {
-            self.input += <string:Char>key.key;
+        input:EditResult result = self.editor.handleEvent(key);
+        if result is input:Submitted {
+            return self.submit(result.text);
         }
         return;
     }
 
-    private function submit() returns termui:Command? {
-        string prompt = self.input.trim();
-        if prompt == "" || self.busy {
+    private function submit(string typed) returns termui:Command? {
+        string prompt = typed.trim();
+        if prompt == "" {
             return;
         }
-        self.input = "";
-        self.historyPos = -1;
-        self.history.push(prompt);
 
         text:Span[][] echo = [[sp("❯ ", ACCENT), sp(prompt, BOLD)]];
         if prompt == "/exit" || prompt == "/quit" {
@@ -209,7 +190,7 @@ class Agent {
                 [sp("  fix the bug in the handler   → tool calls + approval prompts")],
                 [sp("  explain how streaming works → streamed prose")],
                 [sp("  write a test                 → short answer with code")],
-                [sp("Keys: ↑/↓ history · esc interrupts a running answer", DIM)]
+                [sp("Keys: ↑/↓ history · alt+enter new line · esc interrupts a running answer", DIM)]
             ])]);
         }
 

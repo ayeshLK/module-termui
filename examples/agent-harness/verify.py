@@ -127,6 +127,21 @@ check("the app asked where the cursor is", app.screen.requests >= 1, "no cursor 
 check("the input is on the bottom rows from the first frame",
       app.rows()[ROWS - 2].startswith("❯") and "ctrl+d to quit" in app.rows()[ROWS - 1], repr(app.rows()[-4:]))
 check("the banner is at the top, untouched", app.rows()[0].startswith("╭") and app.on_screen("Welcome to Dummy Agent"), repr(app.rows()[:4]))
+# the line editor: move the cursor and edit in the middle, a line break with Alt+Enter, then clear it again
+app.type("ab")
+app.send(b"\x1b[D")
+app.type("X")
+app.pump(0.3)
+check("the cursor keys edit in the middle of the input", any(r.startswith("❯ aXb") for r in app.rows()), repr(app.rows()[-4:]))
+app.send(b"\x1b\r")
+app.type("Y")
+app.pump(0.3)
+check("Alt+Enter starts a second line, indented under the prompt",
+      any(r.startswith("  Y") for r in app.rows()) and "ctrl+d to quit" in app.rows()[ROWS - 1], repr(app.rows()[-5:]))
+app.send(b"\x15\x7f\x15\x0b")  # Ctrl+U, Backspace, Ctrl+U, Ctrl+K: what is left of the line break is cleared too
+app.pump(0.3)
+check("Ctrl+U, Ctrl+K and Backspace clear the input again",
+      app.rows()[ROWS - 2].rstrip() == "❯" and "ctrl+d to quit" in app.rows()[ROWS - 1], repr(app.rows()[-4:]))
 app.type("fix the bug in the handler")
 app.send(b"\r")
 check("asks before editing a file", app.wait_for("Allow Edit(src/handler.bal)?"), app.text()[-300:])
