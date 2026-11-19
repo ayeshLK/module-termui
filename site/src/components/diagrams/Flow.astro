@@ -1,0 +1,174 @@
+---
+// A message-flow diagram: a row of steps joined by arrows, with an optional branch that hangs under one of
+// them. It is plain HTML and CSS (no script), and a real nested list, so it reads in order without seeing it.
+//
+//   <Flow nodes={[{label: 'queue'}, {label: 'loop', kind: 'core'}, ...]}
+//         branch={{from: 1, nodes: [{label: 'view()', code: true}, {label: 'a frame'}]}}
+//         caption="..." />
+//
+// `kind`: 'source' (where messages come from: dashed), 'core' (the node the diagram is about: accent).
+// `code` sets the label in the monospace font. The arrows are drawn with borders; the words "then" and
+// "and also" are for screen readers.
+interface Node {
+	label: string;
+	code?: boolean;
+	kind?: 'source' | 'core';
+}
+interface Props {
+	nodes: Node[];
+	branch?: { from: number; nodes: Node[] };
+	caption?: string;
+}
+
+const { nodes, branch, caption } = Astro.props;
+const kindClass = (n: Node) => (n.kind ? `dg-${n.kind}` : '');
+---
+
+<figure class="dg-figure dg-flow">
+	<ol class:list={['dg-flow-main', branch && 'has-branch']}>
+		{
+			nodes.map((n, i) => (
+				<li class={`dg-node ${kindClass(n)}`}>
+					{i > 0 && <span class="dg-sr">{branch && branch.from === i - 1 ? 'on the main path, then ' : 'then '}</span>}
+					<span class="dg-pill">{n.code ? <code>{n.label}</code> : n.label}</span>
+					{branch && branch.from === i && (
+						<ol class="dg-flow-branch">
+							{branch.nodes.map((b, j) => (
+								<li class={`dg-node ${kindClass(b)}`}>
+									<span class="dg-sr">{j === 0 ? 'on a branch from here: ' : 'then '}</span>
+									<span class="dg-pill">{b.code ? <code>{b.label}</code> : b.label}</span>
+								</li>
+							))}
+						</ol>
+					)}
+				</li>
+			))
+		}
+	</ol>
+	{caption && <figcaption>{caption}</figcaption>}
+</figure>
+
+<style>
+	.dg-flow-main {
+		display: flex;
+		align-items: flex-start;
+		gap: var(--dg-gap);
+	}
+	.dg-flow-main.has-branch {
+		padding-bottom: 2.9rem; /* room for the branch that hangs under its node */
+	}
+	.dg-node {
+		position: relative;
+		flex: 0 0 auto;
+	}
+	/* labels never break inside a word; only the long source label wraps */
+	.dg-pill {
+		white-space: nowrap;
+	}
+	.dg-source > .dg-pill {
+		white-space: normal;
+		max-width: 11rem;
+	}
+
+	/* an arrow into every node after the first: a line and a head, drawn with borders */
+	.dg-flow-main > .dg-node + .dg-node::before,
+	.dg-flow-branch > .dg-node + .dg-node::before {
+		content: '';
+		position: absolute;
+		left: calc(var(--dg-gap) * -1);
+		top: 1.05rem;
+		width: calc(var(--dg-gap) - 0.2rem);
+		border-top: 2px solid var(--dg-line);
+	}
+	.dg-flow-main > .dg-node + .dg-node::after,
+	.dg-flow-branch > .dg-node + .dg-node::after {
+		content: '';
+		position: absolute;
+		left: -0.45rem;
+		top: calc(1.05rem - 4px);
+		width: 0.5rem;
+		height: 0.5rem;
+		border-top: 2px solid var(--dg-line);
+		border-right: 2px solid var(--dg-line);
+		transform: rotate(45deg);
+	}
+
+	/* the branch hangs under its node without widening it: an elbow from the node down and into the first step */
+	.dg-flow-branch {
+		position: absolute;
+		top: 100%;
+		left: 1.1rem;
+		display: flex;
+		align-items: flex-start;
+		gap: var(--dg-gap);
+		width: max-content;
+		margin-top: 0.7rem;
+		padding-left: 1.3rem;
+	}
+	.dg-flow-branch::before {
+		content: '';
+		position: absolute;
+		left: 0;
+		top: -0.7rem;
+		width: 1.1rem;
+		height: calc(0.7rem + 1.05rem);
+		border-left: 2px solid var(--dg-line);
+		border-bottom: 2px solid var(--dg-line);
+		border-bottom-left-radius: 0.5rem;
+	}
+	.dg-flow-branch > .dg-node:first-child::after {
+		content: '';
+		position: absolute;
+		left: -0.45rem;
+		top: calc(1.05rem - 4px);
+		width: 0.5rem;
+		height: 0.5rem;
+		border-top: 2px solid var(--dg-line);
+		border-right: 2px solid var(--dg-line);
+		transform: rotate(45deg);
+	}
+
+	/* narrow: the whole flow reads top to bottom, arrows point down, the branch is indented under its node */
+	@container (max-width: 40rem) {
+		.dg-flow-main {
+			flex-direction: column;
+			gap: 1.5rem;
+		}
+		.dg-flow-main.has-branch {
+			padding-bottom: 0;
+		}
+		.dg-source > .dg-pill {
+			max-width: none;
+		}
+		.dg-flow-main > .dg-node + .dg-node::before,
+		.dg-flow-branch > .dg-node + .dg-node::before {
+			left: 1.1rem;
+			top: -1.4rem;
+			width: 0;
+			height: 1.1rem;
+			border-top: 0;
+			border-left: 2px solid var(--dg-line);
+		}
+		.dg-flow-main > .dg-node + .dg-node::after,
+		.dg-flow-branch > .dg-node + .dg-node::after {
+			left: calc(1.1rem - 0.27rem);
+			top: -0.5rem;
+			transform: rotate(135deg);
+		}
+		.dg-flow-branch {
+			position: relative;
+			flex-direction: column;
+			gap: 1.5rem;
+			width: auto;
+			margin: 0.9rem 0 0 1.1rem;
+		}
+		.dg-flow-branch::before {
+			top: -0.9rem;
+			height: calc(0.9rem + 1.05rem);
+		}
+		/* the line from the node on to the next step runs on past the branch, down the left */
+		.dg-flow-main > .dg-node:has(> .dg-flow-branch) {
+			background: linear-gradient(var(--dg-line), var(--dg-line)) 1.1rem 2.3rem / 2px calc(100% - 2.3rem) no-repeat;
+		}
+	}
+</style>

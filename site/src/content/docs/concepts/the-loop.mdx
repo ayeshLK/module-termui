@@ -8,15 +8,22 @@ sidebar:
 import ExampleCode from '../../../components/ExampleCode.astro';
 import CastPlayer from '../../../components/CastPlayer.astro';
 import LoopPlayground from '../../../components/LoopPlayground.astro';
+import Flow from '../../../components/diagrams/Flow.astro';
 
 A termui program is a class with two methods. Everything else in the library exists to feed them
 messages and to draw what they return.
 
-```
- keys, resizes, timers, effect results --> message queue --> loop --> update(message) --> command
-                                                                  |
-                                                                  +--> view() --> one frame per batch
-```
+<Flow
+	nodes={[
+		{label: 'keys, resizes, timers, effect results', kind: 'source'},
+		{label: 'message queue'},
+		{label: 'loop', kind: 'core'},
+		{label: 'update(message)', code: true},
+		{label: 'command'},
+	]}
+	branch={{from: 2, nodes: [{label: 'view()', code: true}, {label: 'one frame per batch'}]}}
+	caption="A message goes into the queue. The loop hands it to update, which may return a command, and draws one frame from view."
+/>
 
 - **`update(message)`** is called once for each message. It changes the program's state and may return
   a **command**: what to do next (`quit()`, start an effect, commit some finished output).

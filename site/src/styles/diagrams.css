@@ -1,0 +1,76 @@
+/*
+ * Shared look for the diagram components (site/src/components/diagrams) and the tutorial step list.
+ * Everything is built on Starlight's colour tokens, so light and dark mode, contrast and the accent all
+ * follow the theme. Nothing here is a script, and nothing depends on colour alone: borders carry the
+ * structure, so the diagrams also read in forced-colours mode.
+ */
+:root {
+	--dg-surface: var(--sl-color-bg-nav);
+	--dg-border: var(--sl-color-gray-5);
+	--dg-line: var(--sl-color-gray-4);
+	--dg-text: var(--sl-color-text);
+	--dg-muted: var(--sl-color-gray-3);
+	--dg-accent: var(--sl-color-text-accent);
+	--dg-accent-bg: var(--sl-color-accent-low);
+	--dg-radius: 0.5rem;
+	--dg-gap: 1.3rem;
+}
+
+/* Text for screen readers only (the arrows of a diagram are drawn, so the words say "then"). */
+.dg-sr {
+	position: absolute;
+	width: 1px;
+	height: 1px;
+	overflow: hidden;
+	clip: rect(0 0 0 0);
+	white-space: nowrap;
+}
+
+.dg-figure {
+	margin: 1.5rem 0;
+	container-type: inline-size;
+}
+.dg-figure figcaption {
+	margin-top: 0.75rem;
+	font-size: var(--sl-text-sm);
+	color: var(--dg-muted);
+}
+
+/* Reset what Starlight's prose styles add to lists inside a diagram. */
+.dg-figure ol,
+.dg-figure li {
+	list-style: none;
+	margin: 0;
+	padding: 0;
+}
+.dg-figure code {
+	background: none;
+	border: 0;
+	padding: 0;
+	font-size: inherit;
+	color: inherit;
+}
+
+.dg-pill {
+	display: inline-block;
+	padding: 0.35rem 0.8rem;
+	border: 1px solid var(--dg-border);
+	border-radius: var(--dg-radius);
+	background: var(--dg-surface);
+	color: var(--dg-text);
+	font-size: var(--sl-text-sm);
+	line-height: 1.35;
+}
+.dg-figure .dg-pill code {
+	font-family: var(--sl-font-mono);
+	font-size: 0.92em;
+}
+.dg-source > .dg-pill {
+	border-style: dashed;
+	color: var(--dg-muted);
+}
+.dg-core > .dg-pill {
+	border-color: var(--dg-accent);
+	background: var(--dg-accent-bg);
+	font-weight: 600;
+}

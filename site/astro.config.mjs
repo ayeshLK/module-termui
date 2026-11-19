@@ -10,6 +10,7 @@ export default defineConfig({
 	integrations: [
 		starlight({
 			title: 'termui',
+			customCss: ['./src/styles/diagrams.css'],
 			description:
 				'Build agent-style terminal apps in Ballerina: streaming output, a live region, and approval prompts that stay well-behaved in pipes and CI.',
 			social: [{ icon: 'github', label: 'GitHub', href: 'https://github.com/ayeshLK/module-termui' }],
