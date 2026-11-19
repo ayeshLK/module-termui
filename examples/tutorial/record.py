@@ -14,6 +14,7 @@ import pyte
 HERE = os.path.dirname(os.path.abspath(__file__))
 JAVA = os.environ.get("JAVA", "java")
 COLS, ROWS = 90, 14
+SIZES = {"step5-approval": (90, 18)}   # steps that need more rows than the default
 
 # ("wait", text): wait for text to appear. ("idle", seconds): let time pass. ("type", text): type it like a
 # person. ("key", bytes): send one key. The last step should end the program.
@@ -31,6 +32,16 @@ SCRIPTS = {
         ("wait", "Interrupted"), ("idle", 1.2),
         ("type", "try again"), ("idle", 0.4), ("key", b"\r"),
         ("wait", "stays live."), ("idle", 1.8),
+        ("key", b"\x03"),
+    ],
+    "step5-approval": [
+        ("wait", "❯ "), ("idle", 1.0),
+        ("type", "run the tests"), ("idle", 0.4), ("key", b"\r"),
+        ("wait", "Allow Bash"), ("idle", 1.6), ("key", b"y"),
+        ("wait", "12 passed"), ("idle", 1.2),
+        ("type", "and again"), ("idle", 0.4), ("key", b"\r"),
+        ("wait", "Allow Bash"), ("idle", 1.4), ("key", b"n"),
+        ("wait", "denied by user"), ("idle", 1.5),
         ("key", b"\x03"),
     ],
 }
@@ -52,6 +63,8 @@ def main():
     if len(sys.argv) < 2 or sys.argv[1] not in SCRIPTS:
         sys.exit(f"usage: record.py <{'|'.join(SCRIPTS)}> [output-directory]")
     step = sys.argv[1]
+    global COLS, ROWS
+    COLS, ROWS = SIZES.get(step, (COLS, ROWS))
     out_dir = os.path.abspath(sys.argv[2] if len(sys.argv) > 2 else os.path.join(HERE, "..", "..", "site", "public", "casts"))
     step_dir = os.path.join(HERE, step)
     jars = [f for f in os.listdir(os.path.join(step_dir, "target", "bin"))] if os.path.isdir(os.path.join(step_dir, "target", "bin")) else []
