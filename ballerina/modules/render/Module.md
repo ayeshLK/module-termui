@@ -15,8 +15,9 @@ output that is written once into the normal scrollback above it.
 ### Live region and commit-above
 
 The region starts on the cursor's row, which must be at the start of a line, and is at most as tall as the
-terminal (extra lines at the top are dropped). After every `draw` the cursor is at column 0 of the
-region's last row. Committed output is never redrawn:
+terminal (extra lines at the top are dropped). A line wider than the terminal is cut off at the right
+edge, not wrapped: wrap it first with `text:wrap` (`LineEditor.render(width)` already does). After every
+`draw` the cursor is at column 0 of the region's last row. Committed output is never redrawn:
 
 - `commitProse` writes each paragraph as one logical line, so the terminal wraps it and, in terminals
   that re-wrap on resize, can re-wrap it later. A newline inside a paragraph is written as carriage

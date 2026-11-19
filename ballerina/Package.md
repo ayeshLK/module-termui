@@ -8,7 +8,7 @@ with its output redirected, and with no terminal at all, and it can be tested wi
 Your program's state lives on one strand; effects are `isolated` and report back with immutable
 messages. It is a UI toolkit only: agent logic stays in your application.
 
-> **Status: experimental (0.1).** The API can change before 1.0. macOS and Linux only. See the
+> **Status: stable.** The API follows semantic versioning (see COMPATIBILITY.md in the repository). macOS and Linux only. See the
 > [repository](https://github.com/ayeshLK/module-termui) for a demo recording, examples and the design notes.
 
 ## Modules

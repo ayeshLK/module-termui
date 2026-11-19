@@ -6,7 +6,7 @@
   <a href="https://central.ballerina.io/ayesha/termui/0.4.0"><img src="https://img.shields.io/badge/Ballerina%20Central-ayesha%2Ftermui-blue" alt="Ballerina Central"></a>
   <a href="https://github.com/ayeshLK/module-termui/releases"><img src="https://img.shields.io/github/v/release/ayeshLK/module-termui" alt="Release"></a>
   <img src="https://img.shields.io/badge/Ballerina-2201.14-blue" alt="Ballerina 2201.14">
-  <img src="https://img.shields.io/badge/status-experimental-orange" alt="Status: experimental">
+  <img src="https://img.shields.io/badge/status-stable-brightgreen" alt="Status: stable">
 </p>
 
 <br>
@@ -23,7 +23,7 @@
   <sub>The <a href="examples/agent-harness">agent harness</a>, recorded from the real program: a prompt with history, a streamed answer with a colored code block, tool calls, and two approval prompts.</sub>
 </p>
 
-> **Status: experimental (0.1).** The API can still change before 1.0. macOS and Linux only.
+> **Status: stable.** The API follows [semantic versioning](COMPATIBILITY.md). macOS and Linux only.
 
 ## Why termui
 
@@ -114,6 +114,8 @@ You write a `Program` with two methods: `update` is called for each message and 
 
 - **[Package guide](ballerina/Package.md):** the modes (interactive, piped output, piped input, headless), what each guarantees, and the plain-output rules.
 - **Module references:** the `Module.md` files linked above.
+- **[Compatibility and versioning](COMPATIBILITY.md):** what is public API, what a patch, minor or major release may change, how deprecation works, and the supported platforms.
+- **[Changelog](CHANGELOG.md):** what changed in each release, with migration notes.
 - **[Specifications](openspec/specs):** the behavior the library promises, as testable requirements and scenarios.
 - **[Design notes](openspec/changes/archive):** why it is built the way it is, including measurements (startup time, write throughput) and what was tried.
 
@@ -121,9 +123,10 @@ You write a `Program` with two methods: `update` is called for each message and 
 
 Worth knowing before you build on it:
 
-- **Experimental.** Expect API changes before 1.0.
+- **Stable.** Breaking changes only in a new major version; see [COMPATIBILITY.md](COMPATIBILITY.md).
 - **Platforms:** macOS and Linux. Windows is not supported.
 - **Startup:** about 0.3 s to the first frame on the JVM (334 ms for the agent demo on a developer laptop) and about 0.23 s with an AppCDS archive. The Ballerina runtime is most of that. Long-lived interactive programs will not notice; a command you run a hundred times a day might.
+- **Wide lines:** a line of the live region wider than the terminal is cut off at the right edge, not wrapped. Wrap it with `text:wrap` first; the line editor does.
 - **Resize:** committed output is not re-laid out; terminals that re-wrap text do it for prose, and blocks keep the width they were written at. The renderer needs to be told whether your terminal re-wraps (`reflow`).
 - **Not there yet:** more ready-made widgets (select list, spinner), incremental markdown rendering, a bridge to Ballerina's AI module, and JSON output for headless mode.
 

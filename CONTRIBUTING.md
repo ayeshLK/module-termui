@@ -1,6 +1,6 @@
 # Contributing to termui
 
-Thanks for helping. This page covers building, testing, and releasing. For what the library is and how to use it, see the [README](README.md).
+Thanks for helping. This page covers building, testing, and releasing. For what the library is and how to use it, see the [README](README.md). What counts as public API, and what each kind of release may change, is in [COMPATIBILITY.md](COMPATIBILITY.md); record every user-visible change in the [CHANGELOG](CHANGELOG.md) under *Unreleased*.
 
 ## Requirements
 
@@ -58,6 +58,31 @@ Releases are cut with the manual **Publish Release** workflow, which builds and 
 creates a `release-<version>` branch, tags `v<version>`, publishes to Ballerina Central, creates a
 GitHub release, and opens a sync pull request. **Publish to the Ballerina Dev/Stage Central** publishes
 a development version to the Dev or Stage Central without tagging.
+
+### Checklist for a stable release (1.0.0 and later)
+
+Do not start the **Publish Release** workflow for a stable version until every item is done. Tick them
+in the release pull request.
+
+- [ ] **API audit.** Every public symbol is either supported API or listed as low-level in its module
+      page, and the *Stability* sections and [COMPATIBILITY.md](COMPATIBILITY.md) agree.
+- [ ] **Documentation.** `bal doc` (run in `ballerina/`) prints no warnings, the module pages and
+      `Package.md` match the code, and the examples in them are covered by the doc tests.
+- [ ] **Changelog.** [CHANGELOG.md](CHANGELOG.md) has an entry for the version, with a migration note
+      for anything removed or changed, and the *Unreleased* section is empty.
+- [ ] **Status.** The README and `Package.md` describe the package as stable (no "experimental" notice,
+      no 0.x wording) and the badges and install snippets show the new version.
+- [ ] **Version.** `gradle.properties` has the release version with `-SNAPSHOT`, and the checked-in
+      `Ballerina.toml`, `Dependencies.toml` and `version.bal` match it.
+- [ ] **CI.** The build is green on Linux and macOS for the commit to be released, including the
+      `tty` tests and the agent-harness check.
+- [ ] **Terminal checks** with the agent harness (`examples/agent-harness`, run with `anchorBottom`) in
+      tmux and in one Linux terminal: the input stays on the bottom rows, a resize keeps the layout, an
+      approval prompt works, and Alt+Enter, the cursor keys and Ctrl+U edit the input.
+      `examples/agent-harness/tmux_check.sh` runs these in tmux (for example in a Linux container with
+      `tmux` and JDK 25 installed); run the harness by hand in a Linux terminal emulator for the other.
+      Note the results in the pull request. A failure blocks the release only if it breaks documented
+      behaviour; otherwise record it as a known limit in the README.
 
 ## The examples
 
