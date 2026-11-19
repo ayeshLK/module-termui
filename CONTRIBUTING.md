@@ -39,6 +39,8 @@ Run a single test with Ballerina directly: `cd ballerina && bal test --tests <te
 Coverage is written as XML to `ballerina/target/report/termui/coverage-report.xml`. The unpacked
 distribution has no HTML report tools, so the HTML report warning can be ignored.
 
+Tests that sleep, read a clock or assert on a duration must also pass when the machine is busy: run `bench/stress_tests.sh` on them (see [`bench/README.md`](bench/README.md)) and give any upper bound a wide margin.
+
 ### Native-image check
 
 `.github/workflows/native-check.yml` runs the package's tests as a GraalVM native image
