@@ -1,6 +1,6 @@
 # Announcement drafts
 
-Working drafts for announcing the first release. Replace `<repo link>` and `<link>` before posting, and re-check each channel's rules on self-promotion first.
+Working drafts for announcing termui as a stable release. Replace `<repo link>` and `<link>` before posting, and re-check each channel's rules on self-promotion first.
 
 ## Where, in order
 
@@ -27,7 +27,7 @@ One channel at a time over about a week, and answer every reply quickly.
 > **termui: build agent-style terminal apps in Ballerina**
 > A small live region (spinner, status line, prompt) redrawn in place, finished output going into your normal scrollback, and an approval prompt like the ones agent CLIs use.
 > What I care about most: the same program runs interactively, with its output piped, and in CI. In a pipe only the result goes to stdout, and questions return their default instead of hanging. It is also testable without a terminal, and effects are `isolated` so the compiler checks the concurrency.
-> Experimental (0.1), macOS and Linux. Demo and a 25-line quickstart in the repo: <repo link>
+> Stable, with semantic versioning (the policy is in the repo), macOS and Linux. It includes a text input with readline-style editing, multi-line and history. Demo and a 25-line quickstart in the repo: <repo link>
 > I would love feedback on the API, and on what an agent CLI needs that is missing.
 
 Attach `docs/assets/harness-demo.gif`.
@@ -52,7 +52,7 @@ Long-running work is an *effect*: an `isolated` function that can only talk back
 
 **What I learned building it.** A few things surprised me, and they are in the design notes: a child process cannot tell whether its parent's output is a terminal, so you have to ask the operating system; terminals disagree about whether they re-wrap text on resize; and recording the demo caught a real bug that no unit test had, because standard output *is* the live region when you run interactively.
 
-**Where it stands.** It is experimental (0.1), macOS and Linux only, and takes about 0.3 s to the first frame on the JVM. Missing: ready-made widgets (a text editor, a select list), incremental markdown, and a bridge to Ballerina's AI module.
+**Where it stands.** It is stable: the API follows semantic versioning, and `COMPATIBILITY.md` in the repository says what that covers. It runs on macOS and Linux only, and takes about 0.3 s to the first frame on the JVM. A `LineEditor` (cursor movement, word editing, multi-line input, paste and history) is included. Missing: more widgets (a select list, a spinner), incremental markdown, and a bridge to Ballerina's AI module.
 
 Code, demo, and the design notes: <repo link>. If you build a CLI with it, I would love to hear what got in your way.
 
