@@ -57,3 +57,9 @@ Found while running them: a line of the live region wider than the terminal is c
 and not wrapped (at 60 columns the harness's 64-character status line loses its last word). That is how
 the cell buffer has always behaved; it was only mentioned in a code comment, so it is now documented in
 the render module page and the README as a known limit.
+
+## Repository settings (2026-11-19)
+
+GitHub Discussions and private vulnerability reporting were enabled with the `gh` CLI, and `SECURITY.md`
+was added. No `good first issue` issues were opened: the decision is that issues should come from the
+community, so task 3.2 was closed without them.

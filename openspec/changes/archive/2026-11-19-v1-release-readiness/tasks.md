@@ -14,7 +14,7 @@
 ## 3. Status and repository
 
 - [x] 3.1 Update the README and `Package.md`: remove the experimental notice and badge, state the platforms, remove "Not there yet" items that are done and keep the rest as the roadmap; verify no page still says experimental or 0.x
-- [ ] 3.2 Enable GitHub Discussions, label a few `good first issue` items, and check `SECURITY.md` or an equivalent note exists; verify in the repository settings
+- [x] 3.2 Enable GitHub Discussions, label a few `good first issue` items, and check `SECURITY.md` or an equivalent note exists; verify in the repository settings
 - [x] 3.3 Do a final pass on the generated API docs (`bal doc`) and the Ballerina Central page preview; verify no undocumented public symbol and no broken links
 
 ## Workflow follow-up
