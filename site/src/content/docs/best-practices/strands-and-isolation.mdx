@@ -24,11 +24,11 @@ The example below does half a second of work on the fifth tick of a 50 ms timer,
 once in an effect. It records when each tick was handled, so the longest gap between ticks shows how long
 the interface went without answering.
 
-<ExampleCode file="examples/best-practices/main.bal" start={43} end={56} title="The same work, done two ways" />
+<ExampleCode file="examples/best-practices/main.bal" region="start-work" title="The same work, done two ways" />
 
 The tests run both and compare the longest gap:
 
-<ExampleCode file="examples/best-practices/tests/responsive_test.bal" start={5} end={22} title="What the tests assert" />
+<ExampleCode file="examples/best-practices/tests/responsive_test.bal" region="tests" title="What the tests assert" />
 
 - With the work in `update`, ticks are handled about half a second apart: the interface froze.
 - With the work in an effect, ticks keep arriving about every 50 ms, and the effect reports back with a

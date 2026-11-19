@@ -15,6 +15,7 @@ import ayesha/termui;
 import ayesha/termui.term;
 import ballerina/test;
 
+// region tests
 @test:Config {}
 function testWorkInUpdateMakesTheInterfaceWait() returns error? {
     term:FakeTerminal terminal = new (30, 3);
@@ -33,3 +34,4 @@ function testWorkInAnEffectKeepsTheInterfaceResponsive() returns error? {
     test:assertTrue(gap < 0.3d, string `ticks were handled at least every 0.3 s, but the longest gap was ${gap.toString()} s`);
     test:assertEquals(job.status, "done");
 }
+// endregion tests

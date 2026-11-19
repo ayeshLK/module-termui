@@ -27,7 +27,7 @@ An **effect** is an `isolated` function that receives a `Session`. It runs on it
 network call or a long computation cannot stall the interface. It talks to the program in only one
 way: `session.send(message)`.
 
-<ExampleCode file="examples/agent-harness/main.bal" start={267} end={308} title="A fake model call, from the agent harness" />
+<ExampleCode file="examples/agent-harness/main.bal" region="stream-turn" title="A fake model call, from the agent harness" />
 
 Three rules make this safe, and the compiler enforces the first two:
 
@@ -54,7 +54,7 @@ terminal they never wait: see [headless mode](../headless-modes/).
 `every` starts a timer. The harness starts one when it launches, to animate the spinner and the elapsed
 time:
 
-<ExampleCode file="examples/agent-harness/main.bal" start={310} end={322} title="Launching with a timer" />
+<ExampleCode file="examples/agent-harness/main.bal" region="launch" title="Launching with a timer" />
 
 A tick is an ordinary message, handled by `update` like any other. Two things to know:
 

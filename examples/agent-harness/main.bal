@@ -166,10 +166,12 @@ class Agent {
         if self.busy && key.key == "enter" {
             return; // keep what is typed until the answer is finished
         }
+        // region editor-input
         input:EditResult result = self.editor.handleEvent(key);
         if result is input:Submitted {
             return self.submit(result.text);
         }
+        // endregion editor-input
         return;
     }
 
@@ -278,6 +280,7 @@ class Agent {
 }
 
 // The fake LLM call: runs on its own strand and reports back only with messages.
+// region stream-turn
 function streamTurn(int turn, readonly & Step[] plan, CancelFlag flag) returns termui:EffectFunction {
     return isolated function(termui:Session session) returns error? {
         boolean interrupted = false;
@@ -320,7 +323,9 @@ function streamTurn(int turn, readonly & Step[] plan, CancelFlag flag) returns t
         session.send({kind: "turnDone", turn, interrupted});
     };
 }
+// endregion stream-turn
 
+// region launch
 public function main() returns error? {
     termui:Interface ui = new (term:detectEnvironment());
     termui:Command banner = termui:batch([
@@ -334,6 +339,7 @@ public function main() returns error? {
     ]);
     check ui.run(new Agent(), banner, anchorBottom = true);
 }
+// endregion launch
 
 function boxLine(string content, text:Style style) returns text:Span[] {
     string pad = rep(" ", 41 - content.length());

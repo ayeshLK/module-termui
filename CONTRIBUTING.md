@@ -120,7 +120,7 @@ npm run build      # the build CI runs
 ```
 
 - **Add a page** by creating a `.md` or `.mdx` file under `site/src/content/docs/<section>/`. The sidebar is generated from the folders; order a page with `sidebar.order` in its front matter. Quote a `description` that contains a colon.
-- **Show code from a file, never a copy.** Include a program with `<ExampleCode file="examples/..." />` (optionally `start` and `end` lines). `examples/check.sh` compiles every example a page includes, and runs their tests, and CI runs it, so a page cannot show code that does not build. Add a new included example to that script.
+- **Show code from a file, never a copy.** Include a program with `<ExampleCode file="examples/..." />`, or part of one with `region="name"`, which shows the lines between `// region name` and `// endregion name` in the source (the markers are not shown, and a missing region fails the build). `examples/check.sh` compiles every example a page includes, and runs their tests, and CI runs it, so a page cannot show code that does not build. Add a new included example to that script.
 - **Use only released API in tutorial and example programs.** They pin a published termui version, so a page matches what a reader can install. A new API appears in the site after the release that contains it.
 - **Link to the API reference** on Ballerina Central instead of restating symbol documentation.
 - **Recordings** are asciinema casts in `site/public/casts/`, recorded from the real programs (`examples/counter/record_demo.py` and `examples/agent-harness/record_demo.py` show how).
