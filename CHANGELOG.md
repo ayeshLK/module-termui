@@ -6,10 +6,24 @@ All notable changes to termui are listed here, newest first. The format follows
 
 ## [Unreleased]
 
+## [1.0.0] - 2026-11-19
+
+termui is stable. From this release the API follows [COMPATIBILITY.md](COMPATIBILITY.md): breaking
+changes are made only in a new major version. There are no API changes since 0.4.0.
+
 ### Added
 - `COMPATIBILITY.md`: what is public API, what each kind of release may change, how deprecation works,
   and the supported platforms.
-- This changelog.
+- This changelog and a `SECURITY.md` with how to report a vulnerability.
+- A release checklist in `CONTRIBUTING.md` and `examples/agent-harness/tmux_check.sh`, which runs the
+  agent harness in tmux and checks the layout, editing keys, a resize and the approval prompts.
+
+### Changed
+- The README and `Package.md` describe the package as stable.
+- Documented that a line of the live region wider than the terminal is cut off at the right edge, not
+  wrapped (it has always behaved this way; wrap it first with `text:wrap`).
+- `examples/agent-harness` uses the terminal width from the first message, so long input wraps under
+  the prompt.
 
 ## [0.4.0] - 2026-11-19
 
@@ -76,7 +90,8 @@ First release.
   `ayesha/termui.text` (styled text, display width, wrapping).
 - The `examples/counter` and `examples/agent-demo` examples.
 
-[Unreleased]: https://github.com/ayeshLK/module-termui/compare/v0.4.0...HEAD
+[Unreleased]: https://github.com/ayeshLK/module-termui/compare/v1.0.0...HEAD
+[1.0.0]: https://github.com/ayeshLK/module-termui/compare/v0.4.0...v1.0.0
 [0.4.0]: https://github.com/ayeshLK/module-termui/compare/v0.3.0...v0.4.0
 [0.3.0]: https://github.com/ayeshLK/module-termui/compare/v0.2.0...v0.3.0
 [0.2.0]: https://github.com/ayeshLK/module-termui/compare/v0.1.0...v0.2.0
