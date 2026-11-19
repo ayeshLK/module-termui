@@ -1,0 +1,144 @@
+---
+title: "6. Testing it"
+description: "Put the harness under test: direct calls, a scripted session, a gated terminal and a headless run."
+sidebar:
+  order: 6
+---
+
+import ExampleCode from '../../../components/ExampleCode.astro';
+
+The harness is finished. This step does not change the program: it is step 5, unchanged. What it adds is
+a `tests/` folder, and a way of thinking about testing a terminal program, which is normally awkward. It
+is not awkward here, because the program never talks to a terminal. It returns lines from `view` and
+commands from `update`, and a renderer and a terminal do the rest. A test swaps those two for fakes.
+
+```
+ what you test                          how
+ -------------                          ---
+ 1. update and view                     call them directly
+ 2. the whole program, scripted keys    FakeTerminal, run to the end
+ 3. a question that needs an answer     a terminal that answers when asked
+ 4. what a script or CI would see       an Interface with no terminal, plain output
+```
+
+The package is `examples/tutorial/step6-testing`. CI builds it and runs its tests with
+`examples/check.sh`.
+
+## Layer 1: call `update` and `view`
+
+The fastest tests do not run the program. They call `update` with a message, the way the runtime would,
+and read what `view` returns. This is the way to test what happens **between** two messages, which a full
+run cannot pause on.
+
+<ExampleCode file="examples/tutorial/step6-testing/tests/support.bal" region="events" title="Building events" />
+
+<ExampleCode file="examples/tutorial/step6-testing/tests/support.bal" region="rows" title="Reading the live region" />
+
+<ExampleCode file="examples/tutorial/step6-testing/tests/unit_test.bal" region="unit-tests" title="tests/unit_test.bal" />
+
+These four tests check that the unfinished line is live and a finished one is not, that a late message from
+an old turn is ignored, that a tick leaves an idle view unchanged (so costs no redraw), and that the next
+question works after an interruption.
+
+## Layer 2: run the whole program
+
+A `FakeTerminal` is a terminal in memory. You push keys into it, run the program with `termui:run`, and
+read the screen it drew.
+
+<ExampleCode file="examples/tutorial/step6-testing/tests/session_test.bal" region="session-tests" title="tests/session_test.bal" />
+
+- `pushText` and `pushKey` script the input. The terminal answers from that script, so a test needs no
+  timing.
+- `screenLines()` and `screenText()` are what a person would see.
+- The run ends when the program quits. When the scripted input runs out, the program receives
+  `InputEnded`, and the harness quits after the answer has finished.
+
+## Layer 3: a question that needs an answer
+
+The first test above approves a tool, and that needs a `y` to arrive **after** the question is on the screen.
+A key pushed up front reaches the program before the question exists. The `Terminal` type is a public
+interface, so a test can wrap a `FakeTerminal` and hold one key back:
+
+<ExampleCode file="examples/tutorial/step6-testing/tests/support.bal" region="gated-terminal" title="tests/support.bal" />
+
+This is the same helper as in step 5. Use it for any test where the program asks something, and the
+answer has to come from the other side.
+
+## Layer 4: what a script or CI would see
+
+Everything so far ran with colors, a live region and questions. A script gets none of that. `Interface`
+chooses plain output and no questions when nothing is a terminal, and you can build one from a made-up
+environment and hand it a fake terminal, so a test can read exactly what was written.
+
+<ExampleCode file="examples/tutorial/step6-testing/tests/headless_test.bal" region="headless-tests" title="tests/headless_test.bal" />
+
+The test asserts what the [headless rules](../../concepts/headless-modes/) promise: the mode is
+`headless`, nobody can answer, the output has no escape sequences or carriage returns, the question took
+its default (deny), and the tool did not run.
+
+## Rules that keep the tests quiet
+
+- **No clocks in assertions.** Set the delay to zero, and assert on order and content, not on durations.
+- **Make timing deterministic instead of long.** The interrupt test pushes Esc while the model is
+  "thinking", a pause far longer than the time Esc takes to arrive, so the result does not depend on a race.
+- **Run them under load once.** A test that passes on a quiet machine can fail on a busy CI runner. The
+  tests in this tutorial were each run repeatedly, including with the machine's cores saturated.
+- **Test the behaviour, not the layout of every cell.** Assert on lines of text. Check a cell's style only
+  when the style is the point.
+
+## All the test files
+
+<details>
+<summary>tests/support.bal</summary>
+
+<ExampleCode file="examples/tutorial/step6-testing/tests/support.bal" title="tests/support.bal" />
+
+</details>
+
+<details>
+<summary>tests/unit_test.bal</summary>
+
+<ExampleCode file="examples/tutorial/step6-testing/tests/unit_test.bal" title="tests/unit_test.bal" />
+
+</details>
+
+<details>
+<summary>tests/session_test.bal</summary>
+
+<ExampleCode file="examples/tutorial/step6-testing/tests/session_test.bal" title="tests/session_test.bal" />
+
+</details>
+
+<details>
+<summary>tests/headless_test.bal</summary>
+
+<ExampleCode file="examples/tutorial/step6-testing/tests/headless_test.bal" title="tests/headless_test.bal" />
+
+</details>
+
+The program under test is step 5's `main.bal` and `model.bal`, unchanged.
+
+## Run them
+
+```sh
+bal test
+```
+
+## Where to go next
+
+You have built a small agent harness with a prompt, a streamed answer, a status line, interrupt, an
+approval step and tests, using only the released API.
+
+- **The finished example.** [`examples/agent-harness`](https://github.com/ayeshLK/module-termui/tree/main/examples/agent-harness)
+  goes further: colored code blocks in the answer, a welcome banner, a token count and several tool calls
+  in a turn, and a terminal check that drives it on a real pseudo-terminal.
+- **Plug in a real model.** [Step 3](../03-streaming/) says what to replace and what to keep. Nothing else
+  in the program changes.
+- **How it works.** The [concepts](../../concepts/the-loop/) pages explain the loop, effects and timers,
+  inline rendering, modes and idle cost.
+- **What to do and avoid.** [Strands and isolation](../../best-practices/strands-and-isolation/) and
+  [testing without a terminal](../../best-practices/testing/).
+- **Every symbol.** The API reference is on
+  [Ballerina Central](https://central.ballerina.io/ayesha/termui/1.0.0).
+- **Questions and ideas.** [Discussions](https://github.com/ayeshLK/module-termui/discussions) on the
+  repository.

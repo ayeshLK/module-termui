@@ -67,6 +67,13 @@ Measured with `bench/idle_cpu.py` on a developer laptop, this step uses about 6%
 waits for a question, and writes nothing to the terminal. That is mostly the work of its own `update` and
 `view`, ten times a second. A program without a timer idles at about 1%.
 
+<details>
+<summary>The whole of model.bal</summary>
+
+<ExampleCode file="examples/tutorial/step4-status/model.bal" title="model.bal" />
+
+</details>
+
 ## The program
 
 <ExampleCode file="examples/tutorial/step4-status/main.bal" title="main.bal" />

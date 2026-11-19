@@ -16,7 +16,10 @@ extends the one before it.
 | [3. Streaming output](./03-streaming/) | An answer that arrives in pieces | Effects, messages, `commitBlock`, `anchorBottom` |
 | [4. Status and interrupt](./04-status/) | A live status line and Esc to stop | Timers, quiet ticks, idle cost, a cancel flag |
 | [5. Tool calls](./05-approval/) | An approval prompt | `confirm`, the default answer, headless |
-| 6. Testing | The harness under a fake terminal | `FakeTerminal`, headless |
+| [6. Testing it](./06-testing/) | The harness under a fake terminal | `FakeTerminal`, a gated terminal, headless |
 
-Step 6 is coming. The finished harness already exists as
+Each step has a recording or a test you can run, and the programs are the files CI builds, in
+[`examples/tutorial`](https://github.com/ayeshLK/module-termui/tree/main/examples/tutorial). The tutorial
+uses a scripted model, so it needs no account, key or network, and says where a real model would plug in.
+The finished harness, with more features, is
 [`examples/agent-harness`](https://github.com/ayeshLK/module-termui/tree/main/examples/agent-harness).

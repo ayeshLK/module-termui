@@ -47,6 +47,11 @@ jobs:
         working-directory: site
         run: npm run build
 
+      # Every internal link and #fragment in the built site must resolve.
+      - name: Check links
+        working-directory: site
+        run: npm run check-links
+
       - name: Upload the site
         if: ${{ github.event_name != 'pull_request' }}
         uses: actions/upload-pages-artifact@fc324d3547104276b827a68afc52ff2a11cc49c9 # v5.0.0
