@@ -31,9 +31,15 @@ By default the region starts where the cursor is, so on a fresh screen the inter
 `anchorBottom` the region is kept on the last rows of the terminal instead, the way a chat input is:
 
 ```
-   existing output          rows above the region, left alone
-   blank rows (the gap)     used before anything scrolls
-   live region              always ends on the last row
+   +--------------------------------------+
+   | $ ls                                 |  existing output:
+   | README.md  main.bal                  |  rows above the region, left alone
+   | . . . . . . . . . . . . . . . . .    |  the gap:
+   | . . . . . . . . . . . . . . . . .    |  blank rows, used before anything scrolls
+   | . . . . . . . . . . . . . . . . .    |
+   | > Responding... (2s)                 |  live region:
+   | > _                                  |  always ends on the last row
+   +--------------------------------------+
 ```
 
 The renderer asks the terminal once where its cursor is (see `term:CursorReporter`), puts the region on the
