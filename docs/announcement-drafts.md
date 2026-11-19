@@ -1,12 +1,12 @@
 # Announcement drafts
 
-Working drafts for announcing termui as a stable release. Replace `<repo link>` and `<link>` before posting, and re-check each channel's rules on self-promotion first.
+Working drafts for announcing termui as a stable release. The links are filled in (repository, documentation site, tutorial). Re-check each channel's rules on self-promotion before posting.
 
 ## Where, in order
 
 | # | Where | Why | Format |
 |---|---|---|---|
-| 1 | Ballerina Discord, Showcase channel | The community's live chat, with a channel for sharing what you build | Short post with the demo GIF |
+| 1 | Ballerina Discord, Showcase channel | The community's live chat, with a channel for sharing what you build | Short post with the demo GIF and the docs link |
 | 2 | Ballerina community Tech Blog | A permanent, searchable home (the official blog is for releases; ask in Discord how to submit) | The long post |
 | 3 | `ballerina-lang` GitHub Discussions, General | Reaches people who follow the project | A short pointer, only if the rules allow self-posts |
 | 4 | Your own blog, dev.to, or Hashnode | Reaches people searching for terminal UI and agent topics | The long post, cross-posted |
@@ -16,10 +16,11 @@ One channel at a time over about a week, and answer every reply quickly.
 
 ## Before posting
 
-- [x] The first release (0.1.0) is on Ballerina Central, and the README install section uses it. (Publishing is permanent: a version cannot be overwritten or removed.)
+- [x] 1.0.0 is on Ballerina Central, and the README install section uses it. (Publishing is permanent: a version cannot be overwritten or removed.)
 - [x] The repository description and topics are set.
-- [ ] GitHub Discussions are enabled.
-- [ ] A few issues are labelled `good first issue`.
+- [x] GitHub Discussions are enabled.
+- [x] The documentation site is live, with the concepts, best practices and a six-step tutorial: https://ayeshlk.github.io/module-termui/
+- [x] No `good first issue` labels, by decision: issues should come from the community.
 - [ ] Each channel's rules on self-promotion have been read.
 
 ## Short post (Discord Showcase)
@@ -27,7 +28,9 @@ One channel at a time over about a week, and answer every reply quickly.
 > **termui: build agent-style terminal apps in Ballerina**
 > A small live region (spinner, status line, prompt) redrawn in place, finished output going into your normal scrollback, and an approval prompt like the ones agent CLIs use.
 > What I care about most: the same program runs interactively, with its output piped, and in CI. In a pipe only the result goes to stdout, and questions return their default instead of hanging. It is also testable without a terminal, and effects are `isolated` so the compiler checks the concurrency.
-> Stable, with semantic versioning (the policy is in the repo), macOS and Linux. It includes a text input with readline-style editing, multi-line and history. Demo and a 25-line quickstart in the repo: <repo link>
+> Stable, with semantic versioning (the policy is in the repo), macOS and Linux. It includes a text input with readline-style editing, multi-line and history.
+> Docs, with a tutorial that builds a small agent harness step by step (prompt, streaming, interrupt, approval, tests): https://ayeshlk.github.io/module-termui/
+> Demo and a 25-line quickstart in the repo: https://github.com/ayeshLK/module-termui
 > I would love feedback on the API, and on what an agent CLI needs that is missing.
 
 Attach `docs/assets/harness-demo.gif`.
@@ -54,7 +57,9 @@ Long-running work is an *effect*: an `isolated` function that can only talk back
 
 **Where it stands.** It is stable: the API follows semantic versioning, and `COMPATIBILITY.md` in the repository says what that covers. It runs on macOS and Linux only, and takes about 0.3 s to the first frame on the JVM. A `LineEditor` (cursor movement, word editing, multi-line input, paste and history) is included. Missing: more widgets (a select list, a spinner), incremental markdown, and a bridge to Ballerina's AI module.
 
-Code, demo, and the design notes: <repo link>. If you build a CLI with it, I would love to hear what got in your way.
+**Where to start.** The documentation site (https://ayeshlk.github.io/module-termui/) explains how the pieces work and what to avoid, and its tutorial builds a small harness in six steps: a prompt, a streamed answer, a status line with Esc to interrupt, a tool call that asks for approval, and tests. Every program in it is built and tested in CI, and the tutorial uses a scripted model, so it needs no account or key; it says where a real model would plug in.
+
+Code, demo, and the design notes: https://github.com/ayeshLK/module-termui. If you build a CLI with it, I would love to hear what got in your way.
 
 The "what I learned" paragraph is the strongest part for readers outside the Ballerina community, so keep it.
 
