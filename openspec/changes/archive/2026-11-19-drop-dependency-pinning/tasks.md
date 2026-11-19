@@ -17,7 +17,7 @@
 
 ## 3. Continuous integration
 
-- [ ] 3.1 Open the pull request and verify that the build, native-image and `Documentation site` workflows pass, and that the build logs show the examples being pointed at the local build
+- [x] 3.1 Open the pull request and verify that the build, native-image and `Documentation site` workflows pass, and that the build logs show the examples being pointed at the local build
 
 ## Workflow follow-up
 

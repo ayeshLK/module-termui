@@ -150,9 +150,13 @@ The site SHALL be published to GitHub Pages automatically after a change to the 
 - **WHEN** a change to a site page is merged to the main branch
 - **THEN** the published site shows the change without a new package version
 
-### Requirement: Included examples are compiled in continuous integration
-Every example program that a site page includes SHALL be compiled by the continuous-integration build against the latest published package, on at least one supported platform.
+### Requirement: Included examples resolve termui from Ballerina Central
+Every example program that a site page includes SHALL be compiled by the continuous-integration build, on at least one supported platform, against the latest published termui, which the example's manifest does not name a version of.
 
-#### Scenario: Example pinned to a release
+#### Scenario: Example resolved from Ballerina Central
 - **WHEN** the build runs
-- **THEN** each included example is resolved against a published package version and compiled
+- **THEN** each included example resolves termui from Ballerina Central, with no version written in its manifest, and is compiled
+
+#### Scenario: Example built against the working tree
+- **WHEN** a contributor or the build runs the script that points the examples at the source
+- **THEN** each example's manifest names the locally built termui from the local repository, and running the script again leaves one such entry and not two
