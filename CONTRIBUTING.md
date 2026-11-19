@@ -117,6 +117,7 @@ cd site
 npm ci
 npm run dev        # live preview at http://localhost:4321/module-termui/
 npm run build      # the build CI runs
+npm run check-links  # then check every internal link and #fragment in the built site (CI runs it too)
 ```
 
 - **Add a page** by creating a `.md` or `.mdx` file under `site/src/content/docs/<section>/`. The sidebar is generated from the folders; order a page with `sidebar.order` in its front matter. Quote a `description` that contains a colon.

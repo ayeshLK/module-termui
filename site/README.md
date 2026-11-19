@@ -12,6 +12,7 @@ cd site
 npm ci
 npm run dev        # live preview at http://localhost:4321/module-termui/
 npm run build      # the same build CI runs; output in dist/
+npm run check-links  # after a build: every internal link and #fragment must resolve (CI runs it too)
 npm run preview    # serve dist/ to check the built site
 ```
 

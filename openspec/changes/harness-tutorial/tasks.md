@@ -36,10 +36,10 @@
 
 ## 6. Step 6 and the finish
 
-- [ ] 6.1 Create `examples/tutorial/step6-testing`: the harness from step 5 with a `tests/` folder showing the testing approach end to end (a scripted session under `FakeTerminal`, and a headless run asserting plain output); verify `bal test` passes and `examples/check.sh` runs it
-- [ ] 6.2 Write `tutorial/06-testing` and a closing section that links `examples/agent-harness`, the concepts pages and the API reference; verify the harness program on the page is the one the tests run against
-- [ ] 6.3 Replace the "coming soon" wording on the tutorial index and step 1 with real links; verify no page in `site/dist` contains "coming" and every internal link under `tutorial/` resolves (a link check over the built site)
-- [ ] 6.4 Verify the finished tutorial end to end: follow steps 1 to 6 from a clean directory using only the pages and the pinned release, and confirm each step runs as its page says; note anything that needed a fix
+- [x] 6.1 Create `examples/tutorial/step6-testing`: the harness from step 5 with a `tests/` folder showing the testing approach end to end (a scripted session under `FakeTerminal`, and a headless run asserting plain output); verify `bal test` passes and `examples/check.sh` runs it
+- [x] 6.2 Write `tutorial/06-testing` and a closing section that links `examples/agent-harness`, the concepts pages and the API reference; verify the harness program on the page is the one the tests run against
+- [x] 6.3 Replace the "coming soon" wording on the tutorial index and step 1 with real links; verify no page in `site/dist` contains "coming" and every internal link under `tutorial/` resolves (a link check over the built site)
+- [x] 6.4 Verify the finished tutorial end to end: follow steps 1 to 6 from a clean directory using only the pages and the pinned release, and confirm each step runs as its page says; note anything that needed a fix
 
 ## Workflow follow-up
 

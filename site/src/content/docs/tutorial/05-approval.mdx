@@ -41,6 +41,13 @@ as [modes and headless operation](../../concepts/headless-modes/) explains. A sc
 never hangs on a question, and, because the default is deny, never runs a tool that nobody approved. Decide
 what "no answer" means for your program, and make it the safe thing.
 
+<details>
+<summary>The whole of model.bal</summary>
+
+<ExampleCode file="examples/tutorial/step5-approval/model.bal" title="model.bal" />
+
+</details>
+
 ## The program
 
 <ExampleCode file="examples/tutorial/step5-approval/main.bal" region="tool-messages" title="Handling the tool messages" />
@@ -86,4 +93,4 @@ wrap a `FakeTerminal` and hold one key back until the screen shows the question.
 
 ## Next
 
-Step 6 puts the harness under test: a scripted session on a fake terminal, and a headless run.
+[Step 6](../06-testing/) puts the harness under test: a scripted session on a fake terminal, and a headless run.

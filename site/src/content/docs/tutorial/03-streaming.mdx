@@ -53,6 +53,13 @@ To use a real model, change what happens inside `streamAnswer` and keep everythi
 The function must stay `isolated` and the messages must stay immutable; the compiler checks both. Pass
 anything the call needs, such as a client or a key, into `streamAnswer` as arguments.
 
+<details>
+<summary>The whole of model.bal</summary>
+
+<ExampleCode file="examples/tutorial/step3-streaming/model.bal" title="model.bal" />
+
+</details>
+
 ## The program
 
 The finished file, built and tested by CI as `examples/tutorial/step3-streaming`:
