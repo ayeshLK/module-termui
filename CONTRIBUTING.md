@@ -96,17 +96,17 @@ second of idleness, 110 ms after three seconds and half a second after 13 second
 
 ## The examples
 
-The examples depend on the version of termui published on Ballerina Central, so anyone who clones the repository can run them with `bal run`. To try them against the code in your working tree, publish it to your local repository and point the examples at it:
+The examples name no version of termui. Their manifests have only a `[package]` section, so anyone who clones the repository can run them with `bal run`, and Ballerina resolves the published release from Ballerina Central. To try them against the code in your working tree, publish it to your local repository and point the examples at it:
 
 ```sh
 (cd ballerina && bal pack && bal push --repository=local)
-.github/scripts/point-examples-at-source.sh          # edits the examples' Ballerina.toml: do not commit the result
+.github/scripts/point-examples-at-source.sh          # adds a dependency on the local build to each example's Ballerina.toml: do not commit the result
 (cd examples/agent-harness && bal build && JAVA=$(which java) python3 verify.py)   # python3 with pyte installed, see Requirements
 (cd examples/counter && bal build && JAVA=$(which java) python3 verify.py)
-git checkout examples                                  # back to the published dependency
+git checkout examples                                  # back to the published release
 ```
 
-CI does the same on Linux and macOS, and `examples/agent-harness/record_demo.py` regenerates the recording used in the README (it needs [`agg`](https://github.com/asciinema/agg)).
+The script covers the examples under `examples/` and not the tutorial packages in `examples/tutorial/`, which are always built against the published release. Running it twice is safe: it replaces the entry it added. CI does the same on Linux and macOS, and `examples/agent-harness/record_demo.py` regenerates the recording used in the README (it needs [`agg`](https://github.com/asciinema/agg)).
 
 ## The documentation site
 
@@ -122,7 +122,7 @@ npm run check-links  # then check every internal link and #fragment in the built
 
 - **Add a page** by creating a `.md` or `.mdx` file under `site/src/content/docs/<section>/`. The sidebar is generated from the folders; order a page with `sidebar.order` in its front matter. Quote a `description` that contains a colon.
 - **Show code from a file, never a copy.** Include a program with `<ExampleCode file="examples/..." />`, or part of one with `region="name"`, which shows the lines between `// region name` and `// endregion name` in the source (the markers are not shown, and a missing region fails the build). `examples/check.sh` compiles every example a page includes, and runs their tests, and CI runs it, so a page cannot show code that does not build. Add a new included example to that script.
-- **Use only released API in tutorial and example programs.** They pin a published termui version, so a page matches what a reader can install. A new API appears in the site after the release that contains it.
+- **Use only released API in tutorial and example programs.** They resolve the published termui release from Ballerina Central, with no version in their manifests, so a page matches what a reader can install. A new API appears in the site after the release that contains it.
 - **Link to the API reference** on Ballerina Central instead of restating symbol documentation.
 - **Recordings** are asciinema casts in `site/public/casts/`, recorded from the real programs (`examples/counter/record_demo.py` and `examples/agent-harness/record_demo.py` show how).
 

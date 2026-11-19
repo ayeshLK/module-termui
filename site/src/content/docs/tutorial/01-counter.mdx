@@ -13,21 +13,15 @@ application, and every later step grows from it.
 
 ## Set up
 
-Create a package and add termui. In an empty folder:
+Create a package. In an empty folder:
 
 ```sh
 bal new harness
 cd harness
 ```
 
-Pin the library in `Ballerina.toml`:
-
-```toml
-[[dependency]]
-org = "ayesha"
-name = "termui"
-version = "1.0.0"
-```
+There is no dependency to declare. The `import ayesha/termui;` in the program below is enough: the first
+build fetches termui from Ballerina Central and records the version in `Dependencies.toml`.
 
 You need Ballerina 2201.14 and JDK 25, on macOS or Linux.
 

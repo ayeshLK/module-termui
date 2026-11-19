@@ -9,15 +9,10 @@ termui is a Ballerina package on
 [Ballerina Central](https://central.ballerina.io/ayesha/termui/1.0.0). It needs Ballerina 2201.14 and
 JDK 25, and runs on macOS and Linux.
 
-Import it and Ballerina fetches it on the next build. To pin a version, add it to your package's
-`Ballerina.toml`:
-
-```toml
-[[dependency]]
-org = "ayesha"
-name = "termui"
-version = "1.0.0"
-```
+Import it, and the first `bal build` fetches the latest release from Central and records its version in
+`Dependencies.toml`. Later builds keep that version as a minimum, pick up newer patch releases on their own,
+and move to a newer minor release only when you ask. There is nothing to add to `Ballerina.toml`. The
+[compatibility page](../../best-practices/compatibility/) says what each kind of release may change.
 
 The package has five modules. Its API reference, with a page per module, is on
 [Ballerina Central](https://central.ballerina.io/ayesha/termui/1.0.0):

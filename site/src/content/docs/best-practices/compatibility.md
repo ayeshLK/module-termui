@@ -11,8 +11,9 @@ is the short version for application authors.
 
 ## What this means for your code
 
-- **Pin a version** in `Ballerina.toml`, and move when you choose to. A patch or minor release does not
-  break code that uses the documented API and follows the two rules below.
+- **Ballerina records the version for you.** The first build writes it to `Dependencies.toml`, newer patch
+  releases are picked up automatically, and a newer minor release is your choice. A patch or minor release
+  does not break code that uses the documented API and follows the two rules below.
 - **Handle the messages and commands you know and ignore the rest.** New messages and commands arrive in
   minor releases, so an `update` that returns `()` for a message it does not recognise keeps working.
 - **Implementing `Terminal` or `Renderer` yourself is safe.** Their required methods are fixed. New

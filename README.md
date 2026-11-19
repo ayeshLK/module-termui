@@ -35,14 +35,7 @@
 
 ## Quickstart
 
-termui is on [Ballerina Central](https://central.ballerina.io/ayesha/termui/1.0.0). Import it and Ballerina fetches it on the next build; to pin a version, add it to your package's `Ballerina.toml`:
-
-```toml
-[[dependency]]
-org = "ayesha"
-name = "termui"
-version = "1.0.0"
-```
+termui is on [Ballerina Central](https://central.ballerina.io/ayesha/termui/1.0.0). Import it, and the first `bal build` fetches the latest release and records its version in `Dependencies.toml`. Later builds keep that version as a minimum, pick up newer patch releases on their own, and move to a newer minor release only when you ask. [COMPATIBILITY.md](COMPATIBILITY.md) says what each kind of release may change.
 
 A counter, in `main.bal` ([`examples/counter`](examples/counter) is this file, built in CI):
 
