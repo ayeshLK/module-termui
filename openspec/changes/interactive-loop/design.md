@@ -21,7 +21,7 @@ See proposal.md for the motivation. The page "The update and view loop" has a st
 
 **Progressive enhancement over the existing markup, not a separate widget.** The server renders the same `Flow` diagram as today, with a `data-step` id on each step, plus a *written breakdown* (a section per step) and the readouts' initial values. A client script then enhances it: it turns each step's pill into a button, adds the controls, and shows one breakdown section at a time. Without the script the page shows the static diagram and every section, in order. Alternative: a client-rendered widget that replaces the diagram; rejected because it would leave nothing at all without scripts and would duplicate the diagram markup.
 
-**The inspector is the breakdown, not a copy of it.** The sections already in the page are the inspector's content: with the script, only the selected section is visible and the others are hidden; a "Show all steps" button unhides them for linear reading. There is no cloning, so the highlighted code blocks keep their copy buttons and their listeners, and there is one source of text. Alternative: clone content into a separate panel; rejected for the lost listeners and the duplication.
+**The inspector is the breakdown, not a copy of it.** The sections already in the page are the inspector's content. With the script they are stacked in one grid cell, so the inspector is as tall as the tallest section (the page does not jump when the reader switches steps, and it needs no measuring, so it stays right when the width changes); only the selected one is visible, the others are `visibility: hidden` and so also out of the accessibility tree. A "Show all steps" button puts them all back in normal flow for linear reading. There is no cloning, so the highlighted code blocks keep their copy buttons and their listeners, and there is one source of text. Alternative: clone content into a separate panel; rejected for the lost listeners and the duplication.
 
 **Content per step.**
 
@@ -45,6 +45,8 @@ See proposal.md for the motivation. The page "The update and view loop" has a st
 
 **Where it lives.** A new `InteractiveLoop.astro` renders the `Flow` markup (with ids), the controls' mount point, the breakdown, and the readouts, and ships the script. `the-loop.mdx` uses it at the top in place of the static `Flow`, and the "Try the loop" section and `LoopPlayground.astro` are removed. The counter code comes from `ExampleCode` regions. Alternative: keep the playground as a second interactive piece; rejected: two interactive explanations of one loop, side by side, is the problem this change exists to fix.
 
+**Elements the script creates need the component's style scope.** Astro scopes a component's CSS with a `data-astro-cid-*` attribute, so the buttons the script makes (the step buttons that replace `Flow`'s pills, and the controls) would lose the styles of the component that rendered what they stand in for. The script copies those attributes onto what it creates. This was found, not foreseen: the first run showed unstyled controls and a diagram wider than its panel.
+
 ## Risks / Trade-offs
 
 - [The model drifts from the real counter] → It mirrors a five-line `update` and a two-line `view`; the inspector shows the real code beside it, and a test pins the model's behaviour for `+`, `-`, `q` and an ignored key. If the counter changes, the page's code changes with it (regions) and the model is the one place to update.
@@ -62,4 +64,4 @@ Rollback is reverting the pull request; the static diagram is what is left.
 
 ## Open Questions
 
-- Whether *Play* should loop or stop at the frame. Stopping is the default; it is a one-line change.
+- Resolved: *Play* stops at the end (the frame, or the command after `q`).
