@@ -197,6 +197,7 @@ class TickCounter {
     int ticks = 0;
     int others = 0;
     int views = 0;
+    boolean inputEnded = false;
 
     function init(boolean showTicks) {
         self.showTicks = showTicks;
@@ -217,6 +218,9 @@ class TickCounter {
         }
         if message is map<anydata> && message["kind"] == "other" {
             self.others += 1;
+        }
+        if message is InputEnded {
+            self.inputEnded = true;
         }
         return ();
     }
@@ -246,16 +250,19 @@ function testATickThatChangesNothingDrawsNothing() returns error? {
     Engine engine = new (program, terminal, renderer);
     engine.launch();
     _ = check engine.step();
+    // The startup messages (the size, the key, the end of the scripted input) may arrive in one batch or
+    // several, depending on how busy the machine is, and each batch with a message that is not a tick is
+    // drawn. Count only once they have all been handled and the timer is running.
     check pump(engine, function () returns boolean {
-        return program.ticks >= 2;
+        return program.ticks >= 2 && program.inputEnded;
     });
-    int afterTwoTicks = drawCount(renderer);
+    int afterStartup = drawCount(renderer);
+    int ticksThen = program.ticks;
     check pump(engine, function () returns boolean {
-        return program.ticks >= 6;
+        return program.ticks >= ticksThen + 4;
     });
     engine.stop();
-    test:assertEquals(drawCount(renderer), afterTwoTicks, "four more ticks, and no more draws");
-    test:assertTrue(afterTwoTicks <= 2, "the first frame, and the one after the key that started the timer");
+    test:assertEquals(drawCount(renderer), afterStartup, "four more ticks, and no more draws");
 }
 
 @test:Config {}

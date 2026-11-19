@@ -1,0 +1,114 @@
+---
+title: "4. Status and interrupt"
+description: "A timer-driven status line, and Esc to stop an answer."
+sidebar:
+  order: 4
+---
+
+import ExampleCode from '../../../components/ExampleCode.astro';
+import CastPlayer from '../../../components/CastPlayer.astro';
+
+A long answer needs two things: a sign that something is happening, and a way to stop it. In this step a
+timer drives a spinner and the elapsed time, and Esc cancels the answer that is streaming.
+
+<CastPlayer cast="step4-status.cast" caption="Step 4: the status line while the model thinks and answers, then Esc to stop it, then a second question." />
+
+## What changed
+
+Starting from step 3, you:
+
+- give the model a "thinking" phase and a `status` message, and let it be **cancelled**,
+- add a `Tick` message and start a timer with `every`,
+- count ticks to move the spinner and measure the time elapsed,
+- draw a **status line** above the prompt while an answer is running, and
+- cancel the running answer on Esc and commit an "Interrupted" line.
+
+## The model: status and cancel
+
+The model now sends a `status` message first and checks a flag between pieces.
+
+<ExampleCode file="examples/tutorial/step4-status/model.bal" region="messages" title="The messages" />
+
+`Done` gained an `interrupted` field, so the program can say which way the answer ended.
+
+<ExampleCode file="examples/tutorial/step4-status/model.bal" region="cancel" title="A shared cancel flag" />
+
+Why a flag? The program's state lives on one strand and the effect on another, and the effect may not read
+the program's fields. The flag is the one thing both may hold. It is an `isolated` class, so the compiler
+allows both strands to share it.
+
+<ExampleCode file="examples/tutorial/step4-status/model.bal" region="stream-answer" title="The effect checks the flag" />
+
+The effect also checks `session.isStopped()`, which becomes true when the program ends, so it never keeps
+working for a program that has gone.
+
+## The timer
+
+<ExampleCode file="examples/tutorial/step4-status/main.bal" region="tick" title="The tick message" />
+
+<ExampleCode file="examples/tutorial/step4-status/main.bal" region="main" title="Starting the timer" />
+
+`termui:every(0.1, ...)` is a command: the runtime sends the message to `update` every 0.1 seconds. It is
+passed to `ui.run` as the **initial command**, so it starts with the program. A tick is an ordinary
+message. The program counts them, so ten ticks are a second.
+
+### What a timer costs
+
+A program that sits idle usually costs almost nothing, because the runtime sleeps longer while nothing
+happens. A timer interferes with that, so it is worth knowing the rules (they are on the
+[idle cost](../../concepts/idle-cost/) page):
+
+- Ticks do not end the idle backoff, and the runtime wakes at least twice per tick period, so a 0.1 s
+  timer is handled on time.
+- A tick that leaves the view **unchanged does not redraw**. When no answer is running the view does not
+  depend on the tick count, so an idle program writes nothing. A test checks this.
+
+Measured with `bench/idle_cpu.py` on a developer laptop, this step uses about 6% of one core while it
+waits for a question, and writes nothing to the terminal. That is mostly the work of its own `update` and
+`view`, ten times a second. A program without a timer idles at about 1%.
+
+## The program
+
+<ExampleCode file="examples/tutorial/step4-status/main.bal" title="main.bal" />
+
+### Status state
+
+<ExampleCode file="examples/tutorial/step4-status/main.bal" region="status-state" title="State" />
+
+### Interrupting
+
+<ExampleCode file="examples/tutorial/step4-status/main.bal" region="interrupt" title="Esc" />
+
+Esc is not a key the editor uses, so the program handles it first. If an answer is running it cancels the
+flag and says "Interrupting". The effect sees the flag at its next check and ends with
+`interrupted: true`, and the program commits the "Interrupted" line. The text the effect had already sent
+stays in the scrollback.
+
+### Drawing the status line
+
+<ExampleCode file="examples/tutorial/step4-status/main.bal" region="view" title="view" />
+
+The spinner frame and the seconds both come from the tick count, so `view` is still a plain function of
+state.
+
+## Check it without a terminal
+
+<ExampleCode file="examples/tutorial/step4-status/tests/chat_test.bal" region="tests" title="tests/chat_test.bal" />
+
+The first test pushes Esc while the model is still "thinking", so the outcome does not depend on timing:
+the answer is stopped before any of it is written. The test that ticks an idle program shows that the
+view stays equal, which is why those ticks cost no redraw.
+
+## Try this
+
+- Press Esc right after you send a question, while it is "Thinking", and then later while it is
+  "Responding". The first stops the answer before any text appears; the second keeps the lines that were
+  already written.
+- Press Ctrl+C during an answer to quit.
+- Change the timer to `termui:every(0.25, ...)`. The spinner turns more slowly; the seconds are computed
+  from the tick count, so you would also divide by four instead of ten. Run `bench/idle_cpu.py` on both
+  to see what a slower timer saves.
+
+## Next
+
+Step 5 adds a tool call that asks for your approval before it runs.

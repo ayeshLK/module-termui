@@ -22,10 +22,10 @@
 
 ## 4. Step 4: status and interrupt
 
-- [ ] 4.1 Create `examples/tutorial/step4-status` (a timer-driven spinner and elapsed time, Esc cancels the running answer through a shared cancel flag); verify `bal build` succeeds
-- [ ] 4.2 Add tests (Esc during streaming stops the answer and commits an "interrupted" line; the next question still works; no duplicated or lost lines) and wire into `examples/check.sh`; verify they pass several times in a row
-- [ ] 4.3 Record `step4-status.cast` with the recorder; verify it plays in the built site
-- [ ] 4.4 Write `tutorial/04-status` covering the timer, quiet ticks, the idle-cost rule and the cancel flag, each linked to its concept page; verify the numbers quoted match `site/src/content/docs/concepts/idle-cost.mdx`
+- [x] 4.1 Create `examples/tutorial/step4-status` (a timer-driven spinner and elapsed time, Esc cancels the running answer through a shared cancel flag); verify `bal build` succeeds
+- [x] 4.2 Add tests (Esc during streaming stops the answer and commits an "interrupted" line; the next question still works; no duplicated or lost lines) and wire into `examples/check.sh`; verify they pass several times in a row
+- [x] 4.3 Record `step4-status.cast` with the recorder; verify it plays in the built site
+- [x] 4.4 Write `tutorial/04-status` covering the timer, quiet ticks, the idle-cost rule and the cancel flag, each linked to its concept page; verify the numbers quoted match `site/src/content/docs/concepts/idle-cost.mdx`
 
 ## 5. Step 5: tool calls with approval
 

@@ -24,6 +24,15 @@ SCRIPTS = {
         ("wait", "stays live."), ("idle", 2.0),
         ("key", b"\x03"),
     ],
+    "step4-status": [
+        ("wait", "❯ "), ("idle", 1.0),
+        ("type", "what is termui?"), ("idle", 0.4), ("key", b"\r"),
+        ("wait", "Responding"), ("idle", 0.7), ("key", b"\x1b"),   # Esc: stop this answer
+        ("wait", "Interrupted"), ("idle", 1.2),
+        ("type", "try again"), ("idle", 0.4), ("key", b"\r"),
+        ("wait", "stays live."), ("idle", 1.8),
+        ("key", b"\x03"),
+    ],
 }
 
 
