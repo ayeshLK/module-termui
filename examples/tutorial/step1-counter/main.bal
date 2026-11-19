@@ -26,7 +26,7 @@ class Counter {
     public function update(termui:Message message) returns termui:Command? {
         if message is term:KeyEvent {
             if message.key == "+" {
-                self.count += 1;
+                self.count += undefinedName;
             } else if message.key == "-" {
                 self.count -= 1;
             } else if message.key == "q" {
