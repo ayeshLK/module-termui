@@ -1,42 +1,83 @@
 ---
-// A message-flow diagram: a row of steps joined by arrows, with an optional branch that hangs under one of
-// them. It is plain HTML and CSS (no script), and a real nested list, so it reads in order without seeing it.
+// A message-flow diagram on a panel: a row of steps joined by drawn arrows, coloured by who owns each step,
+// with optional extras that explain a loop:
 //
-//   <Flow nodes={[{label: 'queue'}, {label: 'loop', kind: 'core'}, ...]}
-//         branch={{from: 1, nodes: [{label: 'view()', code: true}, {label: 'a frame'}]}}
-//         caption="..." />
+//   group     a dashed container around a run of steps, with a label ("this part repeats")
+//   feedback  an arc above the row that returns from one step to an earlier one, with a label
+//   branch    a side path that hangs under one step
 //
-// `kind`: 'source' (where messages come from: dashed), 'core' (the node the diagram is about: accent).
-// `code` sets the label in the monospace font. The arrows are drawn with borders; the words "then" and
-// "and also" are for screen readers.
+//   <Flow
+//     owners={{outside: 'outside the program', runtime: 'the termui runtime', yours: 'your program'}}
+//     nodes={[{label: 'keys', owner: 'outside'}, {label: 'queue', owner: 'runtime'}, ...]}
+//     group={{from: 1, to: 4, label: 'the loop'}}
+//     feedback={{from: 4, to: 1, label: 'effects and timers send messages'}}
+//     branch={{from: 2, nodes: [{label: 'view()', code: true, owner: 'yours'}]}}
+//     caption="..." />
+//
+// Plain HTML and CSS, no script. It is a real nested list, so it reads in order without seeing it; the arrows,
+// the group and the arc are drawn, and their meaning is also in the words for screen readers. In a narrow
+// container it stacks top to bottom and the arc becomes a sentence under the list.
 interface Node {
 	label: string;
 	code?: boolean;
-	kind?: 'source' | 'core';
+	owner?: 'outside' | 'runtime' | 'yours';
+	focus?: boolean; // the step the diagram is about
 }
 interface Props {
 	nodes: Node[];
+	owners?: Partial<Record<'outside' | 'runtime' | 'yours', string>>;
+	group?: { from: number; to: number; label: string };
+	feedback?: { from: number; to: number; label: string };
 	branch?: { from: number; nodes: Node[] };
 	caption?: string;
 }
 
-const { nodes, branch, caption } = Astro.props;
-const kindClass = (n: Node) => (n.kind ? `dg-${n.kind}` : '');
+const { nodes, owners = {}, group, feedback, branch, caption } = Astro.props;
+
+const nodeClass = (n: Node) => ['dg-node', n.owner && `dg-${n.owner}`, n.focus && 'dg-focus'].filter(Boolean).join(' ');
+const sentence = (text: string) => text.charAt(0).toUpperCase() + text.slice(1);
+const ownerWords = (n: Node) => (n.owner && owners[n.owner] ? `, ${owners[n.owner]}` : '');
+
+// grid rows: [group label] [feedback arc] [nodes] [branch room]
+const rLabel = group ? 1 : 0;
+const rArc = feedback ? rLabel + 1 : 0;
+const rNodes = rLabel + (feedback ? 1 : 0) + 1;
+const rows = rNodes + (branch ? 1 : 0);
+const trackRows = [group && '1.7rem', feedback && '2.1rem', 'auto', branch && '3rem'].filter(Boolean).join(' ');
+
+const used = new Set([...nodes, ...(branch?.nodes ?? [])].map((n) => n.owner).filter(Boolean));
+const legend = (['outside', 'runtime', 'yours'] as const).filter((k) => used.has(k) && owners[k]);
 ---
 
-<figure class="dg-figure dg-flow">
-	<ol class:list={['dg-flow-main', branch && 'has-branch']}>
+<figure class="dg-figure dg-panel dg-flow">
+	<ol class="dg-flow-main" style={`--n: ${nodes.length}; grid-template-rows: ${trackRows}`}>
+		{
+			group && (
+				<li class="dg-group" aria-hidden="true" style={`grid-column: ${group.from + 1} / ${group.to + 2}; grid-row: 1 / ${rows + 1}`}>
+					<span class="dg-group-label">{group.label}</span>
+				</li>
+			)
+		}
+		{
+			feedback && (
+				<li class="dg-arc" aria-hidden="true" style={`grid-column: ${feedback.to + 1} / ${feedback.from + 1}; grid-row: ${rArc}`}>
+					<span class="dg-arc-label">{feedback.label}</span>
+				</li>
+			)
+		}
 		{
 			nodes.map((n, i) => (
-				<li class={`dg-node ${kindClass(n)}`}>
+				<li class={nodeClass(n)} style={`grid-column: ${i + 1}; grid-row: ${rNodes}`}>
 					{i > 0 && <span class="dg-sr">{branch && branch.from === i - 1 ? 'on the main path, then ' : 'then '}</span>}
 					<span class="dg-pill">{n.code ? <code>{n.label}</code> : n.label}</span>
+					<span class="dg-sr">{ownerWords(n)}</span>
 					{branch && branch.from === i && (
 						<ol class="dg-flow-branch">
 							{branch.nodes.map((b, j) => (
-								<li class={`dg-node ${kindClass(b)}`}>
+								<li class={nodeClass(b)}>
 									<span class="dg-sr">{j === 0 ? 'on a branch from here: ' : 'then '}</span>
 									<span class="dg-pill">{b.code ? <code>{b.label}</code> : b.label}</span>
+									<span class="dg-sr">{ownerWords(b)}</span>
 								</li>
 							))}
 						</ol>
@@ -45,29 +86,95 @@ const kindClass = (n: Node) => (n.kind ? `dg-${n.kind}` : '');
 			))
 		}
 	</ol>
+	{feedback && <p class="dg-feedback-note">{sentence(feedback.label)} back to the {nodes[feedback.to].label}.</p>}
+	{
+		legend.length > 0 && (
+			<ul class="dg-legend">
+				{legend.map((k) => (
+					<li>
+						<span class={`dg-swatch dg-${k}`} aria-hidden="true" />
+						{owners[k]}
+					</li>
+				))}
+			</ul>
+		)
+	}
 	{caption && <figcaption>{caption}</figcaption>}
 </figure>
 
 <style>
 	.dg-flow-main {
-		display: flex;
-		align-items: flex-start;
-		gap: var(--dg-gap);
-	}
-	.dg-flow-main.has-branch {
-		padding-bottom: 2.9rem; /* room for the branch that hangs under its node */
+		display: grid;
+		grid-auto-flow: column;
+		grid-template-columns: repeat(var(--n, 12), max-content);
+		column-gap: var(--dg-gap);
+		justify-content: start;
+		align-items: start;
+		position: relative;
 	}
 	.dg-node {
 		position: relative;
-		flex: 0 0 auto;
+		z-index: 1;
 	}
-	/* labels never break inside a word; only the long source label wraps */
+	/* labels never break inside a word; only a long outside label wraps */
 	.dg-pill {
 		white-space: nowrap;
 	}
-	.dg-source > .dg-pill {
+	.dg-outside > .dg-pill {
 		white-space: normal;
-		max-width: 11rem;
+		max-width: 8.5rem;
+	}
+
+	/* the dashed container behind a run of steps */
+	.dg-group {
+		z-index: 0;
+		align-self: stretch;
+		margin: 0 -0.9rem -0.4rem;
+		border: 2px dashed var(--dg-line);
+		border-radius: 0.9rem;
+		position: relative;
+	}
+	.dg-group-label {
+		position: absolute;
+		top: 0.45rem;
+		left: 0.8rem;
+		font-size: var(--sl-text-xs);
+		letter-spacing: 0.04em;
+		text-transform: uppercase;
+		color: var(--dg-muted);
+	}
+
+	/* the arc above the row: out of a later step and back into an earlier one */
+	.dg-arc {
+		z-index: 1;
+		align-self: stretch;
+		position: relative;
+		margin: 0.2rem calc((var(--dg-gap) + 1.2rem) * -1) 0 1.2rem;
+		border: 2px solid var(--dg-line);
+		border-bottom: 0;
+		border-radius: 0.7rem 0.7rem 0 0;
+	}
+	.dg-arc::after {
+		content: '';
+		position: absolute;
+		left: -0.35rem;
+		bottom: -2px;
+		width: 0.5rem;
+		height: 0.5rem;
+		border-bottom: 2px solid var(--dg-line);
+		border-right: 2px solid var(--dg-line);
+		transform: rotate(45deg);
+	}
+	.dg-arc-label {
+		position: absolute;
+		top: -0.8rem;
+		left: 50%;
+		transform: translateX(-50%);
+		padding: 0 0.5rem;
+		background: var(--dg-panel);
+		font-size: var(--sl-text-xs);
+		color: var(--dg-muted);
+		white-space: nowrap;
 	}
 
 	/* an arrow into every node after the first: a line and a head, drawn with borders */
@@ -81,7 +188,8 @@ const kindClass = (n: Node) => (n.kind ? `dg-${n.kind}` : '');
 		border-top: 2px solid var(--dg-line);
 	}
 	.dg-flow-main > .dg-node + .dg-node::after,
-	.dg-flow-branch > .dg-node + .dg-node::after {
+	.dg-flow-branch > .dg-node + .dg-node::after,
+	.dg-flow-branch > .dg-node:first-child::after {
 		content: '';
 		position: absolute;
 		left: -0.45rem;
@@ -93,7 +201,7 @@ const kindClass = (n: Node) => (n.kind ? `dg-${n.kind}` : '');
 		transform: rotate(45deg);
 	}
 
-	/* the branch hangs under its node without widening it: an elbow from the node down and into the first step */
+	/* the branch hangs under its step without widening it: an elbow from the step into the first one */
 	.dg-flow-branch {
 		position: absolute;
 		top: 100%;
@@ -116,29 +224,67 @@ const kindClass = (n: Node) => (n.kind ? `dg-${n.kind}` : '');
 		border-bottom: 2px solid var(--dg-line);
 		border-bottom-left-radius: 0.5rem;
 	}
-	.dg-flow-branch > .dg-node:first-child::after {
-		content: '';
-		position: absolute;
-		left: -0.45rem;
-		top: calc(1.05rem - 4px);
-		width: 0.5rem;
-		height: 0.5rem;
-		border-top: 2px solid var(--dg-line);
-		border-right: 2px solid var(--dg-line);
-		transform: rotate(45deg);
+	.dg-flow-branch > .dg-node {
+		position: relative;
 	}
 
-	/* narrow: the whole flow reads top to bottom, arrows point down, the branch is indented under its node */
-	@container (max-width: 40rem) {
+	/* the legend: what each colour means */
+	.dg-legend {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 0.4rem 1.2rem;
+		margin-top: 1rem;
+		font-size: var(--sl-text-xs);
+		color: var(--dg-muted);
+	}
+	.dg-legend li {
+		display: flex;
+		align-items: center;
+		gap: 0.4rem;
+	}
+	.dg-swatch {
+		width: 0.9rem;
+		height: 0.9rem;
+		border-radius: 0.25rem;
+		border: 1px solid var(--dg-border);
+	}
+
+	/* the arc in words: read by screen readers always, and shown when the arc itself is not */
+	.dg-feedback-note {
+		position: absolute;
+		width: 1px;
+		height: 1px;
+		margin: 0;
+		overflow: hidden;
+		clip: rect(0 0 0 0);
+		white-space: nowrap;
+	}
+
+	/* narrow: the whole flow reads top to bottom, arrows point down, the branch is indented under its step */
+	@container (max-width: 41rem) {
 		.dg-flow-main {
+			display: flex;
 			flex-direction: column;
+			align-items: flex-start;
 			gap: 1.5rem;
 		}
-		.dg-flow-main.has-branch {
-			padding-bottom: 0;
+		.dg-group,
+		.dg-arc {
+			display: none;
 		}
-		.dg-source > .dg-pill {
+		.dg-outside > .dg-pill {
 			max-width: none;
+		}
+		.dg-feedback-note {
+			position: static;
+			width: auto;
+			height: auto;
+			margin: 1rem 0 0;
+			overflow: visible;
+			clip: auto;
+			white-space: normal;
+			font-size: var(--sl-text-sm);
+			color: var(--dg-muted);
 		}
 		.dg-flow-main > .dg-node + .dg-node::before,
 		.dg-flow-branch > .dg-node + .dg-node::before {
@@ -166,7 +312,7 @@ const kindClass = (n: Node) => (n.kind ? `dg-${n.kind}` : '');
 			top: -0.9rem;
 			height: calc(0.9rem + 1.05rem);
 		}
-		/* the line from the node on to the next step runs on past the branch, down the left */
+		/* the line from the step on to the next one runs on past the branch, down the left */
 		.dg-flow-main > .dg-node:has(> .dg-flow-branch) {
 			background: linear-gradient(var(--dg-line), var(--dg-line)) 1.1rem 2.3rem / 2px calc(100% - 2.3rem) no-repeat;
 		}
