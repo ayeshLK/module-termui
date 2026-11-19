@@ -1,0 +1,47 @@
+---
+title: Testing without a terminal
+description: "Script keys and assert on what was drawn, with no terminal and no pseudo-terminal."
+sidebar:
+  order: 2
+---
+
+import ExampleCode from '../../../components/ExampleCode.astro';
+
+A termui program does not talk to a terminal directly. It returns lines from `view` and commands from
+`update`, and a renderer and a terminal do the rest. A **`FakeTerminal`** takes the terminal's place in
+tests: it is an in-memory screen that you feed keys and read back.
+
+## A program to test
+
+A tiny prompt that echoes what is typed. Typing shows in the live region, Enter commits a line above
+it, and `!` quits.
+
+<ExampleCode file="examples/best-practices/echo.bal" start={5} end={30} title="Echo" />
+
+## Tests
+
+<ExampleCode file="examples/best-practices/tests/echo_test.bal" start={5} end={21} title="Two tests with a FakeTerminal" />
+
+- `pushText` and `pushKey` queue input. The terminal answers from that queue, so a test needs no timing.
+- `termui:run(program, terminal)` runs the real loop until the program quits, so end your script with
+  the key that quits it.
+- `screenText()` and `screenLines()` return what a user would see. `scrollbackLines()` returns what
+  scrolled off the top.
+- Committed output lands above the live region, so a test sees it where a user would.
+
+## More you can check
+
+- **Size and resize.** `new term:FakeTerminal(width, height)` sets the size the program starts with, which
+  arrives as its first message, and `terminal.resize(w, h)` changes it.
+- **Cells and styles.** `render:InlineRenderer.frame()`, `bufferLines` and `cellAt` check the style of a
+  cell, not just its text.
+- **Plain mode.** `render:PlainRenderer` writes what a pipe or CI log receives: no styling, no escape
+  sequences. See [modes and headless operation](../../concepts/headless-modes/).
+- **A fake with no terminal at all** means the default test suite passes in CI without a pseudo-terminal.
+  Keep tests that need a real one in a separate group, as termui's own `tty` group does.
+
+## Timing
+
+A fake terminal does not make timers fake. If your program uses `every` or an effect that sleeps, the
+test takes real time. Keep sleeps short in tests, assert with generous margins, and prefer asserting on
+order ("the result arrived after the status") over exact durations.

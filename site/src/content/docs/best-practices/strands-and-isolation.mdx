@@ -1,0 +1,50 @@
+---
+title: Strands and isolation
+description: "Why a blocking call stalls the interface, and how effects avoid it."
+sidebar:
+  order: 1
+---
+
+import ExampleCode from '../../../components/ExampleCode.astro';
+
+**The rule: never block in `update` or `view`.** A blocking call there, such as a sleep, a network
+request or a long computation, stops the whole interface until it returns.
+
+## Why
+
+`update` and `view` always run on one strand, and so does every other piece of your program that is not
+`isolated`. Ballerina runs the strands of non-isolated functions in one group, one at a time. While one
+of them blocks, the rest wait: no message is handled, no frame is drawn, and a key press sits in the
+queue. That is also why `termui` insists that effects are `isolated`: an isolated function gets its own
+strand, so it can block without holding anything else up.
+
+## Seeing it
+
+The example below does half a second of work on the fifth tick of a 50 ms timer, once inside `update` and
+once in an effect. It records when each tick was handled, so the longest gap between ticks shows how long
+the interface went without answering.
+
+<ExampleCode file="examples/best-practices/main.bal" start={43} end={56} title="The same work, done two ways" />
+
+The tests run both and compare the longest gap:
+
+<ExampleCode file="examples/best-practices/tests/responsive_test.bal" start={5} end={22} title="What the tests assert" />
+
+- With the work in `update`, ticks are handled about half a second apart: the interface froze.
+- With the work in an effect, ticks keep arriving about every 50 ms, and the effect reports back with a
+  `worked` message when it is done.
+
+CI runs these tests, so the claim on this page is checked against the real library.
+
+## What to do instead
+
+1. **Run slow work as an effect.** `termui:effect(...)` takes an `isolated` function. It talks back with
+   `session.send(...)`, as often as it likes, so streaming results work. See
+   [commands, effects and timers](../../concepts/commands-and-timers/).
+2. **Send immutable messages.** The compiler rejects a mutable value passed to `send`.
+3. **Keep `update` and `view` cheap.** `view` runs once per frame, and a timer calls it ten times a second
+   in a spinner. Build the lines from state; do not compute them.
+4. **Mark your own helpers `isolated` when they block.** A non-isolated function that waits for a process or
+   a socket can hold up other strands in the same group, including ones you did not write. If you start
+   your own strands, keep that work in isolated functions too.
+5. **Check `session.isStopped()`** in long effects so they end when the program does.

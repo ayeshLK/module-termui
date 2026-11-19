@@ -1,0 +1,10 @@
+{"version": 2, "width": 60, "height": 8, "timestamp": 0, "env": {"TERM": "xterm-256color", "SHELL": "/bin/sh"}}
+[0.0, "o", "\u001b[?2004h\u001b[?2048h"]
+[0.0323, "o", "\u001b[1G\u001b[1mcount: 0\u001b[0m\r\n\u001b[1G\u001b[2m+ and - change it, q quits\u001b[0m\u001b[1G"]
+[1.2588, "o", "\u001b[1A\u001b[8G\u001b[1m1\u001b[0m\u001b[1G"]
+[1.7364, "o", "\u001b[8G\u001b[1m2\u001b[0m\u001b[1G"]
+[2.1491, "o", "\u001b[8G\u001b[1m3\u001b[0m\u001b[1G"]
+[3.0746, "o", "\u001b[8G\u001b[1m2\u001b[0m\u001b[1G"]
+[3.7816, "o", "\u001b[8G\u001b[1m3\u001b[0m\u001b[1G"]
+[4.9937, "o", "\r\n"]
+[5.0249, "o", "\u001b[?2004l\u001b[?2048l"]

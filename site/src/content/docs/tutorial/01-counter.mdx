@@ -1,0 +1,95 @@
+---
+title: "1. A counter"
+description: "The smallest interactive program: state, update, view and run."
+sidebar:
+  order: 1
+---
+
+import ExampleCode from '../../../components/ExampleCode.astro';
+import CastPlayer from '../../../components/CastPlayer.astro';
+
+In this step you build a counter. It is the smallest program that shows the whole shape of a termui
+application, and every later step grows from it.
+
+## Set up
+
+Create a package and add termui. In an empty folder:
+
+```sh
+bal new harness
+cd harness
+```
+
+Pin the library in `Ballerina.toml`:
+
+```toml
+[[dependency]]
+org = "ayesha"
+name = "termui"
+version = "1.0.0"
+```
+
+You need Ballerina 2201.14 and JDK 25, on macOS or Linux.
+
+## The program
+
+Replace `main.bal` with this. It is the file CI builds as `examples/tutorial/step1-counter`, so what
+you read here compiles.
+
+<ExampleCode file="examples/tutorial/step1-counter/main.bal" title="main.bal" />
+
+Run it:
+
+```sh
+bal run
+```
+
+<CastPlayer cast="counter-demo.cast" caption="Press + and - to change the count, q to quit." />
+
+## What each part does
+
+**The program is a class.** `*termui:Program` is the contract: the class has an `update` and a `view`.
+Its state, `count`, is an ordinary field.
+
+<ExampleCode file="examples/tutorial/step1-counter/main.bal" start={5} end={8} title="State" />
+
+**`update` handles messages.** The runtime calls it once for every message: a key press, a resize, a
+timer tick. Anything it does not recognise, it ignores by returning `()`. The only thing it changes is
+`self`; the thing it returns is a *command* telling the runtime what to do next.
+
+<ExampleCode file="examples/tutorial/step1-counter/main.bal" start={10} end={21} title="update" />
+
+**`view` describes the screen.** It returns lines, each a list of styled spans. It does not draw
+anything. After handling the waiting messages, the runtime calls it once and writes only the cells that
+changed.
+
+<ExampleCode file="examples/tutorial/step1-counter/main.bal" start={23} end={28} title="view" />
+
+**`main` connects the program to a terminal.** `term:detectEnvironment()` looks at what the process is
+attached to, and `ui.run` runs the loop until the program returns `quit()`.
+
+<ExampleCode file="examples/tutorial/step1-counter/main.bal" start={31} end={34} title="main" />
+
+## Try this
+
+- Change the step so `+` adds ten. Save and run again.
+- Make `view` show the count in red, using `style: {fg: "red"}`.
+- Make it work in a pipe. Run `bal run < /dev/null` and you will see it wait forever: with no input,
+  nothing ever tells the counter to stop. Add a first check to `update`:
+
+  ```ballerina
+  if message is termui:InputEnded {
+      return termui:quit();
+  }
+  ```
+
+  Now `bal run < /dev/null | cat` prints `count: 0` and the hint line as plain text and exits. This is
+  [headless mode](../../concepts/headless-modes/): the program needed no other change.
+
+## Next
+
+Step 2 adds a prompt you can type into, with editing and history. It is not written yet. The finished
+harness is in
+[`examples/agent-harness`](https://github.com/ayeshLK/module-termui/tree/main/examples/agent-harness)
+if you want to read ahead. Meanwhile, [the update and view loop](../../concepts/the-loop/) explains
+what you just built.

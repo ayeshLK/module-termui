@@ -1,0 +1,61 @@
+---
+title: The line editor
+description: "A text input for the prompt - editing, multi-line, paste and history."
+sidebar:
+  order: 5
+---
+
+import ExampleCode from '../../../components/ExampleCode.astro';
+
+A prompt is a text and a cursor. `LineEditor` from `ayesha/termui.input` holds both. It owns no terminal,
+so it follows the same shape as the rest of the library: your program gives it the events it receives
+and draws what it returns.
+
+<ExampleCode file="examples/agent-harness/main.bal" start={155} end={158} title="Feeding keys to the editor" />
+
+`handleEvent` returns one of three things:
+
+- `edited`: the editor used the event.
+- `ignored`: it did not, so your program can act on it. Ctrl+C, Escape, Tab and Ctrl+D on empty text
+  come back this way.
+- a `Submitted` with the text, when Enter was pressed. The editor is then empty again.
+
+To draw it, return `editor.render(width, prompt)` from `view`. It wraps long lines by display width (a
+wide character is never split), indents later rows under the prompt, and shows the cursor as the
+character under it in reverse video. Get the width from the first `ResizeEvent`.
+
+## What it does
+
+- **Multi-line.** Enter submits; Alt+Enter or Ctrl+J inserts a line break, and Up and Down move
+  between lines. Create the editor with `multiline = false` for a single line.
+- **Paste.** Pasted text goes in as one edit and never submits. Line breaks are kept, or turned into
+  spaces in a single-line editor, and tabs become four spaces.
+- **History.** Submissions are remembered. Up and Down at the first or last line walk through them and
+  keep the unsent draft. `history()` returns them so you can save them between runs.
+
+## Keys
+
+| Action | Keys |
+|---|---|
+| Submit | Enter |
+| Line break (multi-line) | Alt+Enter, Ctrl+J |
+| Left, right | arrows, Ctrl+B, Ctrl+F |
+| Word left, word right | Alt+B, Alt+F, Ctrl+arrows, Alt+arrows |
+| Start, end of line | Home, Ctrl+A, End, Ctrl+E |
+| Delete back, forward | Backspace, Delete, Ctrl+D (when there is text) |
+| Delete word back, forward | Ctrl+W, Alt+D |
+| Delete to start, end of line | Ctrl+U, Ctrl+K |
+| Up, down | between lines; on the first or last line, through the history |
+
+Shift+Enter cannot be told from Enter on most terminals, which is why a line break is Alt+Enter or
+Ctrl+J. On macOS Terminal and iTerm2 the Option key must send Escape sequences for the Alt shortcuts to
+work: set "Use Option as Meta key" in Terminal, or "Esc+" for the Option key in iTerm2.
+
+## Limits
+
+A character is a code point with its combining marks. Longer sequences, such as emoji joined with a
+zero-width joiner, take several cursor steps. There is no undo, selection or mouse support, and the
+cursor is drawn as a reverse-video cell, not as the terminal's own cursor.
+
+The bindings are supported API: a new key may be added in a minor release, but an existing binding is
+kept for the whole major version.

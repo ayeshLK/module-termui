@@ -1,0 +1,10 @@
+[package]
+org = "ayesha"
+name = "best_practices"
+version = "0.1.0"
+distribution = "2201.14.2"
+
+[[dependency]]
+org = "ayesha"
+name = "termui"
+version = "1.0.0"

@@ -1,0 +1,69 @@
+---
+title: Commands, effects and timers
+description: "How a program does things - commands from update, effects on their own strand, and timers."
+sidebar:
+  order: 2
+---
+
+import ExampleCode from '../../../components/ExampleCode.astro';
+
+`update` does not do things. It changes state and **returns a command** that says what the runtime
+should do. This keeps `update` fast and keeps everything that can block off the program's strand.
+
+| Command | What it does |
+|---|---|
+| `quit()` | Ends the program. The runtime always releases the terminal afterwards, also on failure. |
+| `commitProse(...)` | Writes finished output above the live region. Each paragraph is one logical line, so the terminal wraps it. |
+| `commitBlock(...)` | Like `commitProse`, but wraps each line to the width at that moment, for tables, boxes and diffs. |
+| `effect(run)` | Runs work on its own strand. |
+| `every(period, message)` | Sends `message` to the program every `period` seconds. |
+| `batch(...)` | Several commands from one `update`. |
+
+New commands and messages are added in minor releases, so handle the ones you know and ignore the rest.
+
+## Effects: work that takes time
+
+An **effect** is an `isolated` function that receives a `Session`. It runs on its own strand, so a slow
+network call or a long computation cannot stall the interface. It talks to the program in only one
+way: `session.send(message)`.
+
+<ExampleCode file="examples/agent-harness/main.bal" start={267} end={308} title="A fake model call, from the agent harness" />
+
+Three rules make this safe, and the compiler enforces the first two:
+
+1. **The function must be `isolated`.** It cannot reach the program's fields, so it cannot race with
+   `update`. A function that is not isolated is a compile error when passed to `effect`.
+2. **Messages must be immutable.** Passing a mutable value to `send` is a compile error. The harness
+   builds each message as a plain record of strings and numbers.
+3. **Results come back as messages.** Send as many as you like. That is how the harness streams one
+   `token` message per piece of the answer.
+
+An effect that returns an error produces an `EffectFailed` message, so `update` can show it. After the
+program has ended, `send` drops messages and `session.isStopped()` is `true`, so a long effect should
+check it. The harness uses a shared cancel flag for the same purpose when the user presses Esc.
+
+### Asking the user from an effect
+
+`session.confirm(question, defaultAnswer)` and `session.choose(question, options)` wait for the user's
+answer. The question appears below the live region, and while it is shown, key presses answer it instead
+of reaching the program. You can see `confirm` in the effect above, before a tool call. Without a
+terminal they never wait: see [headless mode](../headless-modes/).
+
+## Timers
+
+`every` starts a timer. The harness starts one when it launches, to animate the spinner and the elapsed
+time:
+
+<ExampleCode file="examples/agent-harness/main.bal" start={310} end={322} title="Launching with a timer" />
+
+A tick is an ordinary message, handled by `update` like any other. Two things to know:
+
+- A tick that leaves `view` unchanged does not redraw, so a quiet timer costs little.
+- Timers do not end the idle backoff, and the runtime wakes at least twice per period of your fastest
+  timer. See [idle cost](../idle-cost/).
+
+## Output order
+
+Committed output is written in the order of the messages that caused it, however the messages were
+batched. Output your own code writes, such as a result on standard output, therefore stays in sequence
+with what the interface commits.

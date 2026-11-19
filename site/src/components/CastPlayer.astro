@@ -1,0 +1,61 @@
+---
+// A terminal recording that can be paused, scrubbed and selected. Casts are served from this site
+// (public/casts), recorded from the real programs. Without scripts the reader gets a link instead.
+interface Props {
+	cast: string; // file name under public/casts
+	rows?: number;
+	cols?: number;
+	speed?: number;
+	idleTimeLimit?: number;
+	caption?: string;
+}
+
+const { cast, rows, cols, speed = 1, idleTimeLimit = 2, caption } = Astro.props;
+const src = `${import.meta.env.BASE_URL.replace(/\/$/, '')}/casts/${cast}`;
+---
+
+<figure class="cast">
+	<div
+		class="cast-host"
+		data-src={src}
+		data-rows={rows}
+		data-cols={cols}
+		data-speed={speed}
+		data-idle={idleTimeLimit}
+	>
+	</div>
+	<noscript>
+		<p>This recording needs scripts. <a href={src}>Download the recording</a> (asciinema format).</p>
+	</noscript>
+	{caption && <figcaption>{caption}</figcaption>}
+</figure>
+
+<script>
+	import * as AsciinemaPlayer from 'asciinema-player';
+	import 'asciinema-player/dist/bundle/asciinema-player.css';
+
+	document.querySelectorAll<HTMLElement>('.cast-host').forEach((host) => {
+		const { src, rows, cols, speed, idle } = host.dataset;
+		AsciinemaPlayer.create(src!, host, {
+			rows: rows ? Number(rows) : undefined,
+			cols: cols ? Number(cols) : undefined,
+			speed: Number(speed),
+			idleTimeLimit: Number(idle),
+			fit: 'width',
+			theme: 'asciinema',
+			preload: true,
+			poster: 'npt:0:1',
+		});
+	});
+</script>
+
+<style>
+	.cast {
+		margin: 1.5rem 0;
+	}
+	figcaption {
+		font-size: var(--sl-text-sm);
+		color: var(--sl-color-gray-3);
+		margin-top: 0.5rem;
+	}
+</style>

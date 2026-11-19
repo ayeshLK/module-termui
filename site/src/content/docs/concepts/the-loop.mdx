@@ -1,0 +1,80 @@
+---
+title: The update and view loop
+description: How a termui program is structured, and what the runtime does with it.
+sidebar:
+  order: 1
+---
+
+import ExampleCode from '../../../components/ExampleCode.astro';
+import CastPlayer from '../../../components/CastPlayer.astro';
+import LoopPlayground from '../../../components/LoopPlayground.astro';
+
+A termui program is a class with two methods. Everything else in the library exists to feed them
+messages and to draw what they return.
+
+```
+ keys, resizes, timers, effect results --> message queue --> loop --> update(message) --> command
+                                                                  |
+                                                                  +--> view() --> one frame per batch
+```
+
+- **`update(message)`** is called once for each message. It changes the program's state and may return
+  a **command**: what to do next (`quit()`, start an effect, commit some finished output).
+- **`view()`** returns the live region as lines of styled text. It has no side effects and returns the
+  whole region each time.
+- A **message** is a key press, a resize, a timer tick, or the result of an effect. They all arrive in
+  one queue, so `update` never runs twice at the same time.
+
+The runtime applies every message that is waiting, then calls `view` once and draws **one frame**,
+writing only the cells that changed. Ten key presses that arrive together cost one frame, not ten.
+
+## The smallest program
+
+This is the counter from the quickstart. It is a complete program, and CI builds this file.
+
+<ExampleCode file="examples/counter/main.bal" />
+
+Here it is running. The recording is of the real program, made with `examples/counter/record_demo.py`.
+Notice that after the first frame only the digit that changed is written.
+
+<CastPlayer cast="counter-demo.cast" caption="The counter, recorded from the real program." />
+
+Reading it from the top:
+
+<ExampleCode file="examples/counter/main.bal" start={5} end={8} title="State and the contract" />
+
+`*termui:Program` says the class is a program. Its state, `count`, is an ordinary field. Only
+`update` changes it, because only `update` runs on the program's strand.
+
+<ExampleCode file="examples/counter/main.bal" start={10} end={21} title="update" />
+
+`update` receives every message. A key press is a `term:KeyEvent`, so the program checks the type
+first and ignores anything else by returning `()`. Returning `termui:quit()` ends the program.
+
+<ExampleCode file="examples/counter/main.bal" start={23} end={28} title="view" />
+
+`view` returns lines, and each line is a list of styled spans. Nothing here talks to the terminal.
+The runtime decides what has to be redrawn.
+
+<ExampleCode file="examples/counter/main.bal" start={31} end={34} title="Running it" />
+
+`term:detectEnvironment()` looks at what the process is attached to and picks the terminal, the
+renderer and the options. [Headless mode](../headless-modes/) explains what changes when there is no
+terminal.
+
+## Try the loop
+
+Send messages and watch the state and the frame change. This is a small illustration of the loop's
+shape, not the runtime itself.
+
+<LoopPlayground />
+
+## Why it is shaped like this
+
+- **One strand for state.** Because every message goes through the queue, you never lock your state.
+  Work that takes time runs as an **effect** on its own strand and reports back with a message; see
+  [commands and timers](../commands-and-timers/).
+- **One frame per batch.** A fast producer, such as streamed text, cannot make the terminal flicker
+  or fall behind: the renderer draws the latest state, once.
+- **`view` is a function of state.** That is what lets the same program run in a pipe or under test:
+  only the renderer changes.

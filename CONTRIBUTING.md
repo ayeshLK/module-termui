@@ -108,6 +108,25 @@ git checkout examples                                  # back to the published d
 
 CI does the same on Linux and macOS, and `examples/agent-harness/record_demo.py` regenerates the recording used in the README (it needs [`agg`](https://github.com/asciinema/agg)).
 
+## The documentation site
+
+The site in [`site/`](site) is built with Starlight from Markdown and MDX and published to GitHub Pages. It needs Node 22.23.4 or later (24 works), and nothing else in the repository does.
+
+```sh
+cd site
+npm ci
+npm run dev        # live preview at http://localhost:4321/module-termui/
+npm run build      # the build CI runs
+```
+
+- **Add a page** by creating a `.md` or `.mdx` file under `site/src/content/docs/<section>/`. The sidebar is generated from the folders; order a page with `sidebar.order` in its front matter. Quote a `description` that contains a colon.
+- **Show code from a file, never a copy.** Include a program with `<ExampleCode file="examples/..." />` (optionally `start` and `end` lines). `examples/check.sh` compiles every example a page includes, and runs their tests, and CI runs it, so a page cannot show code that does not build. Add a new included example to that script.
+- **Use only released API in tutorial and example programs.** They pin a published termui version, so a page matches what a reader can install. A new API appears in the site after the release that contains it.
+- **Link to the API reference** on Ballerina Central instead of restating symbol documentation.
+- **Recordings** are asciinema casts in `site/public/casts/`, recorded from the real programs (`examples/counter/record_demo.py` and `examples/agent-harness/record_demo.py` show how).
+
+The `Documentation site` workflow builds the site and the examples on pull requests that touch `site/` or `examples/`, and publishes from `main`. Package-only changes do not run it.
+
 ## How changes are planned
 
 Larger changes are planned with [OpenSpec](https://openspec.dev): a proposal, the behavior as requirements with scenarios, a design, and tasks. The current specifications are in [`openspec/specs`](openspec/specs) and finished changes, with their design notes, are in [`openspec/changes/archive`](openspec/changes/archive). Small fixes do not need any of that.
