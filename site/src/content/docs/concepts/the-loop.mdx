@@ -7,26 +7,12 @@ sidebar:
 
 import ExampleCode from '../../../components/ExampleCode.astro';
 import CastPlayer from '../../../components/CastPlayer.astro';
-import LoopPlayground from '../../../components/LoopPlayground.astro';
-import Flow from '../../../components/diagrams/Flow.astro';
+import InteractiveLoop from '../../../components/diagrams/InteractiveLoop.astro';
 
 A termui program is a class with two methods. Everything else in the library exists to feed them
 messages and to draw what they return.
 
-<Flow
-	owners={{outside: 'outside the program', runtime: 'the termui runtime', yours: 'your program'}}
-	nodes={[
-		{label: 'keys, resizes, timers, effect results', owner: 'outside'},
-		{label: 'message queue', owner: 'runtime'},
-		{label: 'loop', owner: 'runtime', focus: true},
-		{label: 'update(message)', code: true, owner: 'yours'},
-		{label: 'command', owner: 'runtime'},
-	]}
-	group={{from: 1, to: 4, label: 'the loop'}}
-	feedback={{from: 4, to: 1, label: 'effects and timers send new messages'}}
-	branch={{from: 2, nodes: [{label: 'view()', code: true, owner: 'yours'}, {label: 'one frame per batch', owner: 'runtime'}]}}
-	caption="A message goes into the queue. The loop hands it to update, which may return a command, and draws one frame from view. A command can start work whose results arrive as new messages."
-/>
+<InteractiveLoop />
 
 - **`update(message)`** is called once for each message. It changes the program's state and may return
   a **command**: what to do next (`quit()`, start an effect, commit some finished output).
@@ -71,13 +57,6 @@ The runtime decides what has to be redrawn.
 `term:detectEnvironment()` looks at what the process is attached to and picks the terminal, the
 renderer and the options. [Headless mode](../headless-modes/) explains what changes when there is no
 terminal.
-
-## Try the loop
-
-Send messages and watch the state and the frame change. This is a small illustration of the loop's
-shape, not the runtime itself.
-
-<LoopPlayground />
 
 ## Why it is shaped like this
 

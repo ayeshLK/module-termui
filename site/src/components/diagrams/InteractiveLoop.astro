@@ -1,0 +1,591 @@
+---
+// The update/view loop for the counter, as a diagram you can walk a message through. It is the Flow diagram
+// plus a written breakdown of every step, and a small script that turns the two into an explorer: each step
+// becomes a button, you send a message (+, -, x or q) and step it through the loop, and selecting a step shows
+// what it does and, for update and view, the real code from examples/counter. The state changes where update
+// runs and the frame at the last step.
+//
+// Without the script the page is complete: the diagram and every written section are there, in order. With it,
+// only the selected section is visible (the sections are stacked in one grid cell, so the box is as tall as
+// the tallest one and the page does not jump), and "Show all steps" puts them all back. This is an
+// illustration of the loop, not the runtime; the walk comes from src/lib/loop-walk.ts.
+import Flow from './Flow.astro';
+import ExampleCode from '../ExampleCode.astro';
+import { frameFor } from '../../lib/loop-walk';
+
+const example = 'https://github.com/ayeshLK/module-termui/tree/main/examples/counter';
+const owners = { outside: 'outside the program', runtime: 'the termui runtime', yours: 'your program' };
+const frame = frameFor(0);
+---
+
+<div class="il" data-loop-root>
+	<p class="il-note">
+		An illustration of the loop for the counter, not the termui runtime. The real program is{' '}
+		<a href={example}>examples/counter</a>.
+	</p>
+
+	<Flow
+		owners={owners}
+		nodes={[
+			{ id: 'outside', label: 'keys, resizes, timers, effect results', owner: 'outside' },
+			{ id: 'queue', label: 'message queue', owner: 'runtime' },
+			{ id: 'loop', label: 'loop', owner: 'runtime', focus: true },
+			{ id: 'update', label: 'update(message)', code: true, owner: 'yours' },
+			{ id: 'command', label: 'command', owner: 'runtime' },
+		]}
+		group={{ from: 1, to: 4, label: 'the loop' }}
+		feedback={{ from: 4, to: 1, label: 'effects and timers send new messages' }}
+		branch={{
+			from: 2,
+			nodes: [
+				{ id: 'view', label: 'view()', code: true, owner: 'yours' },
+				{ id: 'frame', label: 'one frame per batch', owner: 'runtime' },
+			],
+		}}
+		caption="A message goes into the queue. The loop hands it to update, which may return a command, and draws one frame from view. A command can start work whose results arrive as new messages."
+	/>
+
+	<div class="il-controls not-content" data-controls></div>
+
+	<div class="il-body">
+		<div class="il-inspector">
+			<div class="il-inspector-head not-content">
+				<h2 class="il-title">What each step does</h2>
+				<button type="button" class="il-showall" data-showall>Show all steps</button>
+			</div>
+			<div class="il-sections" data-sections>
+				<section class="il-section" data-for="outside" data-title="Keys, resizes, timers, effect results">
+					<h3>Keys, resizes, timers, effect results <span class="il-owner il-owner-outside">{owners.outside}</span></h3>
+					<p>
+						Anything that can happen to a program: a key press, a change of the window's size, a timer tick, or the
+						result of work an effect started. Each one becomes a message.
+					</p>
+				</section>
+				<section class="il-section" data-for="queue" data-title="Message queue">
+					<h3>Message queue <span class="il-owner il-owner-runtime">{owners.runtime}</span></h3>
+					<p>
+						Every message goes into one queue, in the order it happened. Because one loop reads the queue,
+						<code>update</code> never runs twice at the same time, and your state needs no locks.
+					</p>
+				</section>
+				<section class="il-section" data-for="loop" data-title="The loop">
+					<h3>The loop <span class="il-owner il-owner-runtime">{owners.runtime}</span></h3>
+					<p>
+						The runtime applies every message that is waiting, one after another, then asks <code>view</code> once and
+						draws one frame. Ten key presses that arrive together cost one frame, not ten.
+					</p>
+				</section>
+				<section class="il-section" data-for="update" data-title="update(message)">
+					<h3><code>update(message)</code> <span class="il-owner il-owner-yours">{owners.yours}</span></h3>
+					<p>
+						It is called once for each message, changes the program's state, and may return a command. This is the
+						counter's <code>update</code>:
+					</p>
+					<ExampleCode file="examples/counter/main.bal" region="update" title="update" />
+				</section>
+				<section class="il-section" data-for="command" data-title="Command">
+					<h3>Command <span class="il-owner il-owner-runtime">{owners.runtime}</span></h3>
+					<p>
+						What <code>update</code> returns: <code>quit()</code>, an <code>effect</code> that runs work on its own
+						strand, <code>commitProse</code> or <code>commitBlock</code> for finished output, <code>every</code> for a
+						timer, <code>batch</code> for several, or nothing. The counter returns nothing, except
+						<code>quit()</code> on q. See <a href="../commands-and-timers/">commands, effects and timers</a>.
+					</p>
+				</section>
+				<section class="il-section" data-for="view" data-title="view()">
+					<h3><code>view()</code> <span class="il-owner il-owner-yours">{owners.yours}</span></h3>
+					<p>
+						It returns the live region as lines of styled text, and has no side effects. It is called once after the
+						waiting messages have been applied. This is the counter's <code>view</code>:
+					</p>
+					<ExampleCode file="examples/counter/main.bal" region="view" title="view" />
+				</section>
+				<section class="il-section" data-for="frame" data-title="One frame per batch">
+					<h3>One frame per batch <span class="il-owner il-owner-runtime">{owners.runtime}</span></h3>
+					<p>
+						The renderer compares the lines with what is already on screen and writes only the cells that changed. A
+						message that changes nothing writes nothing. See <a href="../inline-rendering/">inline rendering</a>.
+					</p>
+				</section>
+			</div>
+		</div>
+
+		<div class="il-readouts not-content" data-readouts>
+			<div class="il-readout" data-readout="update">
+				<h3>update did</h3>
+				<pre data-update>waiting for a message</pre>
+			</div>
+			<div class="il-readout" data-readout="state">
+				<h3>State</h3>
+				<pre data-state>count = 0</pre>
+			</div>
+			<div class="il-readout" data-readout="frame">
+				<h3>Frame</h3>
+				<pre class="il-frame" data-frame>{frame.join('\n')}</pre>
+				<p class="il-hint" data-hint>The first frame draws every cell.</p>
+			</div>
+		</div>
+	</div>
+
+	<p class="dg-sr" role="status" aria-live="polite" data-status></p>
+</div>
+
+<script>
+	import { autoplayAllowed, frameFor, walk, type StopId, type Walk } from '../../lib/loop-walk';
+
+	const PLAY_MS = 900;
+	const OWNER_LABEL: Record<string, string> = { outside: 'outside the program', runtime: 'the termui runtime', yours: 'your program' };
+
+	// Astro scopes a component's CSS with a data-astro-cid-* attribute. Elements this script creates do not have
+	// it, so they would lose the styles of the component that rendered what they replace. Copy the attributes.
+	const scopeOf = (el: Element) => el.getAttributeNames().filter((a) => a.startsWith('data-astro-cid'));
+	const adopt = (el: Element, from: Element) => scopeOf(from).forEach((a) => el.setAttribute(a, ''));
+
+	function enhance(root: HTMLElement) {
+		const reduced = window.matchMedia('(prefers-reduced-motion: reduce)');
+		const q = <T extends HTMLElement>(sel: string) => root.querySelector<T>(sel)!;
+		const statusEl = q('[data-status]');
+		const controlsEl = q('[data-controls]');
+		const showAllBtn = q<HTMLButtonElement>('[data-showall]');
+		const updateEl = q('[data-update]');
+		const stateEl = q('[data-state]');
+		const frameEl = q('[data-frame]');
+		const hintEl = q('[data-hint]');
+		const readout = (name: string) => q(`[data-readout="${name}"]`);
+
+		// each step: its list item, its button, its written section
+		const steps = new Map<StopId, { li: HTMLElement; button: HTMLButtonElement; section: HTMLElement }>();
+		root.querySelectorAll<HTMLElement>('li[data-step]').forEach((li) => {
+			const id = li.dataset.step as StopId;
+			const pill = li.querySelector<HTMLElement>(':scope > .dg-pill')!;
+			const button = document.createElement('button');
+			button.type = 'button';
+			button.className = pill.className;
+			button.innerHTML = pill.innerHTML;
+			button.dataset.step = id;
+			adopt(button, pill); // the styles of Flow (no wrapping, the width of the long label)
+			adopt(button, root); // and of this component
+			pill.replaceWith(button);
+			const section = root.querySelector<HTMLElement>(`.il-section[data-for="${id}"]`)!;
+			steps.set(id, { li, button, section });
+			button.addEventListener('click', () => select(id));
+		});
+
+		// state of the explorer
+		let count = 0;
+		let current: Walk | null = null;
+		let pos = -1;
+		let selected: StopId = 'loop';
+		let showAll = false;
+		let timer: number | undefined;
+		let ended = false;
+
+		const canPlay = () => autoplayAllowed(reduced.matches);
+
+		// controls
+		controlsEl.innerHTML = `
+			<div class="il-group" role="group" aria-label="Send a message">
+				<span class="il-label" aria-hidden="true">Send a message</span>
+				${['+', '-', 'x', 'q'].map((k) => `<button type="button" class="il-btn" data-key="${k}">press ${k}</button>`).join('')}
+			</div>
+			<div class="il-group" role="group" aria-label="Walk it through the loop">
+				<button type="button" class="il-btn" data-act="step" disabled>Step</button>
+				<button type="button" class="il-btn" data-act="play" disabled>Play</button>
+				<button type="button" class="il-btn" data-act="reset">Reset</button>
+			</div>`;
+		controlsEl.querySelectorAll('*').forEach((e) => adopt(e, root));
+		const stepBtn = controlsEl.querySelector<HTMLButtonElement>('[data-act="step"]')!;
+		const playBtn = controlsEl.querySelector<HTMLButtonElement>('[data-act="play"]')!;
+		const resetBtn = controlsEl.querySelector<HTMLButtonElement>('[data-act="reset"]')!;
+		const keyBtns = [...controlsEl.querySelectorAll<HTMLButtonElement>('[data-key]')];
+
+		function announce(text: string) {
+			statusEl.textContent = text;
+		}
+
+		function select(id: StopId) {
+			selected = id;
+			steps.forEach((s, sid) => {
+				s.section.classList.toggle('il-off', !showAll && sid !== id);
+				s.button.setAttribute('aria-pressed', String(sid === id));
+			});
+		}
+
+		function markChanged(name: string, changed: boolean) {
+			readout(name).classList.toggle('il-changed', changed);
+		}
+
+		function clearMarks() {
+			steps.forEach((s) => {
+				s.li.classList.remove('dg-active', 'dg-visited');
+				s.button.removeAttribute('aria-current');
+			});
+			['update', 'state', 'frame'].forEach((n) => markChanged(n, false));
+		}
+
+		function refreshControls() {
+			const last = current ? pos >= current.stops.length - 1 : true;
+			stepBtn.disabled = !current || last;
+			const playing = timer !== undefined;
+			playBtn.disabled = !current || last || !canPlay();
+			playBtn.hidden = !canPlay();
+			playBtn.textContent = playing ? 'Pause' : 'Play';
+			keyBtns.forEach((b) => (b.disabled = ended));
+		}
+
+		function stop() {
+			if (timer !== undefined) {
+				window.clearInterval(timer);
+				timer = undefined;
+			}
+		}
+
+		// arrive at stop `pos` of the current walk: highlight it, apply what happens there, announce it
+		function arrive() {
+			if (!current) return;
+			const w = current;
+			const id = w.stops[pos];
+			steps.forEach((s, sid) => {
+				const i = w.stops.indexOf(sid);
+				s.li.classList.toggle('dg-active', sid === id);
+				s.li.classList.toggle('dg-visited', i >= 0 && i < pos);
+				if (sid === id) s.button.setAttribute('aria-current', 'step');
+				else s.button.removeAttribute('aria-current');
+			});
+			['update', 'state', 'frame'].forEach((n) => markChanged(n, false));
+			if (id === 'update') {
+				count = w.countAfter;
+				updateEl.textContent = `update(KeyEvent "${w.key}")\n${w.updateLines.join('\n')}`;
+				stateEl.textContent = `count = ${count}`;
+				markChanged('update', true);
+				markChanged('state', w.countAfter !== w.countBefore);
+			}
+			if (id === 'command' && w.quit) {
+				ended = true;
+				frameEl.textContent = `${frameFor(count).join('\n')}\n(program ended)`;
+				hintEl.textContent = 'quit() ends the loop and releases the terminal.';
+				markChanged('frame', true);
+			}
+			if (id === 'frame') {
+				frameEl.textContent = w.frameAfter.join('\n');
+				hintEl.textContent = w.frameChanged ? 'Only the cells that changed are written.' : 'The frame is unchanged, so nothing is written.';
+				markChanged('frame', w.frameChanged);
+			}
+			select(id);
+			const s = steps.get(id)!;
+			const first = (s.section.querySelector('p')?.textContent ?? '').trim().split('. ')[0].replace(/\s+/g, ' ');
+			const owner = [...s.li.classList].map((c) => c.replace('dg-', '')).find((c) => OWNER_LABEL[c]);
+			announce(`Step ${pos + 1} of ${w.stops.length}: ${s.section.dataset.title}${owner ? `, ${OWNER_LABEL[owner]}` : ''}. ${first}.`);
+			if (pos >= w.stops.length - 1) stop();
+			refreshControls();
+		}
+
+		function send(key: string) {
+			stop();
+			current = walk(count, key);
+			pos = 0;
+			clearMarks();
+			updateEl.textContent = 'waiting for update to run';
+			hintEl.textContent = '';
+			arrive();
+		}
+
+		function next() {
+			if (current && pos < current.stops.length - 1) {
+				pos += 1;
+				arrive();
+			}
+		}
+
+		function reset() {
+			stop();
+			count = 0;
+			current = null;
+			pos = -1;
+			ended = false;
+			clearMarks();
+			updateEl.textContent = 'waiting for a message';
+			stateEl.textContent = 'count = 0';
+			frameEl.textContent = frameFor(0).join('\n');
+			hintEl.textContent = 'The first frame draws every cell.';
+			select('loop');
+			announce('Reset.');
+			refreshControls();
+		}
+
+		keyBtns.forEach((b) => b.addEventListener('click', () => send(b.dataset.key!)));
+		stepBtn.addEventListener('click', () => {
+			stop();
+			next();
+			refreshControls();
+		});
+		playBtn.addEventListener('click', () => {
+			if (timer !== undefined) {
+				stop();
+				refreshControls();
+				return;
+			}
+			timer = window.setInterval(next, PLAY_MS);
+			refreshControls();
+		});
+		resetBtn.addEventListener('click', reset);
+		showAllBtn.addEventListener('click', () => {
+			showAll = !showAll;
+			showAllBtn.textContent = showAll ? 'Show one step at a time' : 'Show all steps';
+			showAllBtn.setAttribute('aria-pressed', String(showAll));
+			root.classList.toggle('il-all', showAll);
+			select(selected);
+		});
+		reduced.addEventListener('change', () => {
+			if (reduced.matches) stop();
+			refreshControls();
+		});
+
+		root.classList.add('il-enhanced');
+		select('loop');
+		refreshControls();
+	}
+
+	document.querySelectorAll<HTMLElement>('[data-loop-root]').forEach(enhance);
+</script>
+
+<style>
+	/* the container the narrow-layout rule below is measured against */
+	.il {
+		container-type: inline-size;
+	}
+	.il-note {
+		margin: 0 0 0.5rem;
+		font-size: var(--sl-text-sm);
+		color: var(--dg-muted);
+	}
+	/* the controls, the readouts and the "show all" button only exist with the script */
+	.il-controls,
+	.il-readouts,
+	.il-showall {
+		display: none;
+	}
+	.il-enhanced .il-controls {
+		display: flex;
+	}
+	.il-enhanced .il-readouts {
+		display: grid;
+	}
+	.il-enhanced .il-showall {
+		display: inline-block;
+	}
+
+	.il-controls {
+		flex-wrap: wrap;
+		gap: 0.6rem 1.4rem;
+		margin: 0.2rem 0 1rem;
+	}
+	.il-group {
+		display: flex;
+		flex-wrap: wrap;
+		align-items: center;
+		gap: 0.4rem;
+	}
+	.il-label {
+		margin-right: 0.2rem;
+		font-size: var(--sl-text-sm);
+		color: var(--dg-muted);
+	}
+	.il-btn,
+	.il-showall {
+		font: inherit;
+		font-size: var(--sl-text-sm);
+		min-height: 2.1rem;
+		padding: 0.3rem 0.8rem;
+		border: 1px solid var(--dg-border);
+		border-radius: var(--dg-radius);
+		background: var(--sl-color-bg);
+		color: var(--dg-text);
+		cursor: pointer;
+	}
+	.il-btn:hover:not(:disabled),
+	.il-showall:hover {
+		border-color: var(--dg-runtime);
+	}
+	.il-btn:disabled {
+		opacity: 0.5;
+		cursor: default;
+	}
+	.il-btn:focus-visible,
+	.il-showall:focus-visible,
+	.il :global(button.dg-pill:focus-visible) {
+		outline: 2px solid var(--dg-runtime);
+		outline-offset: 2px;
+	}
+
+	/* the steps of the diagram, once they are buttons */
+	.il :global(button.dg-pill) {
+		font: inherit;
+		font-size: var(--sl-text-sm);
+		line-height: 1.35;
+		cursor: pointer;
+		text-align: left;
+	}
+	.il :global(button.dg-pill:hover) {
+		border-color: var(--dg-text);
+	}
+	.il :global(.dg-visited > .dg-pill) {
+		border-style: solid;
+		filter: saturate(0.6);
+	}
+	/* the current step and the selected one are marked inside the box, so nothing reaches past an arrow */
+	.il :global(.dg-active > .dg-pill) {
+		box-shadow: inset 0 0 0 2px var(--dg-text);
+		font-weight: 700;
+	}
+	.il :global(button.dg-pill[aria-pressed='true']) {
+		text-decoration: underline;
+		text-underline-offset: 3px;
+	}
+
+	.il-body {
+		display: grid;
+		grid-template-columns: minmax(0, 1fr);
+		gap: 1.2rem;
+		align-items: start;
+		margin: 1rem 0;
+	}
+	/* two columns (the steps, and the readouts beside them) only once the readouts exist */
+	.il-enhanced .il-body {
+		grid-template-columns: minmax(0, 1.6fr) minmax(0, 1fr);
+	}
+	.il-inspector,
+	.il-readout {
+		min-width: 0;
+		padding: 0.9rem 1rem;
+		border: 1px solid var(--dg-border);
+		border-radius: 0.6rem;
+		background: var(--sl-color-bg);
+	}
+	.il-inspector-head {
+		display: flex;
+		flex-wrap: wrap;
+		align-items: center;
+		justify-content: space-between;
+		gap: 0.5rem;
+		margin-bottom: 0.7rem;
+	}
+	.il-title {
+		margin: 0;
+		padding: 0;
+		border: 0;
+		font-size: var(--sl-text-base);
+		font-weight: 600;
+	}
+	.il-section {
+		min-width: 0;
+	}
+	.il-section h3 {
+		margin: 0 0 0.4rem;
+		font-size: var(--sl-text-base);
+	}
+	.il-section p {
+		margin: 0.4rem 0;
+		font-size: var(--sl-text-sm);
+	}
+	.il-owner {
+		display: inline-block;
+		margin-left: 0.4rem;
+		padding: 0.05rem 0.55rem;
+		border: 1px solid var(--dg-border);
+		border-radius: 999px;
+		font-size: var(--sl-text-xs);
+		font-weight: 500;
+		color: var(--dg-muted);
+		vertical-align: middle;
+	}
+	.il-owner-outside {
+		border-style: dashed;
+	}
+	.il-owner-runtime {
+		border-color: var(--dg-runtime);
+		background: var(--dg-runtime-bg);
+		color: var(--dg-runtime-text);
+	}
+	.il-owner-yours {
+		border-color: var(--dg-yours);
+		background: var(--dg-yours-bg);
+		color: var(--dg-yours-text);
+	}
+	.il-section + .il-section {
+		margin-top: 1.4rem;
+	}
+
+	/* with the script: the sections share one grid cell, so the box is as tall as the tallest one, and only
+	   the selected one is visible (the others are invisible, so also out of the accessibility tree) */
+	.il-enhanced .il-sections {
+		display: grid;
+		grid-template-columns: minmax(0, 1fr);
+	}
+	.il-enhanced .il-section {
+		grid-area: 1 / 1;
+		margin: 0;
+	}
+	.il-enhanced .il-section.il-off {
+		visibility: hidden;
+	}
+	.il-enhanced.il-all .il-sections {
+		display: block;
+	}
+	.il-enhanced.il-all .il-section {
+		margin: 0;
+	}
+	.il-enhanced.il-all .il-section + .il-section {
+		margin-top: 1.4rem;
+	}
+
+	.il-readouts {
+		gap: 0.7rem;
+	}
+	.il-readout h3 {
+		margin: 0 0 0.4rem;
+		font-size: var(--sl-text-xs);
+		font-weight: 600;
+		letter-spacing: 0.04em;
+		text-transform: uppercase;
+		color: var(--dg-muted);
+	}
+	.il-readout pre {
+		margin: 0;
+		padding: 0.5rem 0.7rem;
+		min-height: 2.4rem;
+		white-space: pre-wrap;
+		border-radius: 0.4rem;
+		border: 1px solid var(--dg-border);
+		background: var(--dg-panel);
+		font-family: var(--sl-font-mono);
+		font-size: 0.78rem;
+		color: var(--dg-text);
+	}
+	.il-readout pre.il-frame {
+		background: #14161b;
+		border-color: #2c303a;
+		color: #dfe3ea;
+	}
+	.il-hint {
+		margin: 0.4rem 0 0;
+		min-height: 1.2em;
+		font-size: var(--sl-text-xs);
+		color: var(--dg-muted);
+	}
+	/* a readout that changed at the current step is marked with a left bar (and fades in only when motion is fine) */
+	.il-readout.il-changed pre {
+		border-left: 3px solid var(--dg-runtime);
+	}
+	@media (prefers-reduced-motion: no-preference) {
+		.il-readout pre {
+			transition: border-color 160ms ease;
+		}
+	}
+
+	@container (max-width: 44rem) {
+		.il-enhanced .il-body {
+			grid-template-columns: minmax(0, 1fr);
+		}
+	}
+</style>

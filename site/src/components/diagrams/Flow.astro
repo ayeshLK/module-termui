@@ -18,6 +18,7 @@
 // the group and the arc are drawn, and their meaning is also in the words for screen readers. In a narrow
 // container it stacks top to bottom and the arc becomes a sentence under the list.
 interface Node {
+	id?: string; // emitted as data-step, so a script can find the step (the interactive loop diagram does)
 	label: string;
 	code?: boolean;
 	owner?: 'outside' | 'runtime' | 'yours';
@@ -67,14 +68,14 @@ const legend = (['outside', 'runtime', 'yours'] as const).filter((k) => used.has
 		}
 		{
 			nodes.map((n, i) => (
-				<li class={nodeClass(n)} style={`grid-column: ${i + 1}; grid-row: ${rNodes}`}>
+				<li class={nodeClass(n)} style={`grid-column: ${i + 1}; grid-row: ${rNodes}`} data-step={n.id}>
 					{i > 0 && <span class="dg-sr">{branch && branch.from === i - 1 ? 'on the main path, then ' : 'then '}</span>}
 					<span class="dg-pill">{n.code ? <code>{n.label}</code> : n.label}</span>
 					<span class="dg-sr">{ownerWords(n)}</span>
 					{branch && branch.from === i && (
 						<ol class="dg-flow-branch">
 							{branch.nodes.map((b, j) => (
-								<li class={nodeClass(b)}>
+								<li class={nodeClass(b)} data-step={b.id}>
 									<span class="dg-sr">{j === 0 ? 'on a branch from here: ' : 'then '}</span>
 									<span class="dg-pill">{b.code ? <code>{b.label}</code> : b.label}</span>
 									<span class="dg-sr">{ownerWords(b)}</span>
