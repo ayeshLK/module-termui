@@ -1,0 +1,104 @@
+---
+title: Quick start
+description: Install termui, write a small to-do list, run it and see it work.
+sidebar:
+  order: 1
+---
+
+import ExampleCode from '../../../components/ExampleCode.astro';
+import CastPlayer from '../../../components/CastPlayer.astro';
+
+In a few minutes you will have a to-do list that runs in your terminal, keeps its items between runs and
+leaves the list in your scrollback when you quit. You need Ballerina 2201.14 and JDK 25, on macOS or
+Linux.
+
+## Create a package
+
+```sh
+bal new todo
+cd todo
+```
+
+## Import termui
+
+Open `main.bal` and import the package. There is nothing to add to `Ballerina.toml`: the first
+`bal build` or `bal run` fetches the latest release from
+[Ballerina Central](https://central.ballerina.io/ayesha/termui/1.0.0) and records its version in
+`Dependencies.toml`.
+
+```ballerina
+import ayesha/termui;
+import ayesha/termui.input;
+import ayesha/termui.term;
+import ayesha/termui.text;
+```
+
+The package has several modules, and the program uses four of them. [The modules](../modules/) says what
+each is for.
+
+## Write the program
+
+The program is a class with an `update` and a `view`. Everything it knows is in its fields.
+
+<ExampleCode file="examples/quick-start/main.bal" region="state" title="State" />
+
+`update` receives every message: a key press, a resize, the end of input. It works in one of two modes.
+Browsing moves the selection, marks an item done, deletes it, starts an add, or quits. Adding hands
+every key to a line editor until you press Enter, which appends the item, or Escape, which gives up.
+
+<ExampleCode file="examples/quick-start/main.bal" region="update" title="update" />
+
+`view` returns the lines to show, as styled spans. It does not draw anything: the runtime compares each
+frame with the last one and writes only what changed. When you quit it returns nothing, because `q` has
+already put the list in your scrollback.
+
+<ExampleCode file="examples/quick-start/main.bal" region="view" title="view" />
+
+The list lives in a file next to where you run the program. Reading and writing it is ordinary Ballerina.
+
+<ExampleCode file="examples/quick-start/main.bal" region="storage" title="Load and save" />
+
+`main` loads the items, runs the program until you quit, and saves them.
+
+<ExampleCode file="examples/quick-start/main.bal" region="main" title="main" />
+
+These pieces are one file. Here it is whole, to copy into `main.bal`; it also needs the two library
+imports it uses, `ballerina/file` and `ballerina/io`, which are part of Ballerina and need no download.
+
+<details>
+<summary>The whole program</summary>
+
+<ExampleCode file="examples/quick-start/main.bal" title="main.bal" />
+
+</details>
+
+It is the file CI builds and tests as `examples/quick-start`, so what you read here compiles.
+
+## Run it
+
+```sh
+bal run
+```
+
+<CastPlayer cast="quick-start.cast" cols={70} rows={10} caption="Add three items, delete one, mark one done, quit. The list stays in the scrollback." />
+
+Press `a` and type an item, then Enter. Move with the arrow keys, press space to mark an item done and
+`d` to delete it, and `q` to quit. Run it again and your list is back: it was saved in `todos.json`.
+
+## What just happened
+
+- **A program is a class** with `update` and `view`. `update` changes state and may return a command;
+  `view` describes the screen. [The update and view loop](../../concepts/the-loop/) follows one message
+  through it.
+- **The screen is a small live region** at the bottom of your terminal, redrawn in place. Output you
+  commit, like the final list, goes into the normal scrollback, which is why it is still there after the
+  program exits. [Inline rendering](../../concepts/inline-rendering/) explains why.
+- **The text input is a `LineEditor`**, which gives you cursor movement, word editing and history without
+  writing any of it. [The line editor](../../concepts/line-editor/) covers it.
+
+## Next
+
+- [The modules](../modules/): what each of the package's modules is for.
+- [Tutorial](../../tutorial/): build a small agent harness step by step, starting with a counter.
+- [Testing without a terminal](../../best-practices/testing/): how this program's own tests drive it with
+  scripted keys.

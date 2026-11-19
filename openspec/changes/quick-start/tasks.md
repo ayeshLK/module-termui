@@ -15,15 +15,15 @@
 
 ## 3. The pages
 
-- [ ] 3.1 Replace `start/install.md` with `start/quick-start.mdx`: requirements in a line, `bal new`, the import (with the note that there is nothing to add to `Ballerina.toml`), the program in four pieces with `ExampleCode` regions and the whole file, `bal run`, the recording, what just happened in a few lines, and links to the loop concept and the tutorial; verify the page builds and every code block is from the example file
-- [ ] 3.2 Add `start/modules.md` with the module table, the pointer to the API reference and the versions note that stays relevant; verify both pages appear in the sidebar in the order quick start, modules
-- [ ] 3.3 Point the home page's "Start here" button at `start/quick-start/` and fix every link that named `start/install`; verify `npm run check-links` passes and a search for `start/install` finds nothing in the site, README or CONTRIBUTING.md
-- [ ] 3.4 Review the pages in light and dark mode at normal width and at a real 390px viewport: no horizontal overflow, the recording readable; verify with measurements as for the other pages
+- [x] 3.1 Replace `start/install.md` with `start/quick-start.mdx`: requirements in a line, `bal new`, the import (with the note that there is nothing to add to `Ballerina.toml`), the program in four pieces with `ExampleCode` regions and the whole file, `bal run`, the recording, what just happened in a few lines, and links to the loop concept and the tutorial; verify the page builds and every code block is from the example file
+- [x] 3.2 Add `start/modules.md` with the module table, the pointer to the API reference and the versions note that stays relevant; verify both pages appear in the sidebar in the order quick start, modules
+- [x] 3.3 Point the home page's "Start here" button at `start/quick-start/` and fix every link that named `start/install`; verify `npm run check-links` passes and a search for `start/install` finds nothing in the site, README or CONTRIBUTING.md
+- [x] 3.4 Review the pages in light and dark mode at normal width and at a real 390px viewport: no horizontal overflow, the recording readable; verify with measurements as for the other pages
 
 ## 4. Housekeeping
 
-- [ ] 4.1 Update `CONTRIBUTING.md` where it lists the examples or the docs-site pages; verify the commands it names run
-- [ ] 4.2 Run the whole local check: `sh examples/check.sh`, `npm test`, `npm run build` and `npm run check-links`; verify all pass
+- [x] 4.1 Update `CONTRIBUTING.md` where it lists the examples or the docs-site pages; verify the commands it names run
+- [x] 4.2 Run the whole local check: `sh examples/check.sh`, `npm test`, `npm run build` and `npm run check-links`; verify all pass
 
 ## Workflow follow-up
 
