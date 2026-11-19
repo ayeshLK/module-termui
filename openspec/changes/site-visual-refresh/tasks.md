@@ -6,7 +6,7 @@
 - [x] 1.2 Build the `Flow` component (an ordered list of pills with arrows and one optional branch, stacking on narrow screens, with a caption); verify it renders from props in a scratch page
 - [x] 1.3 Replace the ASCII diagram on "The update and view loop" with `Flow`; verify in a browser in light and dark mode and at phone width, with keyboard focus visible, and that the built HTML contains no `<script>` from the component and the same text as the old diagram
 - [x] 1.4 Redo `Flow` after comparing other documentation sites (Claude Code, Anthropic, Codex): a panel, colour by owner with a legend, a dashed group container, a feedback arc, and a branch; verify in light and dark mode and in a narrow container, that the built HTML has no script and the feedback sentence appears once, and that the checks pass
-- [ ] 1.5 Review the look of this first page with you before the style is repeated (density, arrow style); apply the feedback to the foundation
+- [x] 1.5 Review the look of this first page with you before the style is repeated (density, arrow style); apply the feedback to the foundation
 
 ## 2. The screen diagrams
 
@@ -33,7 +33,7 @@
 
 ## 6. Whole-site review
 
-- [ ] 6.1 Look at every page that changed in light and dark mode and at phone width, and run the link check and the site build in CI; list anything that still looks off and fix it
+- [x] 6.1 Look at every page that changed in light and dark mode and at phone width, and run the link check and the site build in CI; list anything that still looks off and fix it (found: the loop playground predated the new look, with a ragged grid, uneven buttons and a missing space before its link; it now uses the shared panel and owner colours)
 
 ## Workflow follow-up
 
