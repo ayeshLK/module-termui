@@ -53,13 +53,35 @@ Enter, Esc for a choice). They return an error when the program ends first or th
 rows of the terminal instead of where the program was started. It is off by default; see the `termui.render`
 module for how it behaves and where it does not apply. It is ignored when `interactive` is `false`.
 
+### Idle cost
+
+The loop wakes to look for messages, since a Ballerina program cannot wait for "a key or a timer or a message"
+at once. While nothing happens it wakes less and less often: it starts at `pollInterval` (5 ms), doubles the
+sleep after every 20 checks that found nothing, and stops at `maxPollInterval` (0.5 s), which it reaches after
+about 13 seconds of idleness. A key, an effect result or any message the program sent returns it to
+`pollInterval` at once. A waiting program, such as the counter example, then uses about 1% of a CPU core
+instead of about 10%.
+
+- **The first key after a long pause waits for the current sleep to end**, in two hops (the terminal's input
+  check, then this loop). Measured on the counter example, the median first key takes about 40 ms after a
+  second of idleness, about 110 ms after three seconds, and about half a second after more than 13 seconds. Lower `maxPollInterval` (or pass
+  `maxPollInterval` to `Interface`, which sets it for the terminal too) for a snappier first key, or set it at
+  or below `pollInterval` to turn the backoff off.
+- **Timers.** The ticks of a timer started with `every` do not end the backoff, and the ceiling is lowered to
+  half the period of the program's fastest timer, so ticks are handled on time. A tick that leaves the view
+  unchanged does not redraw. A program with a 100 ms timer idles at a few percent, mostly the work of its own
+  `update` and `view` ten times a second.
+- **Measuring.** `bench/idle_cpu.py` and `bench/latency.py` in the repository measure idle CPU and the first-key
+  delay for any built program.
+
 ### Stability
 
 The supported API of this module is `Program`, `run`, `Options`, `Interface`, `Session`, `Message`,
 `Command` with its helpers (`quit`, `effect`, `commitProse`, `commitBlock`, `every`, `batch`) and the
 message types the runtime sends. New messages and commands are added in minor releases, so handle the
 ones you know and ignore the rest. The run settings keep their defaults for the whole major version:
-`colors` and `reflow` on, `anchorBottom` off, `interactive` on, `pollInterval` 0.005 seconds.
+`colors` and `reflow` on, `anchorBottom` off, `interactive` on, `pollInterval` 0.005 seconds and
+`maxPollInterval` 0.5 seconds.
 
 ### Example
 

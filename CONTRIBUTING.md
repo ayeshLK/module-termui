@@ -84,6 +84,16 @@ in the release pull request.
       Note the results in the pull request. A failure blocks the release only if it breaks documented
       behaviour; otherwise record it as a known limit in the README.
 
+## Measuring performance
+
+`bench/` has two scripts that run a built program on a pseudo-terminal and report the CPU it uses while idle
+(`idle_cpu.py`) and how long a key takes to produce output after idle pauses of different lengths
+(`latency.py`). Run them against the counter example before a release and after any change to the loops or the
+renderer; see [bench/README.md](bench/README.md). They are not a CI gate, because timing on shared runners is
+noisy. Expected on a laptop: a waiting program without a fast timer, such as the counter, idles under 3% of a
+core; a program with a 10 Hz timer idles at a few percent more; the median first key takes about 40 ms after a
+second of idleness, 110 ms after three seconds and half a second after 13 seconds or more.
+
 ## The examples
 
 The examples depend on the version of termui published on Ballerina Central, so anyone who clones the repository can run them with `bal run`. To try them against the code in your working tree, publish it to your local repository and point the examples at it:

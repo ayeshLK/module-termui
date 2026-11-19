@@ -126,6 +126,7 @@ Worth knowing before you build on it:
 - **Stable.** Breaking changes only in a new major version; see [COMPATIBILITY.md](COMPATIBILITY.md).
 - **Platforms:** macOS and Linux. Windows is not supported.
 - **Startup:** about 0.3 s to the first frame on the JVM (334 ms for the agent demo on a developer laptop) and about 0.23 s with an AppCDS archive. The Ballerina runtime is most of that. Long-lived interactive programs will not notice; a command you run a hundred times a day might.
+- **Idle:** a waiting program uses about 1% of a CPU core: its loops sleep longer and longer while nothing happens (up to `maxPollInterval`, 0.5 s). The median first key takes about 40 ms after a second of idleness, 110 ms after three seconds and about half a second after 13 seconds or more; lower `maxPollInterval` for a snappier first key.
 - **Wide lines:** a line of the live region wider than the terminal is cut off at the right edge, not wrapped. Wrap it with `text:wrap` first; the line editor does.
 - **Resize:** committed output is not re-laid out; terminals that re-wrap text do it for prose, and blocks keep the width they were written at. The renderer needs to be told whether your terminal re-wraps (`reflow`).
 - **Not there yet:** more ready-made widgets (select list, spinner), incremental markdown rendering, a bridge to Ballerina's AI module, and JSON output for headless mode.

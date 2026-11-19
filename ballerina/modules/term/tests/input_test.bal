@@ -44,3 +44,13 @@ function testByteQueueCanBeCleared() {
     queue.clear();
     test:assertEquals(queue.takeAll(), []);
 }
+
+@test:Config {}
+function testTakingFromAnEmptyByteQueueGivesNothingAndKeepsTheQueueWorking() {
+    ByteQueue queue = new;
+    test:assertEquals(queue.takeAll(), <int[]>[]);
+    test:assertEquals(queue.takeAll(), <int[]>[], "again");
+    queue.push([97, 98]);
+    test:assertEquals(queue.takeAll(), [97, 98]);
+    test:assertEquals(queue.takeAll(), <int[]>[], "emptied by the take");
+}

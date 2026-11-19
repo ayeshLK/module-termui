@@ -40,6 +40,7 @@ public class Interface {
 
     private final term:Environment environment;
     private final string? resultFile;
+    private final decimal maxPollInterval;
     private render:Renderer? active = ();
 
     # + environment - what the process is attached to (see `term:detectEnvironment`)
@@ -48,9 +49,13 @@ public class Interface {
     #                that capture them)
     # + terminal - use this terminal instead of the one the mode would choose (for tests and for custom
     #              terminals)
+    # + maxPollInterval - the longest the loops sleep while the program is idle, in seconds (see
+    #                     `Options.maxPollInterval`); it is used for the run options and for the terminal
+    #                     this interface creates
     public function init(term:Environment environment, string ttyPath = "/dev/tty", string? resultFile = (),
-            term:Terminal? terminal = ()) {
+            term:Terminal? terminal = (), decimal maxPollInterval = 0.5) {
         self.environment = environment;
+        self.maxPollInterval = maxPollInterval;
         self.mode = term:selectMode(environment);
         // with output redirected a terminal is still there, so questions can be asked
         self.interactive = self.mode == "interactive" || self.mode == "pipedOutput";
@@ -58,7 +63,7 @@ public class Interface {
         if terminal is term:Terminal {
             self.terminal = terminal;
         } else if self.mode == "interactive" || self.mode == "pipedOutput" {
-            self.terminal = new term:UnixTerminal(ttyPath);
+            self.terminal = new term:UnixTerminal(ttyPath, maxPollInterval);
         } else {
             self.terminal = new term:StreamTerminal(io:stdout, environment.width, environment.height, resultFile);
         }
@@ -96,7 +101,7 @@ public class Interface {
     #
     # + return - the options
     public function options() returns Options {
-        return {colors: self.colorsOnTerminal(), interactive: self.interactive,
+        return {colors: self.colorsOnTerminal(), interactive: self.interactive, maxPollInterval: self.maxPollInterval,
             fallbackSize: {width: self.environment.width, height: self.environment.height}};
     }
 

@@ -35,6 +35,9 @@ const decimal ESCAPE_TIMEOUT = 0.05;
 // milliseconds (the slowest measured was 16 ms); a terminal that never answers costs this once.
 const decimal CURSOR_REPORT_TIMEOUT = 0.2;
 
+// How long nextEvent sleeps between checks for input at the start; it grows while nothing arrives (see backoff.bal).
+const decimal INPUT_POLL_INTERVAL = 0.002;
+
 const string CURSOR_POSITION_REQUEST = "\u{1b}[6n";
 
 // Runs a shell command and returns what it printed; a non-zero exit status is an error.
@@ -86,6 +89,7 @@ public isolated class UnixTerminal {
     *CursorReporter;
 
     private final string ttyPath;
+    private final decimal maxPollInterval;
     private boolean acquired = false;
     private string savedSettings = "";
     private boolean stopHandlerRegistered = false;
@@ -102,8 +106,13 @@ public isolated class UnixTerminal {
     private boolean cursorUnsupported = false;
 
     # + ttyPath - the terminal device; the controlling terminal by default
-    public isolated function init(string ttyPath = "/dev/tty") {
+    # + maxPollInterval - the longest `nextEvent` sleeps between checks for input while nothing arrives, in
+    #                     seconds. It starts at 2 ms, grows while the terminal is idle and returns to 2 ms
+    #                     when input arrives; a value at or below 2 ms turns this off. A key pressed after a
+    #                     long pause waits for the current sleep to end.
+    public isolated function init(string ttyPath = "/dev/tty", decimal maxPollInterval = 0.5) {
         self.ttyPath = ttyPath;
+        self.maxPollInterval = maxPollInterval;
     }
 
     # Saves the terminal settings and switches to raw mode.
@@ -191,28 +200,30 @@ public isolated class UnixTerminal {
     #
     # + return - the event, `()` when the terminal input has ended, or an error when reading fails
     public isolated function nextEvent() returns InputEvent|error? {
+        decimal interval = INPUT_POLL_INTERVAL;
+        int emptyChecks = 0;
         while true {
-            boolean checkSize = false;
             lock {
                 if self.ready.length() > 0 {
                     InputEvent event = self.ready.remove(0);
                     return event.clone();
                 }
-                int[] fresh = self.queue.takeAll();
-                if fresh.length() > 0 {
-                    self.pending.push(...fresh);
-                    self.lastByteAt = time:monotonicNow();
-                    self.accept(decodeInput(self.pending, false, self.cursorRequested).cloneReadOnly());
-                    continue;
-                }
-                if self.pending.length() > 0 && time:monotonicNow() - self.lastByteAt >= ESCAPE_TIMEOUT {
-                    self.accept(decodeInput(self.pending, true, self.cursorRequested).cloneReadOnly());
-                    self.lastByteAt = time:monotonicNow();
-                    continue;
-                }
-                if self.pending.length() == 0 && self.queue.hasEnded() {
+            }
+            string pumped = self.pumpInput();
+            if pumped == "found" {
+                interval = INPUT_POLL_INTERVAL; // input arrived: back to the short sleep
+                emptyChecks = 0;
+                continue;
+            }
+            if pumped == "ended" {
+                lock {
                     return self.queue.lastFailure();
                 }
+            }
+            boolean checkSize = false;
+            boolean waitingForMore = false;
+            lock {
+                waitingForMore = self.pending.length() > 0;
                 if !self.inBandResize && time:monotonicNow() - self.lastSizeCheck >= RESIZE_POLL_INTERVAL {
                     self.lastSizeCheck = time:monotonicNow();
                     checkSize = true;
@@ -225,7 +236,39 @@ public isolated class UnixTerminal {
                     self.noteSize(current.cloneReadOnly());
                 }
             }
-            runtime:sleep(0.002);
+            if waitingForMore {
+                // part of a sequence (or a lone Escape) is waiting for its timeout: check at the short interval
+                interval = INPUT_POLL_INTERVAL;
+                emptyChecks = 0;
+            } else {
+                [interval, emptyChecks] = backOff(interval, emptyChecks, INPUT_POLL_INTERVAL, self.maxPollInterval);
+            }
+            runtime:sleep(interval);
+        }
+    }
+
+    // Takes what the reader strand has queued, decodes it, and lets a waiting lone Escape through once it has
+    // waited long enough. Returns `found` when it decoded something, `ended` when the input is over and nothing
+    // is left, and `idle` otherwise. `nextEvent` and `queryCursor` both call it, so a reply to a cursor
+    // position request is found whatever sleep `nextEvent` is in.
+    private isolated function pumpInput() returns "found"|"ended"|"idle" {
+        lock {
+            int[] fresh = self.queue.takeAll();
+            if fresh.length() > 0 {
+                self.pending.push(...fresh);
+                self.lastByteAt = time:monotonicNow();
+                self.accept(decodeInput(self.pending, false, self.cursorRequested).cloneReadOnly());
+                return "found";
+            }
+            if self.pending.length() > 0 && time:monotonicNow() - self.lastByteAt >= ESCAPE_TIMEOUT {
+                self.accept(decodeInput(self.pending, true, self.cursorRequested).cloneReadOnly());
+                self.lastByteAt = time:monotonicNow();
+                return "found";
+            }
+            if self.pending.length() == 0 && self.queue.hasEnded() {
+                return "ended";
+            }
+            return "idle";
         }
     }
 
@@ -259,10 +302,10 @@ public isolated class UnixTerminal {
         }
     }
 
-    # Asks the terminal where its cursor is (`ESC [ 6 n`) and waits for the reply, which `nextEvent`
-    # picks out of the input, so `nextEvent` must be running on another strand (the runtime's input
-    # loop does this). A terminal that does not answer within a fifth of a second is remembered as not
-    # supporting it, so later calls return at once. Input that arrives meanwhile is kept.
+    # Asks the terminal where its cursor is (`ESC [ 6 n`) and waits for the reply, which it reads out of
+    # the input itself (so it does not depend on `nextEvent`, which may be asleep between checks). A
+    # terminal that does not answer within a fifth of a second is remembered as not supporting it, so
+    # later calls return at once. Input that arrives meanwhile is kept for `nextEvent`.
     #
     # + return - the position, `()` when the terminal does not answer or is not acquired, or an error
     #            when the request cannot be written
@@ -277,6 +320,7 @@ public isolated class UnixTerminal {
         error? sent = self.write(CURSOR_POSITION_REQUEST);
         decimal waited = 0;
         while sent is () && waited < CURSOR_REPORT_TIMEOUT {
+            _ = self.pumpInput();
             lock {
                 CursorPosition? reply = self.cursorReply;
                 if reply is CursorPosition {

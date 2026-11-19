@@ -22,6 +22,11 @@ The terminal the application draws on and reads input from.
 
 - **Requirements.** macOS or Linux, `sh` and `stty` on the path, and a terminal device. It opens
   `/dev/tty` (the controlling terminal) unless you pass another device. Windows is not supported.
+- **Idle cost.** `nextEvent` checks for input every 2 ms at first and lengthens the sleep while nothing arrives,
+  up to `maxPollInterval` (the second argument of `UnixTerminal`, 0.5 s by default). A key returns it to 2 ms.
+  A key pressed after a long pause waits for the current sleep to end; pass a smaller value for a snappier
+  first key, or 2 ms or less to turn this off. A cursor position request reads its reply itself, so it is
+  answered in time whatever sleep `nextEvent` is in.
 - **Acquire and release.** `acquire` saves the terminal settings and switches to raw mode: no echo, no
   line editing, no signal keys (Ctrl+C arrives as a key event), and no output processing, so a line feed
   moves down only and frames must use carriage return plus line feed. It also turns on bracketed paste

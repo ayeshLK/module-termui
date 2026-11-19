@@ -137,5 +137,6 @@ function testTheRunSettingsKeepTheirDefaults() {
     test:assertEquals(options.anchorBottom, false);
     test:assertEquals(options.interactive, true);
     test:assertEquals(options.pollInterval, 0.005d);
+    test:assertEquals(options.maxPollInterval, 0.5d);
     test:assertEquals(options.initialCommand, ());
 }

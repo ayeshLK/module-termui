@@ -13,6 +13,7 @@
 // language governing permissions and limitations under the License.
 
 import ballerina/io;
+import ballerina/lang.runtime;
 import ballerina/os;
 import ballerina/test;
 import ballerina/time;
@@ -467,4 +468,101 @@ function testASilentTerminalCostsOneTimeoutAndKeepsInput() returns error? {
 function testAnUnacquiredTerminalDoesNotKnowItsCursor() returns error? {
     UnixTerminal terminal = new ("/dev/tty");
     test:assertEquals(check terminal.queryCursor(), ());
+}
+
+// ---- idle backoff ---------------------------------------------------------------------------------
+
+// Like `Collected`, with the time each event was delivered.
+isolated class Timed {
+    private [InputEvent, decimal][] events = [];
+
+    isolated function add(InputEvent event) {
+        decimal at = time:monotonicNow();
+        lock {
+            self.events.push([event.clone(), at]);
+        }
+    }
+
+    isolated function all() returns [InputEvent, decimal][] {
+        lock {
+            return self.events.clone();
+        }
+    }
+}
+
+function pumpTimedUntilQ(UnixTerminal terminal, Timed collected) {
+    while true {
+        InputEvent|error? event = terminal.nextEvent();
+        if event is InputEvent {
+            collected.add(event);
+            if event is KeyEvent && event.key == "q" {
+                return;
+            }
+        } else {
+            return;
+        }
+    }
+}
+
+@test:Config {groups: ["tty"]}
+function testAKeyAfterAPauseIsDeliveredWithinTheCeilingAndTheLoopRecovers() returns error? {
+    string dir = check newWorkDir();
+    os:Process helper = check startHelper(dir, [
+        {op: "wait", file: "go1"},
+        {op: "send", hex: "6b"}, // k, after the pause
+        {op: "wait", file: "go2"},
+        {op: "send", hex: "6a"}, // j, soon after the first
+        {op: "wait", file: "go3"},
+        {op: "send", hex: "71"}, // q ends the pump
+        {op: "wait", file: "finished"}
+    ]);
+    UnixTerminal terminal = new (check helperTty(dir), 0.04);
+    check terminal.acquire();
+    Timed collected = new;
+    future<()> pump = start pumpTimedUntilQ(terminal, collected);
+    runtime:sleep(1.6); // long enough for the sleep to reach the 40 ms ceiling
+    decimal firstAsked = time:monotonicNow();
+    check touch(dir, "go1");
+    runtime:sleep(0.3);
+    decimal secondAsked = time:monotonicNow();
+    check touch(dir, "go2");
+    runtime:sleep(0.2);
+    check touch(dir, "go3");
+    () _ = wait pump;
+    check terminal.release();
+    check touch(dir, "finished");
+    _ = check finishHelper(helper, dir);
+
+    [InputEvent, decimal][] got = collected.all();
+    test:assertEquals(got.length(), 3);
+    test:assertEquals(got[0][0], <KeyEvent>{key: "k"});
+    test:assertEquals(got[1][0], <KeyEvent>{key: "j"});
+    test:assertTrue(got[0][1] - firstAsked <= 0.15d, string `the first key waited ${(got[0][1] - firstAsked).toString()} s`);
+    test:assertTrue(got[1][1] - secondAsked <= 0.06d, string `after input the loop is back to its short sleep, but the next key waited ${(got[1][1] - secondAsked).toString()} s`);
+}
+
+@test:Config {groups: ["tty"]}
+function testTheCursorPositionIsAnsweredWhileTheInputLoopSleepsLong() returns error? {
+    string dir = check newWorkDir();
+    os:Process helper = check startHelper(dir, [
+        {op: "cpr", label: "asked", row: 7, col: 3},
+        {op: "send", hex: "71"}, // q ends the pump
+        {op: "wait", file: "finished"}
+    ]);
+    // a ceiling far above the 0.2 s the request may take: after about 5 s the loop sleeps more than 0.25 s at a time
+    UnixTerminal terminal = new (check helperTty(dir), 5.0);
+    check terminal.acquire();
+    Collected collected = new;
+    future<()> pump = start pumpUntilQ(terminal, collected);
+    runtime:sleep(5.5);
+    time:Utc begin = time:utcNow();
+    CursorPosition? position = check terminal.queryCursor();
+    decimal took = time:utcDiffSeconds(time:utcNow(), begin);
+    () _ = wait pump;
+    check terminal.release();
+    check touch(dir, "finished");
+    _ = check finishHelper(helper, dir);
+
+    test:assertEquals(position, <CursorPosition>{row: 6, col: 2}, "the reply is found although the input loop is asleep");
+    test:assertTrue(took < 0.2d, string `the request took ${took.toString()} s`);
 }

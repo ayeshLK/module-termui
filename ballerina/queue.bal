@@ -41,6 +41,9 @@ isolated class MessageQueue {
 
     isolated function takeAll() returns Message[] {
         lock {
+            if self.items.length() == 0 {
+                return []; // the usual case while idle: nothing to copy
+            }
             Message[] all = self.items.clone();
             self.items = [];
             return all.clone();

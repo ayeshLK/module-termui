@@ -29,7 +29,9 @@ Everything documented in the module pages is supported API; symbols described th
 change in a minor release. `Renderer` and `Terminal` have a fixed set of required methods, and later
 abilities arrive as separate optional capability types, so an implementation you write keeps working.
 The run settings keep their defaults for the whole major version: colors and reflow on, bottom
-anchoring off, interactive on.
+anchoring off, interactive on, `pollInterval` 5 ms and `maxPollInterval` 0.5 s (a waiting program backs its
+checks off from the first to the second, so it idles at about 1% of a core; the first key after a long
+pause can take about half a second, see the *Idle cost* section of the `ayesha/termui` page).
 
 ## Running without a terminal
 

@@ -9,9 +9,18 @@ All notable changes to termui are listed here, newest first. The format follows
 ## [1.0.0] - 2026-11-19
 
 termui is stable. From this release the API follows [COMPATIBILITY.md](COMPATIBILITY.md): breaking
-changes are made only in a new major version. There are no API changes since 0.4.0.
+changes are made only in a new major version. The only API additions since 0.4.0 are the new option
+`Options.maxPollInterval` and the matching optional parameters of `Interface` and `UnixTerminal`.
 
 ### Added
+- **Idle backoff.** A program that is waiting for input now uses about 1% of a CPU core instead of about 10%:
+  the engine loop and the terminal's input check sleep longer while nothing happens, from `pollInterval`
+  (5 ms) up to the new `Options.maxPollInterval` (default 0.5 s), and go back to the short sleep as soon as a
+  key, an effect result or another message arrives. `Interface` takes a `maxPollInterval` argument and passes it
+  to the terminal it creates, and `UnixTerminal` takes one too. A value at or below `pollInterval` turns the
+  backoff off. The median first key takes about 40 ms after a second of idleness, about 110 ms after three seconds
+  and about half a second after more than 13 seconds.
+- `bench/idle_cpu.py` and `bench/latency.py`, which measure the idle CPU and the first-key delay of a built program.
 - `COMPATIBILITY.md`: what is public API, what each kind of release may change, how deprecation works,
   and the supported platforms.
 - This changelog and a `SECURITY.md` with how to report a vulnerability.
@@ -19,6 +28,12 @@ changes are made only in a new major version. There are no API changes since 0.4
   agent harness in tmux and checks the layout, editing keys, a resize and the approval prompts.
 
 ### Changed
+- `Options.pollInterval` is now documented as the shortest sleep: the loop may sleep longer while idle (its default
+  is unchanged).
+- The ticks of an `every` timer do not end the backoff, the ceiling is lowered to half the period of the fastest
+  timer, and a tick that leaves the view unchanged no longer redraws.
+- A cursor position request reads its reply itself instead of waiting for the input loop, so it is answered in time
+  while that loop sleeps.
 - The README and `Package.md` describe the package as stable.
 - Documented that a line of the live region wider than the terminal is cut off at the right edge, not
   wrapped (it has always behaved this way; wrap it first with `text:wrap`).

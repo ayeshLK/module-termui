@@ -34,6 +34,9 @@ isolated class ByteQueue {
     // Removes and returns everything queued so far; never waits.
     isolated function takeAll() returns int[] {
         lock {
+            if self.bytes.length() == 0 {
+                return []; // the usual case while idle: nothing to copy
+            }
             int[] all = self.bytes.clone();
             self.bytes = [];
             return all.clone();

@@ -39,7 +39,7 @@ Additions never break a program that follows two rules, which the module pages r
   `CursorReporter` did), which the runtime uses only when your implementation also provides them.
 
 The defaults of the run settings (`colors`, `reflow` and `interactive` on, `anchorBottom` off,
-`pollInterval`, `fallbackSize`) are part of the API and stay for the whole major version.
+`pollInterval`, `maxPollInterval`, `fallbackSize`) are part of the API and stay for the whole major version.
 
 ## Deprecation
 

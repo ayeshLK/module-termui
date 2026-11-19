@@ -42,7 +42,14 @@ public type Program object {
 # + anchorBottom - whether to keep the live region on the last rows of the terminal, using the blank rows
 #                  above it before the screen scrolls (see `render:InlineRenderer`); off by default, and
 #                  ignored when `interactive` is `false`
-# + pollInterval - seconds the loop sleeps when there is nothing to do
+# + pollInterval - the shortest time in seconds the loop sleeps when there is nothing to do; it sleeps longer
+#                  (up to `maxPollInterval`) when the program has been idle for a while
+# + maxPollInterval - the longest time in seconds the loop sleeps. While nothing happens the sleep grows from
+#                     `pollInterval` toward this ceiling and returns to `pollInterval` when something does
+#                     (a key, an effect result, a message; not a tick of an `every` timer). A value at or below
+#                     `pollInterval` turns this off. A message that arrives while the loop sleeps waits for the
+#                     sleep to end, so the first key after a long pause can wait about this long; lower it for a
+#                     snappier first key or raise it to idle even cheaper
 # + interactive - whether a user can answer questions; when `false`, `confirm` and `choose` return
 #                 their default or a `NoTerminal` error at once
 # + initialCommand - a command to carry out before the first message, for example to start streaming
@@ -54,6 +61,7 @@ public type Options record {|
     boolean reflow = true;
     boolean anchorBottom = false;
     decimal pollInterval = 0.005;
+    decimal maxPollInterval = 0.5;
     boolean interactive = true;
     Command? initialCommand = ();
     term:Size fallbackSize = {width: 80, height: 24};
@@ -107,6 +115,10 @@ class Engine {
     private PromptRequest? prompt = ();
     private int promptSerial = 0;
     private int promptIndex = 0;
+    private boolean stepWasActive = true;
+    private text:Span[][]? lastFrame = ();
+    private decimal? shortestTimer = ();
+    private Message[] timerMessages = [];
 
     function init(Program program, term:Terminal terminal, render:Renderer renderer, boolean interactive = true) {
         self.program = program;
@@ -134,8 +146,28 @@ class Engine {
         return self.quitting;
     }
 
+    // Whether the last step found something other than timer ticks to do: the first frame, the initial size or
+    // command, a message that is not a tick of an `every` timer, or a question being asked or answered. The loop
+    // goes back to its shortest sleep after such a step and sleeps longer after one that was not.
+    function wasActive() returns boolean {
+        return self.stepWasActive;
+    }
+
+    // The longest the loop may sleep: the ceiling asked for, lowered so that the ticks of the program's fastest
+    // timer are handled within half their period.
+    function ceiling(decimal maxInterval, decimal base) returns decimal {
+        decimal? timer = self.shortestTimer;
+        if timer is decimal {
+            decimal cap = timer / 2;
+            return cap < base ? base : (cap < maxInterval ? cap : maxInterval);
+        }
+        return maxInterval;
+    }
+
     function step() returns boolean|error {
         boolean changed = !self.drawn;
+        boolean active = !self.drawn;
+        boolean mustDraw = !self.drawn; // false only while the step handles nothing but quiet timer ticks
         // The size the program is drawn with is its first message. It goes straight to the program and not
         // through the queue: a key must not overtake it, and it is not a resize, so nothing is redrawn for it.
         term:Size? size = self.initialSize;
@@ -144,11 +176,21 @@ class Engine {
             readonly & term:ResizeEvent told = {kind: "resize", width: size.width, height: size.height};
             check self.carryOut(self.program.update(told));
             changed = true;
+            active = true;
+            mustDraw = true;
         }
         Command? first = self.initial;
         self.initial = ();
+        if first is Command {
+            active = true;
+            mustDraw = true;
+        }
         check self.carryOut(first);
         foreach Message message in self.queue.takeAll() {
+            if !self.isTimerTick(message) {
+                active = true;
+                mustDraw = true;
+            }
             boolean isResize = message is term:ResizeEvent;
             if isResize {
                 term:ResizeEvent resized = <term:ResizeEvent>message;
@@ -157,9 +199,14 @@ class Engine {
             }
             if self.answerPrompt(message) {
                 changed = true;
+                mustDraw = true;
                 continue;
             }
-            check self.carryOut(self.program.update(message));
+            Command? command = self.program.update(message);
+            if command is Command {
+                mustDraw = true;
+            }
+            check self.carryOut(command);
             changed = true;
             if self.quitting {
                 break; // messages after a quit are dropped, but the final state is still drawn
@@ -167,12 +214,30 @@ class Engine {
         }
         if self.syncPrompt() {
             changed = true;
+            active = true;
+            mustDraw = true;
         }
         if changed {
-            check self.renderer.draw(self.frame());
-            self.drawn = true;
+            text:Span[][] frame = self.frame();
+            // a tick that changed nothing is not worth a draw: it costs milliseconds and the screen is already right
+            if mustDraw || frame != self.lastFrame {
+                check self.renderer.draw(frame);
+                self.drawn = true;
+                self.lastFrame = frame;
+            }
         }
+        self.stepWasActive = active;
         return !self.quitting;
+    }
+
+    // Whether a message is the tick of one of the program's `every` timers (an equal message is treated as one).
+    private function isTimerTick(Message message) returns boolean {
+        foreach Message tick in self.timerMessages {
+            if tick == message {
+                return true;
+            }
+        }
+        return false;
     }
 
     // Carries out a command. Commits are written at once, in the order the messages were handled, so
@@ -187,6 +252,11 @@ class Engine {
         } else if command is Effect {
             _ = start runEffect(command.run, self.session);
         } else if command is Every {
+            self.timerMessages.push(command.message);
+            decimal? known = self.shortestTimer;
+            if known is () || command.interval < known {
+                self.shortestTimer = command.interval;
+            }
             _ = start tickLoop(self.session, command.interval, command.message);
         } else if command is Batch {
             foreach Command each in command.commands {
@@ -302,8 +372,17 @@ public function run(Program program, term:Terminal terminal, Options options = {
         Engine running = new (program, terminal, drawing, options.interactive);
         engine = running;
         running.launch(options.initialCommand, size);
+        decimal interval = options.pollInterval;
+        int emptyChecks = 0;
         while check running.step() {
-            runtime:sleep(options.pollInterval);
+            if running.wasActive() {
+                interval = options.pollInterval;
+                emptyChecks = 0;
+            } else {
+                [interval, emptyChecks] = backOff(interval, emptyChecks, options.pollInterval,
+                    running.ceiling(options.maxPollInterval, options.pollInterval));
+            }
+            runtime:sleep(interval);
         }
         check drawing.close();
     } on fail error cause {
