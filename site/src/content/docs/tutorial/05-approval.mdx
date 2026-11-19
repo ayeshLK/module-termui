@@ -1,0 +1,89 @@
+---
+title: "5. Tool calls with approval"
+description: "Ask before a tool runs, and decide what happens when nobody can answer."
+sidebar:
+  order: 5
+---
+
+import ExampleCode from '../../../components/ExampleCode.astro';
+import CastPlayer from '../../../components/CastPlayer.astro';
+
+An agent that runs tools should ask first. In this step the scripted model finishes its answer and then
+asks to run one tool, `Bash(bal test)`. The effect waits for your yes or no before it runs anything.
+
+<CastPlayer cast="step5-approval.cast" caption="Step 5: a tool call approved with y, and a second one denied with n." />
+
+## What changed
+
+Starting from step 4, you:
+
+- add `ToolStarted` and `ToolFinished` messages and a `runTool` function that asks before it runs,
+- commit a finished tool call as a small block: a green or red dot, the tool, and its result,
+- show "Waiting for approval" in the status line while the question is up, and
+- decide what the program does when there is nobody to ask.
+
+## Asking from an effect
+
+<ExampleCode file="examples/tutorial/step5-approval/model.bal" region="approval" title="runTool" />
+
+`session.confirm(question, defaultAnswer)` shows the question below the live region and **waits** for the
+answer. That is why it lives in the effect: waiting for a person would freeze the interface if the
+program's own strand did it. While the question is shown, your key presses answer it instead of reaching the
+program: `y` to allow, `n` to deny, Enter for the default, Esc for no.
+
+The default is the part to think about. Here it is `false`: if there is nothing to answer, **deny**.
+
+### When nobody can answer
+
+`confirm` does not wait when there is no terminal to answer it. It returns the default you passed at
+once, or a `NoTerminal` error if you gave none. `Interface` tells the runtime whether a user can answer,
+as [modes and headless operation](../../concepts/headless-modes/) explains. A script, a pipe or CI therefore
+never hangs on a question, and, because the default is deny, never runs a tool that nobody approved. Decide
+what "no answer" means for your program, and make it the safe thing.
+
+## The program
+
+<ExampleCode file="examples/tutorial/step5-approval/main.bal" region="tool-messages" title="Handling the tool messages" />
+
+<ExampleCode file="examples/tutorial/step5-approval/main.bal" region="tool-finished" title="Committing a finished tool call" />
+
+The tool call is committed with `commitBlock`, like a finished line of the answer: it is written once
+into your scrollback and never redrawn. The answer now ends with a newline, so its last line is committed
+before the question appears.
+
+The status line also changes while the question is up. Esc answers the question then, rather than
+interrupting, so the hint says "answer below" instead of "esc to interrupt".
+
+The whole program is the file CI builds and tests as `examples/tutorial/step5-approval`:
+
+<ExampleCode file="examples/tutorial/step5-approval/main.bal" title="main.bal" />
+
+## Check it without a terminal
+
+A test has to answer the question, and that is trickier than it looks. If you push a `y` key before the
+program runs, it reaches the program straight away, before the question exists, and ends up typed into the
+prompt. The key has to arrive when a person's would: after the question is on the screen.
+
+So the test uses a small terminal of its own. The `Terminal` type is a public interface, so a test can
+wrap a `FakeTerminal` and hold one key back until the screen shows the question.
+
+<ExampleCode file="examples/tutorial/step5-approval/tests/chat_test.bal" region="gated-terminal" title="A terminal that answers when asked" />
+
+<ExampleCode file="examples/tutorial/step5-approval/tests/chat_test.bal" region="tests" title="tests/chat_test.bal" />
+
+- Approving runs the tool, and denying does not.
+- With `interactive: false`, which is what `Interface` sets when nobody can answer, the program never
+  waits: the tool is denied and the transcript says so.
+- Esc during the model's "thinking" stops the answer before any tool is asked for.
+
+## Try this
+
+- Run `bal run`, send a question, and answer `y`. Send another and answer `n`. The dot is green for the first
+  and red for the second.
+- Press Enter on the question without typing anything: that takes the default, which is to deny.
+- Change the default in `runTool` to `true` and run the "no terminal" test. It now fails, because the tool
+  runs unattended. That is the reason the default here is `false`.
+
+## Next
+
+Step 6 puts the harness under test: a scripted session on a fake terminal, and a headless run.

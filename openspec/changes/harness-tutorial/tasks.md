@@ -29,10 +29,10 @@
 
 ## 5. Step 5: tool calls with approval
 
-- [ ] 5.1 Create `examples/tutorial/step5-approval` (the model plan gains a tool step; `session.confirm` runs before it; a denied tool is reported as denied); verify `bal build` succeeds
-- [ ] 5.2 Add tests (answering `y` runs the tool, answering `n` denies it, and with a headless `Interface` the default is deny and nothing waits) and wire into `examples/check.sh`; verify `bal test` passes
-- [ ] 5.3 Record `step5-approval.cast`; verify it plays in the built site
-- [ ] 5.4 Write `tutorial/05-approval` including the headless behaviour and why deny is the default; verify the page matches `site/src/content/docs/concepts/headless-modes.mdx`
+- [x] 5.1 Create `examples/tutorial/step5-approval` (the model plan gains a tool step; `session.confirm` runs before it; a denied tool is reported as denied); verify `bal build` succeeds
+- [x] 5.2 Add tests (answering `y` runs the tool, answering `n` denies it, and with a headless `Interface` the default is deny and nothing waits) and wire into `examples/check.sh`; verify `bal test` passes
+- [x] 5.3 Record `step5-approval.cast`; verify it plays in the built site
+- [x] 5.4 Write `tutorial/05-approval` including the headless behaviour and why deny is the default; verify the page matches `site/src/content/docs/concepts/headless-modes.mdx`
 
 ## 6. Step 6 and the finish
 
