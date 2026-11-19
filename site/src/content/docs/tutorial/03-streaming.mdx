@@ -1,0 +1,120 @@
+---
+title: "3. Streaming output"
+description: "An answer that streams in from an effect, while the prompt stays on screen."
+sidebar:
+  order: 3
+---
+
+import ExampleCode from '../../../components/ExampleCode.astro';
+import CastPlayer from '../../../components/CastPlayer.astro';
+
+A harness's answer arrives in pieces. In this step the prompt starts an **effect** that streams a
+scripted answer back as messages. Finished lines are committed to your scrollback, and the line being
+written stays in the live region.
+
+<CastPlayer cast="step3-streaming.cast" caption="Step 3: a question, then an answer that streams in. Each line is committed as it finishes." />
+
+## What changed
+
+Starting from step 2, you:
+
+- add a scripted **model** in `model.bal`, which streams a fixed answer a few characters at a time,
+- rename `Prompt` to `Chat` and give it a turn counter and the line being written,
+- start the model as an effect when a line is submitted, and handle its `token` and `done` messages,
+- commit each finished line, and draw the unfinished one above the prompt, and
+- keep the prompt at the bottom with `anchorBottom = true`.
+
+## The scripted model
+
+There is no real model in this tutorial. `model.bal` answers every question with the same lines, so the
+interface has something to stream and nothing needs an account, a key or a network.
+
+<ExampleCode file="examples/tutorial/step3-streaming/model.bal" region="stream-answer" title="model.bal" />
+
+This is the part that matters. The effect is an **`isolated` function**, so it runs on its own strand
+and cannot touch the program's fields. It talks back in one way only: `session.send(...)`, once per
+piece. The messages are small records:
+
+<ExampleCode file="examples/tutorial/step3-streaming/model.bal" region="messages" title="The messages" />
+
+Every message carries the **turn** it belongs to. If a piece from an old question arrives after a new
+one has started, the program ignores it.
+
+### Connecting a real model
+
+To use a real model, change what happens inside `streamAnswer` and keep everything else:
+
+1. Call your model there. It runs on its own strand, so a slow call does not freeze the interface.
+2. For each piece of the answer, call `session.send({kind: "token", turn, text: piece})`.
+3. When it ends, call `session.send({kind: "done", turn})`.
+4. If the call fails, return the error. The runtime sends an `EffectFailed` message, which the program
+   already turns into a red line.
+
+The function must stay `isolated` and the messages must stay immutable; the compiler checks both. Pass
+anything the call needs, such as a client or a key, into `streamAnswer` as arguments.
+
+## The program
+
+The finished file, built and tested by CI as `examples/tutorial/step3-streaming`:
+
+<ExampleCode file="examples/tutorial/step3-streaming/main.bal" title="main.bal" />
+
+### State
+
+<ExampleCode file="examples/tutorial/step3-streaming/main.bal" region="state" title="State" />
+
+`busy` says an answer is streaming, `turn` numbers the questions, and `partial` is the line being
+written. The delay between pieces is an argument, so a test can set it to zero.
+
+### Starting a turn
+
+<ExampleCode file="examples/tutorial/step3-streaming/main.bal" region="ask" title="Submitting a line" />
+
+Submitting returns two commands in a `batch`: commit the question above the prompt, and start the
+effect. While an answer is streaming, Enter is ignored and what you type is kept for the next question.
+
+### Handling the stream
+
+<ExampleCode file="examples/tutorial/step3-streaming/main.bal" region="stream-messages" title="Messages from the effect" />
+
+<ExampleCode file="examples/tutorial/step3-streaming/main.bal" region="fold" title="Folding a piece into the line" />
+
+Each `token` is added to `partial`. Whenever `partial` holds a newline, the finished line is committed
+with `commitBlock` and the rest stays live. `commitBlock` wraps the line to the width at that moment, which
+is what you want for a line that will not be re-laid out later.
+
+When the input ends while an answer is streaming, the program sets `quitWhenIdle` and lets the answer
+finish before it quits, so a script that pipes a question in still gets the whole answer.
+
+### Drawing
+
+<ExampleCode file="examples/tutorial/step3-streaming/main.bal" region="view" title="view" />
+
+The live region is the unfinished line, if there is one, above the prompt.
+
+### Starting it
+
+<ExampleCode file="examples/tutorial/step3-streaming/main.bal" region="main" title="main" />
+
+`anchorBottom = true` keeps the live region on the last rows of the terminal, like a chat input, so the
+prompt does not jump around as the answer grows. See [inline rendering](../../concepts/inline-rendering/)
+for how it works and where it does not apply.
+
+## Check it without a terminal
+
+<ExampleCode file="examples/tutorial/step3-streaming/tests/chat_test.bal" region="tests" title="tests/chat_test.bal" />
+
+One test runs the whole program on a `FakeTerminal` with a zero delay. The others call `update` with
+messages directly, which is the easiest way to test what happens between two pieces of an answer.
+
+## Try this
+
+- Make the answer slower or faster: change the delay in `new Chat()`, for example `new Chat(delay = 0.1)`.
+- Type while an answer streams. The text stays in the prompt, Enter does nothing, and the question can be
+  sent once the answer is done.
+- Ask two questions in a row and scroll up in your terminal: the first answer is still there, because it
+  was committed rather than redrawn.
+
+## Next
+
+Step 4 adds a status line with a spinner and the time elapsed, and Esc to stop an answer.

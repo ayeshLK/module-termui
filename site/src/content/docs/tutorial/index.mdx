@@ -13,10 +13,10 @@ extends the one before it.
 |---|---|---|
 | [1. A counter](./01-counter/) | The smallest interactive program | `Program`, `update`, `view`, `run` |
 | [2. A prompt](./02-prompt/) | A text input with history | `LineEditor`, `commitProse` |
-| 3. Streaming output | An answer that arrives in pieces | Effects, messages, `commitProse` |
+| [3. Streaming output](./03-streaming/) | An answer that arrives in pieces | Effects, messages, `commitBlock`, `anchorBottom` |
 | 4. Status and spinner | A live status line | Timers, quiet ticks, idle cost |
 | 5. Tool calls | An approval prompt | `confirm`, `choose` |
 | 6. Testing | The harness under a fake terminal | `FakeTerminal`, headless |
 
-Steps 3 to 6 are coming. The finished harness already exists as
+Steps 4 to 6 are coming. The finished harness already exists as
 [`examples/agent-harness`](https://github.com/ayeshLK/module-termui/tree/main/examples/agent-harness).
