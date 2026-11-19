@@ -23,7 +23,9 @@ import ballerina/lang.runtime;
 public type Program object {
     # Handles one message.
     #
-    # + message - a key press, a resize, an effect result, a tick, or any message the program sent
+    # + message - a key press, a paste, a resize, an effect result, a tick, or any message the program sent.
+    #             The first message is always a `term:ResizeEvent` with the size the program is drawn with, so
+    #             the width is known from the first `view`; later resizes arrive the same way
     # + return - what to do next, or `()` for nothing
     public function update(Message message) returns Command?;
 
@@ -45,6 +47,8 @@ public type Program object {
 #                 their default or a `NoTerminal` error at once
 # + initialCommand - a command to carry out before the first message, for example to start streaming
 #                    from an agent
+# + fallbackSize - the size to draw with, and to tell the program, when the terminal cannot report one
+#                  (or reports zero, as a pseudo-terminal nobody sized does)
 public type Options record {|
     boolean colors = true;
     boolean reflow = true;
@@ -52,6 +56,7 @@ public type Options record {|
     decimal pollInterval = 0.005;
     boolean interactive = true;
     Command? initialCommand = ();
+    term:Size fallbackSize = {width: 80, height: 24};
 |};
 
 // Reads the terminal's input and turns each event into a message. Runs on its own strand because
@@ -98,6 +103,7 @@ class Engine {
     private boolean quitting = false;
     private boolean drawn = false;
     private Command? initial = ();
+    private term:Size? initialSize = ();
     private PromptRequest? prompt = ();
     private int promptSerial = 0;
     private int promptIndex = 0;
@@ -111,9 +117,11 @@ class Engine {
         self.session = new Session(self.queue, self.board, interactive);
     }
 
-    // Remembers the initial command (carried out by the first step) and starts reading the terminal.
-    function launch(Command? initial = ()) {
+    // Remembers the initial command and the size to tell the program (both handled by the first step) and
+    // starts reading the terminal.
+    function launch(Command? initial = (), term:Size? size = ()) {
         self.initial = initial;
+        self.initialSize = size;
         _ = start inputLoop(self.terminal, self.session);
     }
 
@@ -128,6 +136,15 @@ class Engine {
 
     function step() returns boolean|error {
         boolean changed = !self.drawn;
+        // The size the program is drawn with is its first message. It goes straight to the program and not
+        // through the queue: a key must not overtake it, and it is not a resize, so nothing is redrawn for it.
+        term:Size? size = self.initialSize;
+        self.initialSize = ();
+        if size is term:Size {
+            readonly & term:ResizeEvent told = {kind: "resize", width: size.width, height: size.height};
+            check self.carryOut(self.program.update(told));
+            changed = true;
+        }
         Command? first = self.initial;
         self.initial = ();
         check self.carryOut(first);
@@ -279,12 +296,12 @@ public function run(Program program, term:Terminal terminal, Options options = {
     error? failure = ();
     Engine? engine = ();
     do {
-        term:Size size = usableSize(terminal.size(), {width: 80, height: 24});
+        term:Size size = usableSize(terminal.size(), options.fallbackSize);
         render:Renderer drawing = renderer ?: new render:InlineRenderer(terminal, size.width, size.height, options.colors, options.reflow,
             options.anchorBottom && options.interactive);
         Engine running = new (program, terminal, drawing, options.interactive);
         engine = running;
-        running.launch(options.initialCommand);
+        running.launch(options.initialCommand, size);
         while check running.step() {
             runtime:sleep(options.pollInterval);
         }

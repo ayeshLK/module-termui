@@ -96,7 +96,8 @@ public class Interface {
     #
     # + return - the options
     public function options() returns Options {
-        return {colors: self.colorsOnTerminal(), interactive: self.interactive};
+        return {colors: self.colorsOnTerminal(), interactive: self.interactive,
+            fallbackSize: {width: self.environment.width, height: self.environment.height}};
     }
 
     # Writes a result: the output a caller or a pipe is waiting for.

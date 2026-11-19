@@ -50,6 +50,9 @@ is attached to and hands out the matching terminal, renderer, and options:
 - **Questions.** Without a terminal, `session.confirm` and `session.choose` never wait: they return
   the default you gave, or a `NoTerminal` error when there is none. Decide in your program what
   "no answer" means, for example deny by default.
+- **Size.** In every mode the first message a program receives is a `term:ResizeEvent` with the size
+  it is drawn with, so it can lay out to the width from its first `view`. When the terminal cannot
+  report a size (a pseudo-terminal nobody sized reports 0 by 0) it is `COLUMNS` and `LINES`, or 80 by 24.
 - **Plain output.** Committed output is written as lines with no styling, escape sequences, or carriage
   returns. The live region (a spinner, a status line) is not repeated: only its final state is written,
   once, when the program ends. Text is wrapped at the terminal width from `COLUMNS`, or 80 columns when

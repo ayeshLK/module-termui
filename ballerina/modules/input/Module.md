@@ -62,8 +62,12 @@ class Prompt {
     *termui:Program;
 
     input:LineEditor editor = new (history = ["hello"]);
+    int width = 80;
 
     public function update(termui:Message message) returns termui:Command? {
+        if message is term:ResizeEvent {
+            self.width = message.width; // the first message is the size, so the width is known from the first view
+        }
         if message is term:KeyEvent|term:PasteEvent {
             input:EditResult result = self.editor.handleEvent(message);
             if result is input:Submitted {
@@ -77,7 +81,7 @@ class Prompt {
     }
 
     public function view() returns text:Span[][] {
-        return self.editor.render(80);
+        return self.editor.render(self.width);
     }
 }
 

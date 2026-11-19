@@ -14,7 +14,9 @@ methods, and the runtime does the rest.
 - **`run`** acquires the terminal, runs the loop until the program returns `quit()`, and always releases
   the terminal afterwards, also when something fails.
 - **Messages** are immutable values (`Message`): key, paste, and resize events, the results of effects,
-  timer ticks, and any message of your own.
+  timer ticks, and any message of your own. The first message is always a `term:ResizeEvent` with the
+  size the program is drawn with (the terminal's, or `Options.fallbackSize` when it cannot say), so the
+  width is known before the first `view`; later changes of the window arrive the same way.
 - **Commands** are what `update` returns: `quit()`, `effect(...)`, `every(...)`, `commitProse(...)`,
   `commitBlock(...)`, or `batch(...)` of several.
 
