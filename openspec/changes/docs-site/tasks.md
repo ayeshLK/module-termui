@@ -37,9 +37,9 @@
 
 ## 6. Delivery
 
-- [ ] 6.1 Add a pull-request workflow, path-filtered to `site/**`, `examples/**` and the workflow itself, that builds the site and compiles included examples; actions pinned by commit; verify a site-only change runs it and a package-only change does not
+- [x] 6.1 Add a pull-request workflow, path-filtered to `site/**`, `examples/**` and the workflow itself, that builds the site and compiles included examples; actions pinned by commit; verify a site-only change runs it and a package-only change does not
 - [x] 6.2 Add a deploy workflow on pushes to `main` with the same path filter, using the official Pages actions with `pages: write` and `id-token: write` only on the deploy job; verify the workflow lints with `actionlint` and its permissions match
-- [ ] 6.3 Verify a deliberately broken tutorial example makes the pull-request check fail, then revert it
+- [x] 6.3 Verify a deliberately broken tutorial example makes the pull-request check fail, then revert it
 - [x] 6.4 Update `CONTRIBUTING.md` with how to preview and add a page, and with the rule that tutorial programs use only released API; verify the steps work on a clean checkout
 
 ## 7. Publish and link
