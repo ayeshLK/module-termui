@@ -19,6 +19,7 @@ messages. It is a UI toolkit only: agent logic stays in your application.
 | `ayesha/termui.term` | The terminal: `UnixTerminal`, `FakeTerminal`, `StreamTerminal`, input events, environment detection |
 | `ayesha/termui.render` | Drawing: `InlineRenderer`, `PlainRenderer`, the cell buffer |
 | `ayesha/termui.text` | Styled text, display width, and wrapping |
+| `ayesha/termui.input` | A text input: `LineEditor` with cursor movement, word editing, multi-line, paste, and history |
 
 Each module's `Module.md` has the details.
 

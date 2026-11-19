@@ -239,3 +239,20 @@ function testOtherSequencesAreStillKeysWhileWaiting() {
     test:assertEquals(decodeInput([0x1B, 0x5B, 0x41], false, true).events, [key("up")]);
     test:assertEquals(decodeInput([0x1B, 0x5B, 0x52], false, true).events, []);
 }
+
+// The keys the line editor binds (see `ayesha/termui.input`) arrive from the terminal as these bytes.
+@test:Config {}
+function testTheKeysTheLineEditorBindsAreDecoded() {
+    test:assertEquals(decode([0x0A]), [key("j", ctrl = true)], "Ctrl+J, the line break key");
+    test:assertEquals(decode([0x1B, 0x0D]), [key("enter", alt = true)], "Alt+Enter");
+    test:assertEquals(decode([0x01, 0x05, 0x02, 0x06]),
+        [key("a", ctrl = true), key("e", ctrl = true), key("b", ctrl = true), key("f", ctrl = true)]);
+    test:assertEquals(decode([0x17, 0x15, 0x0B, 0x04]),
+        [key("w", ctrl = true), key("u", ctrl = true), key("k", ctrl = true), key("d", ctrl = true)]);
+    test:assertEquals(decode([0x1B, 0x62, 0x1B, 0x66, 0x1B, 0x64]),
+        [key("b", alt = true), key("f", alt = true), key("d", alt = true)], "Alt+B, Alt+F, Alt+D (Option as Meta)");
+    test:assertEquals(decode([0x1B, 0x5B, 0x31, 0x3B, 0x35, 0x44]), [key("left", ctrl = true)], "Ctrl+Left");
+    test:assertEquals(decode([0x1B, 0x5B, 0x31, 0x3B, 0x33, 0x43]), [key("right", alt = true)], "Alt+Right");
+    test:assertEquals(decode([0x1B, 0x5B, 0x48, 0x1B, 0x5B, 0x46]), [key("home"), key("end")]);
+    test:assertEquals(decode([0x1B, 0x5B, 0x33, 0x7E]), [key("delete")]);
+}

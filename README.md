@@ -101,6 +101,7 @@ You write a `Program` with two methods: `update` is called for each message and 
 | [`ayesha/termui.term`](ballerina/modules/term/Module.md) | The terminal: `UnixTerminal`, `FakeTerminal`, input events, environment detection |
 | [`ayesha/termui.render`](ballerina/modules/render/Module.md) | Drawing: the inline renderer, the plain renderer, the cell buffer |
 | [`ayesha/termui.text`](ballerina/modules/text/Module.md) | Styled text, display width (CJK, emoji, combining marks), wrapping |
+| [`ayesha/termui.input`](ballerina/modules/input/Module.md) | A text input: `LineEditor` with cursor movement, word editing, multi-line, paste, history |
 
 ## Examples
 
@@ -112,7 +113,7 @@ You write a `Program` with two methods: `update` is called for each message and 
 ## Documentation
 
 - **[Package guide](ballerina/Package.md):** the modes (interactive, piped output, piped input, headless), what each guarantees, and the plain-output rules.
-- **Module references:** the four `Module.md` files linked above.
+- **Module references:** the `Module.md` files linked above.
 - **[Specifications](openspec/specs):** the behavior the library promises, as testable requirements and scenarios.
 - **[Design notes](openspec/changes/archive):** why it is built the way it is, including measurements (startup time, write throughput) and what was tried.
 
@@ -124,7 +125,7 @@ Worth knowing before you build on it:
 - **Platforms:** macOS and Linux. Windows is not supported.
 - **Startup:** about 0.3 s to the first frame on the JVM (334 ms for the agent demo on a developer laptop) and about 0.23 s with an AppCDS archive. The Ballerina runtime is most of that. Long-lived interactive programs will not notice; a command you run a hundred times a day might.
 - **Resize:** committed output is not re-laid out; terminals that re-wrap text do it for prose, and blocks keep the width they were written at. The renderer needs to be told whether your terminal re-wraps (`reflow`).
-- **Not there yet:** ready-made widgets (text editor, select list, spinner), incremental markdown rendering, a bridge to Ballerina's AI module, and JSON output for headless mode.
+- **Not there yet:** more ready-made widgets (select list, spinner), incremental markdown rendering, a bridge to Ballerina's AI module, and JSON output for headless mode.
 
 ## Contributing
 

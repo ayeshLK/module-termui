@@ -19,3 +19,7 @@ export = true
 [[package.modules]]
 name = "termui.text"
 export = true
+
+[[package.modules]]
+name = "termui.input"
+export = true
