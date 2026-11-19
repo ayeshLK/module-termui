@@ -1,21 +1,23 @@
 ---
 // An illustration of the update/view loop for the counter. It is written in JavaScript and models only
 // the shape of the loop (message, update, view, frame); it is not the termui runtime. The runnable
-// program is examples/counter.
+// program is examples/counter. It uses the same panel and the same owner colours as the Flow diagram above
+// it: the keys are outside the program (dashed), update is your code (green), the frame is the runtime's
+// (blue).
 const example = 'https://github.com/ayeshLK/module-termui/tree/main/examples/counter';
 ---
 
-<div class="loop" data-loop>
+<div class="loop dg-figure dg-panel not-content" data-loop>
 	<p class="loop-note">
-		An illustration in JavaScript of the shape of the loop, not the termui runtime. The real program is
+		An illustration in JavaScript of the shape of the loop, not the termui runtime. The real program is{' '}
 		<a href={example}>examples/counter</a>.
 	</p>
 	<noscript>
 		<p class="loop-fallback">This illustration needs scripts. The counter program above shows the same loop.</p>
 	</noscript>
 	<div class="loop-grid" hidden data-live>
-		<section>
-			<h4>1. Send a message</h4>
+		<section class="loop-outside">
+			<h4><span class="loop-num" aria-hidden="true">1</span>Send a message</h4>
 			<div class="loop-keys">
 				<button type="button" data-key="+">press +</button>
 				<button type="button" data-key="-">press -</button>
@@ -24,14 +26,14 @@ const example = 'https://github.com/ayeshLK/module-termui/tree/main/examples/cou
 			</div>
 			<p class="loop-hint">Each press is a <code>KeyEvent</code> message put on the queue.</p>
 		</section>
-		<section>
-			<h4>2. update(message)</h4>
+		<section class="loop-yours">
+			<h4><span class="loop-num" aria-hidden="true">2</span>update(message)</h4>
 			<pre data-update>waiting for a message</pre>
-			<h4>State</h4>
+			<h5>State</h5>
 			<pre data-state>count = 0</pre>
 		</section>
-		<section>
-			<h4>3. view() &rarr; frame</h4>
+		<section class="loop-runtime">
+			<h4><span class="loop-num" aria-hidden="true">3</span>view() &rarr; frame</h4>
 			<pre class="loop-frame" data-frame></pre>
 			<p class="loop-hint" data-hint></p>
 		</section>
@@ -94,60 +96,131 @@ const example = 'https://github.com/ayeshLK/module-termui/tree/main/examples/cou
 </script>
 
 <style>
-	.loop {
-		border: 1px solid var(--sl-color-gray-5);
-		border-radius: 0.5rem;
-		padding: 1rem;
-		margin: 1.5rem 0;
-	}
 	.loop-note,
 	.loop-hint,
 	.loop-fallback {
-		font-size: var(--sl-text-sm);
-		color: var(--sl-color-gray-3);
 		margin: 0.5rem 0;
+		font-size: var(--sl-text-sm);
+		color: var(--dg-muted);
+	}
+	.loop-note {
+		margin-top: 0;
 	}
 	.loop-grid {
 		display: grid;
-		grid-template-columns: repeat(auto-fit, minmax(14rem, 1fr));
+		grid-template-columns: repeat(3, minmax(0, 1fr));
 		gap: 1rem;
+		align-items: start;
+		margin-top: 1rem;
 	}
 	.loop-grid[hidden] {
 		display: none;
 	}
+	section {
+		min-width: 0;
+		padding: 0.8rem;
+		border: 1px solid var(--dg-border);
+		border-radius: var(--dg-radius);
+		background: var(--sl-color-bg);
+	}
+	.loop-outside {
+		border-style: dashed;
+	}
+	.loop-yours {
+		border-color: var(--dg-yours);
+	}
+	.loop-runtime {
+		border-color: var(--dg-runtime);
+	}
 	h4 {
-		margin: 0 0 0.4rem;
+		display: flex;
+		align-items: center;
+		gap: 0.5rem;
+		margin: 0 0 0.6rem;
 		font-size: var(--sl-text-sm);
+		font-weight: 600;
+		color: var(--dg-text);
+	}
+	h5 {
+		margin: 0.7rem 0 0.4rem;
+		font-size: var(--sl-text-xs);
+		font-weight: 600;
+		letter-spacing: 0.04em;
+		text-transform: uppercase;
+		color: var(--dg-muted);
+	}
+	.loop-num {
+		display: grid;
+		place-items: center;
+		flex: none;
+		width: 1.5rem;
+		height: 1.5rem;
+		border-radius: 50%;
+		border: 1px solid var(--dg-border);
+		font-size: var(--sl-text-xs);
+		font-weight: 700;
+		color: var(--dg-muted);
+	}
+	.loop-outside .loop-num {
+		border-style: dashed;
+	}
+	.loop-yours .loop-num {
+		border-color: var(--dg-yours);
+		background: var(--dg-yours-bg);
+		color: var(--dg-yours-text);
+	}
+	.loop-runtime .loop-num {
+		border-color: var(--dg-runtime);
+		background: var(--dg-runtime-bg);
+		color: var(--dg-runtime-text);
 	}
 	pre {
-		background: var(--sl-color-gray-6);
-		border-radius: 0.3rem;
-		padding: 0.6rem;
-		margin: 0 0 0.8rem;
-		min-height: 3.2rem;
+		margin: 0;
+		padding: 0.55rem 0.7rem;
+		min-height: 2.6rem;
 		white-space: pre-wrap;
-		font-size: var(--sl-text-sm);
+		border-radius: 0.4rem;
+		background: var(--dg-panel);
+		border: 1px solid var(--dg-border);
+		font-family: var(--sl-font-mono);
+		font-size: 0.78rem;
+		color: var(--dg-text);
 	}
 	.loop-frame {
-		background: #111;
-		color: #eee;
+		background: #14161b;
+		border-color: #2c303a;
+		color: #dfe3ea;
 	}
 	.loop-keys {
-		display: flex;
-		flex-wrap: wrap;
+		display: grid;
+		grid-template-columns: repeat(2, minmax(0, 1fr));
 		gap: 0.4rem;
 	}
 	button {
 		font: inherit;
-		padding: 0.3rem 0.7rem;
-		border: 1px solid var(--sl-color-gray-4);
-		border-radius: 0.3rem;
-		background: var(--sl-color-bg);
-		color: var(--sl-color-text);
+		font-size: var(--sl-text-sm);
+		padding: 0.35rem 0.5rem;
+		min-height: 2.1rem;
+		border: 1px solid var(--dg-border);
+		border-radius: var(--dg-radius);
+		background: var(--dg-panel);
+		color: var(--dg-text);
 		cursor: pointer;
+	}
+	button:hover:not(:disabled) {
+		border-color: var(--dg-runtime);
+	}
+	button:focus-visible {
+		outline: 2px solid var(--dg-runtime);
+		outline-offset: 2px;
 	}
 	button:disabled {
 		opacity: 0.5;
 		cursor: default;
+	}
+	@container (max-width: 40rem) {
+		.loop-grid {
+			grid-template-columns: minmax(0, 1fr);
+		}
 	}
 </style>
