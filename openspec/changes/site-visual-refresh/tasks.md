@@ -2,10 +2,11 @@
 
 ## 1. Foundation and the flow diagram
 
-- [ ] 1.1 Add `site/src/styles/diagrams.css` (the shared surface, spacing and accent variables, on Starlight's tokens) and register it with `customCss`; verify the site builds and no existing page changes appearance
-- [ ] 1.2 Build the `Flow` component (an ordered list of pills with arrows and one optional branch, stacking on narrow screens, with a caption); verify it renders from props in a scratch page
-- [ ] 1.3 Replace the ASCII diagram on "The update and view loop" with `Flow`; verify in a browser in light and dark mode and at phone width, with keyboard focus visible, and that the built HTML contains no `<script>` from the component and the same text as the old diagram
-- [ ] 1.4 Review the look of this first page with you before the style is repeated (accent colour, density, arrow style); apply the feedback to the foundation
+- [x] 1.1 Add `site/src/styles/diagrams.css` (the shared surface, spacing and accent variables, on Starlight's tokens) and register it with `customCss`; verify the site builds and no existing page changes appearance
+- [x] 1.2 Build the `Flow` component (an ordered list of pills with arrows and one optional branch, stacking on narrow screens, with a caption); verify it renders from props in a scratch page
+- [x] 1.3 Replace the ASCII diagram on "The update and view loop" with `Flow`; verify in a browser in light and dark mode and at phone width, with keyboard focus visible, and that the built HTML contains no `<script>` from the component and the same text as the old diagram
+- [x] 1.4 Redo `Flow` after comparing other documentation sites (Claude Code, Anthropic, Codex): a panel, colour by owner with a legend, a dashed group container, a feedback arc, and a branch; verify in light and dark mode and in a narrow container, that the built HTML has no script and the feedback sentence appears once, and that the checks pass
+- [ ] 1.5 Review the look of this first page with you before the style is repeated (density, arrow style); apply the feedback to the foundation
 
 ## 2. The screen diagrams
 

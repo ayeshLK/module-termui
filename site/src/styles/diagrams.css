@@ -1,0 +1,116 @@
+/*
+ * Shared look for the diagram components (site/src/components/diagrams) and the tutorial step list.
+ * Everything is built on Starlight's colour tokens, so light and dark mode, contrast and the accent all
+ * follow the theme. Nothing here is a script, and nothing depends on colour alone: borders carry the
+ * structure, so the diagrams also read in forced-colours mode.
+ */
+:root {
+	--dg-surface: var(--sl-color-bg-nav);
+	--dg-border: var(--sl-color-gray-5);
+	--dg-line: var(--sl-color-gray-4);
+	--dg-text: var(--sl-color-text);
+	--dg-muted: var(--sl-color-gray-3);
+	--dg-accent: var(--sl-color-text-accent);
+	--dg-accent-bg: var(--sl-color-accent-low);
+	--dg-radius: 0.5rem;
+	--dg-gap: 1.3rem;
+	--dg-panel: var(--sl-color-gray-6);
+	--dg-runtime: var(--sl-color-accent);
+	--dg-runtime-bg: var(--sl-color-accent-low);
+	--dg-runtime-text: var(--sl-color-text-accent);
+	--dg-yours: var(--sl-color-green);
+	--dg-yours-bg: var(--sl-color-green-low);
+	--dg-yours-text: var(--sl-color-green-high);
+}
+
+/* Text for screen readers only (the arrows of a diagram are drawn, so the words say "then"). */
+.dg-sr {
+	position: absolute;
+	width: 1px;
+	height: 1px;
+	overflow: hidden;
+	clip: rect(0 0 0 0);
+	white-space: nowrap;
+}
+
+.dg-figure {
+	margin: 1.5rem 0;
+	container-type: inline-size;
+}
+.dg-panel {
+	padding: 1.25rem 1.25rem 1rem;
+	border: 1px solid var(--dg-border);
+	border-radius: 0.75rem;
+	background: var(--dg-panel);
+}
+.dg-figure figcaption {
+	margin-top: 0.75rem;
+	font-size: var(--sl-text-sm);
+	color: var(--dg-muted);
+}
+
+/* Reset what Starlight's prose styles add to lists inside a diagram. */
+.dg-figure ol,
+.dg-figure ul,
+.dg-figure li {
+	list-style: none;
+	margin: 0;
+	padding: 0;
+}
+.dg-figure code {
+	background: none;
+	border: 0;
+	padding: 0;
+	font-size: inherit;
+	color: inherit;
+}
+
+.dg-pill {
+	display: inline-block;
+	padding: 0.35rem 0.8rem;
+	border: 1px solid var(--dg-border);
+	border-radius: var(--dg-radius);
+	background: var(--sl-color-bg);
+	color: var(--dg-text);
+	font-size: var(--sl-text-sm);
+	line-height: 1.35;
+}
+.dg-figure .dg-pill code {
+	font-family: var(--sl-font-mono);
+	font-size: 0.92em;
+}
+/* who owns a step: outside the program (dashed grey), the runtime (accent), your program (green) */
+.dg-outside > .dg-pill {
+	border-style: dashed;
+	color: var(--dg-muted);
+	background: transparent;
+}
+.dg-runtime > .dg-pill {
+	border-color: var(--dg-runtime);
+	background: var(--dg-runtime-bg);
+	color: var(--dg-runtime-text);
+}
+.dg-yours > .dg-pill {
+	border-color: var(--dg-yours);
+	background: var(--dg-yours-bg);
+	color: var(--dg-yours-text);
+}
+.dg-focus > .dg-pill {
+	font-weight: 600;
+	/* the emphasis is drawn inside the box, so nothing reaches past its edge and an arrow never starts
+	   or ends inside a ring */
+	box-shadow: inset 0 0 0 2px var(--dg-runtime-bg), inset 0 0 0 3px var(--dg-runtime);
+}
+/* legend swatches */
+.dg-swatch.dg-outside {
+	border-style: dashed;
+	background: transparent;
+}
+.dg-swatch.dg-runtime {
+	border-color: var(--dg-runtime);
+	background: var(--dg-runtime-bg);
+}
+.dg-swatch.dg-yours {
+	border-color: var(--dg-yours);
+	background: var(--dg-yours-bg);
+}
