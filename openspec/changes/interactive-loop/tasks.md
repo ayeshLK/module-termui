@@ -2,9 +2,9 @@
 
 ## 1. The walk model and its tests
 
-- [ ] 1.1 Write `site/src/lib/loop-walk.ts`: a pure model of the counter's loop that, given the state (`count`) and a key (`+`, `-`, `q`, or any other), returns the ordered stops a message takes (outside, queue, loop, update, command, view, frame; a `q` ends at the command), the state after `update`, the command (nothing or `quit()`), the frame, and whether the frame changed; plus `autoplayAllowed(prefersReducedMotion)`; verify it compiles under `node` type stripping and a scratch call prints the expected walk for `+`
-- [ ] 1.2 Test it with `node --test` (`+` increments and changes the frame, `-` decrements, an ignored key leaves state and frame unchanged and ends at the frame, `q` ends at the command with `quit()`, the stops are in order, `autoplayAllowed(true)` is false); add `npm test` to `site/package.json`; verify `npm test` passes and fails when the model is changed to be wrong
-- [ ] 1.3 Run `npm test` in the site workflow before the build and note it in `site/README.md`; verify with `actionlint` and that a deliberately broken model fails the workflow's test step locally
+- [x] 1.1 Write `site/src/lib/loop-walk.ts`: a pure model of the counter's loop that, given the state (`count`) and a key (`+`, `-`, `q`, or any other), returns the ordered stops a message takes (outside, queue, loop, update, command, view, frame; a `q` ends at the command), the state after `update`, the command (nothing or `quit()`), the frame, and whether the frame changed; plus `autoplayAllowed(prefersReducedMotion)`; verify it compiles under `node` type stripping and a scratch call prints the expected walk for `+`
+- [x] 1.2 Test it with `node --test` (`+` increments and changes the frame, `-` decrements, an ignored key leaves state and frame unchanged and ends at the frame, `q` ends at the command with `quit()`, the stops are in order, `autoplayAllowed(true)` is false); add `npm test` to `site/package.json`; verify `npm test` passes and fails when the model is changed to be wrong
+- [x] 1.3 Run `npm test` in the site workflow before the build and note it in `site/README.md`; verify with `actionlint` and that a deliberately broken model fails the workflow's test step locally
 
 ## 2. The component without its script
 
