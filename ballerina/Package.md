@@ -9,6 +9,7 @@ Your program's state lives on one strand; effects are `isolated` and report back
 messages. It is a UI toolkit only: agent logic stays in your application.
 
 > **Status: stable.** The API follows semantic versioning (see COMPATIBILITY.md in the repository). macOS and Linux only. See the
+> [documentation site](https://ayeshlk.github.io/module-termui/) for the concepts, best practices and a tutorial, and the
 > [repository](https://github.com/ayeshLK/module-termui) for a demo recording, examples and the design notes.
 
 ## Modules

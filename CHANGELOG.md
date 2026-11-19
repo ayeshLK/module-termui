@@ -6,6 +6,8 @@ All notable changes to termui are listed here, newest first. The format follows
 
 ## [Unreleased]
 
+- A documentation site is published at https://ayeshlk.github.io/module-termui/: concepts, best practices and the first step of a tutorial. It changes no package code or API.
+
 ## [1.0.0] - 2026-11-19
 
 termui is stable. From this release the API follows [COMPATIBILITY.md](COMPATIBILITY.md): breaking

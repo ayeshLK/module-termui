@@ -37,16 +37,16 @@
 
 ## 6. Delivery
 
-- [ ] 6.1 Add a pull-request workflow, path-filtered to `site/**`, `examples/**` and the workflow itself, that builds the site and compiles included examples; actions pinned by commit; verify a site-only change runs it and a package-only change does not
+- [x] 6.1 Add a pull-request workflow, path-filtered to `site/**`, `examples/**` and the workflow itself, that builds the site and compiles included examples; actions pinned by commit; verify a site-only change runs it and a package-only change does not
 - [x] 6.2 Add a deploy workflow on pushes to `main` with the same path filter, using the official Pages actions with `pages: write` and `id-token: write` only on the deploy job; verify the workflow lints with `actionlint` and its permissions match
-- [ ] 6.3 Verify a deliberately broken tutorial example makes the pull-request check fail, then revert it
+- [x] 6.3 Verify a deliberately broken tutorial example makes the pull-request check fail, then revert it
 - [x] 6.4 Update `CONTRIBUTING.md` with how to preview and add a page, and with the rule that tutorial programs use only released API; verify the steps work on a clean checkout
 
 ## 7. Publish and link
 
-- [ ] 7.1 Maintainer: enable GitHub Pages with the GitHub Actions source in repository settings; verify the Pages settings page shows that source
-- [ ] 7.2 Merge to `main` and verify the deploy workflow succeeds and the site loads at its address, including an inner page and a cast
-- [ ] 7.3 Add the site link to `README.md` and `ballerina/Package.md` and add a CHANGELOG "Unreleased" note; verify the links resolve to the live site
+- [x] 7.1 Maintainer: enable GitHub Pages with the GitHub Actions source in repository settings; verify the Pages settings page shows that source
+- [x] 7.2 Merge to `main` and verify the deploy workflow succeeds and the site loads at its address, including an inner page and a cast
+- [x] 7.3 Add the site link to `README.md` and `ballerina/Package.md` and add a CHANGELOG "Unreleased" note; verify the links resolve to the live site
 
 ## Workflow follow-up
 
