@@ -10,8 +10,8 @@
 
 ## 2. The screen diagrams
 
-- [ ] 2.1 Build the `Screen` component (a terminal-styled stack of rows with a labelled gutter); verify it renders every row kind (`committed`, `gap`, `live`, `prompt`) in a scratch page
-- [ ] 2.2 Replace both diagrams on "Inline rendering" with `Screen`; verify in light and dark mode and at phone width, that each row's meaning is readable as text, and that the page's links still resolve
+- [x] 2.1 Build the `Screen` component (a terminal-styled stack of rows with a labelled gutter); verify it renders every row kind (`committed`, `gap`, `live`, `prompt`) in a scratch page
+- [x] 2.2 Replace both diagrams on "Inline rendering" with `Screen`; verify in light and dark mode and at phone width, that each row's meaning is readable as text, and that the page's links still resolve
 
 ## 3. The backoff chart
 
