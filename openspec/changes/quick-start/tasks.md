@@ -11,7 +11,7 @@
 
 ## 2. The recording
 
-- [ ] 2.1 Record the program with a script that adds two items, completes one, deletes one and quits, using the existing pty recorder (a new entry in its scripts); verify the cast plays in the site's player, shows the final list in the scrollback at the end, and has no personal paths or names in it
+- [x] 2.1 Record the program with a script that adds two items, completes one, deletes one and quits, using the existing pty recorder (a new entry in its scripts); verify the cast plays in the site's player, shows the final list in the scrollback at the end, and has no personal paths or names in it
 
 ## 3. The pages
 
