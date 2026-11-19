@@ -1,0 +1,81 @@
+---
+// A numbered list of layers, each with what it covers and how it is done: the four ways of testing a
+// program, for example. A real ordered list on a panel, plain HTML and CSS (no script). The number is drawn
+// and the list supplies the order, so a screen reader hears "1 of 4" without any extra words.
+//
+//   <Layers items={[{what: 'update and view', how: 'call them directly'}, ...]} caption="..." />
+interface Item {
+	what: string;
+	how: string;
+}
+interface Props {
+	items: Item[];
+	caption?: string;
+}
+const { items, caption } = Astro.props;
+---
+
+<figure class="dg-figure dg-panel dg-layers not-content">
+	<ol>
+		{
+			items.map((item, i) => (
+				<li>
+					<span class="dg-layer-num" aria-hidden="true">{i + 1}</span>
+					<span class="dg-layer-what">{item.what}</span>
+					<span class="dg-layer-how">{item.how}</span>
+				</li>
+			))
+		}
+	</ol>
+	{caption && <figcaption>{caption}</figcaption>}
+</figure>
+
+<style>
+	ol {
+		display: grid;
+		gap: 0.6rem;
+	}
+	li {
+		display: grid;
+		grid-template-columns: 2rem minmax(0, 1fr) minmax(0, 1.1fr);
+		align-items: center;
+		gap: 0.9rem;
+		padding: 0.7rem 0.9rem;
+		border: 1px solid var(--dg-border);
+		border-radius: var(--dg-radius);
+		background: var(--sl-color-bg);
+	}
+	.dg-layer-num {
+		display: grid;
+		place-items: center;
+		width: 2rem;
+		height: 2rem;
+		border-radius: 50%;
+		border: 1px solid var(--dg-runtime);
+		background: var(--dg-runtime-bg);
+		color: var(--dg-runtime-text);
+		font-weight: 600;
+		font-size: var(--sl-text-sm);
+	}
+	.dg-layer-what {
+		font-weight: 600;
+		color: var(--dg-text);
+	}
+	.dg-layer-how {
+		justify-self: start;
+		padding: 0.15rem 0.6rem;
+		border: 1px solid var(--dg-border);
+		border-radius: 999px;
+		font-size: var(--sl-text-sm);
+		color: var(--dg-muted);
+		background: var(--dg-panel);
+	}
+	@container (max-width: 38rem) {
+		li {
+			grid-template-columns: 2rem minmax(0, 1fr);
+		}
+		.dg-layer-how {
+			grid-column: 2;
+		}
+	}
+</style>
