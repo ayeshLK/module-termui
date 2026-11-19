@@ -1,0 +1,81 @@
+---
+title: "2. A prompt"
+description: "Replace the counter with a text input: editing, history and committed lines."
+sidebar:
+  order: 2
+---
+
+import ExampleCode from '../../../components/ExampleCode.astro';
+
+The counter's state was a number. A harness needs a prompt: somewhere to type, edit and resubmit. In
+this step the state becomes a `LineEditor`, and a submitted line is **committed** above the prompt, into
+your normal scrollback.
+
+## What changed
+
+Starting from step 1, you:
+
+- replace `count` with a `LineEditor` and the terminal width,
+- hand it the key and paste events `update` receives,
+- commit each submitted line with `commitProse`,
+- draw the editor from `view`, and
+- quit on Ctrl+C, or when the input ends.
+
+## The program
+
+It is the file CI builds and tests as `examples/tutorial/step2-prompt`.
+
+<ExampleCode file="examples/tutorial/step2-prompt/main.bal" title="main.bal" />
+
+Run it with `bal run`, type, press Enter, then press Up.
+
+## What each part does
+
+**State.** The editor holds the text and the cursor and remembers what you submit. It owns no terminal.
+The width starts at 80; the real one arrives as the program's first message.
+
+<ExampleCode file="examples/tutorial/step2-prompt/main.bal" region="state" title="State" />
+
+**`update` hands events to the editor.** `handleEvent` returns `edited` when it used the event,
+`ignored` when it did not, or a `Submitted` with the text when Enter was pressed. The editor is then
+empty again.
+
+<ExampleCode file="examples/tutorial/step2-prompt/main.bal" region="update" title="update" />
+
+Three things worth noticing:
+
+- A submitted line becomes a **command**: `commitProse` writes it above the live region, once. It is not
+  state, so the program does not keep it. The terminal's scrollback holds the history of the session.
+- Ctrl+C comes back from the editor as `ignored`, because the editor does not use it. That is how a
+  program finds the keys that are its own. The editor handles all the editing keys, including Alt+Enter for a new
+  line and Ctrl+W to delete a word; see [the line editor](../../concepts/line-editor/) for the full list.
+- `termui:InputEnded` arrives when there is no more input, for example in a pipe. Quitting on it means the
+  program runs in a script instead of waiting forever. See
+  [modes and headless operation](../../concepts/headless-modes/).
+
+**`view` draws the editor.** `render(width, prompt)` wraps long lines by display width, indents later
+rows under the prompt, and shows the cursor as the character under it in reverse video.
+
+<ExampleCode file="examples/tutorial/step2-prompt/main.bal" region="view" title="view" />
+
+## Check it without a terminal
+
+The step has tests that script keys into a `FakeTerminal` and assert on what was drawn. You do not need
+them to follow along, and step 6 explains the approach. They are here because they are also how this page
+stays true.
+
+<ExampleCode file="examples/tutorial/step2-prompt/tests/prompt_test.bal" region="tests" title="tests/prompt_test.bal" />
+
+## Try this
+
+- Start the editor with some history, so that Up recalls an earlier line straight away:
+  `new (history = ["help", "quit"])`. Press Up once and you get `quit`.
+- Press Alt+Enter to add a line break, type more, then Enter: both lines are committed together. On macOS
+  Terminal and iTerm2 the Option key must be set to send Escape sequences first (the line editor page says
+  how).
+- Create the editor with `multiline = false` for a one-line prompt: Alt+Enter then does nothing, so typing
+  `a`, Alt+Enter and `b` submits `ab`.
+
+## Next
+
+Step 3 adds an answer that streams in while the prompt stays on screen.
