@@ -15,9 +15,9 @@
 
 ## 3. The backoff chart
 
-- [ ] 3.1 Read the base sleep, the ceiling and the checks per step from `ballerina/engine.bal` and `ballerina/backoff.bal` at build time with strict patterns; verify the site build fails with a message naming the file and the constant when one is renamed in a scratch copy, and passes again when restored
-- [ ] 3.2 Build `BackoffChart` (inline SVG with a title, a description, labelled axes, the ceiling line, and a sentence stating the same numbers); verify the plotted steps are 5 ms doubling after every 20 checks to 0.5 s, reached after about 12.7 s, matching the page's "about 13 seconds"
-- [ ] 3.3 Replace the curve on "Idle cost" with it; verify in light and dark mode and at phone width, and that the SVG is readable by a screen reader through its title and description
+- [x] 3.1 Read the base sleep, the ceiling and the checks per step from `ballerina/engine.bal` and `ballerina/backoff.bal` at build time with strict patterns; verify the site build fails with a message naming the file and the constant when one is renamed in a scratch copy, and passes again when restored
+- [x] 3.2 Build `BackoffChart` (inline SVG with a title, a description, labelled axes, the ceiling line, and a sentence stating the same numbers); verify the plotted steps are 5 ms doubling after every 20 checks to 0.5 s, reached after about 12.7 s, matching the page's "about 13 seconds"
+- [x] 3.3 Replace the curve on "Idle cost" with it; verify in light and dark mode and at phone width, and that the SVG is readable by a screen reader through its title and description
 
 ## 4. The layers list and the stepper
 

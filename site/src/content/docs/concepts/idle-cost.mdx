@@ -5,21 +5,14 @@ sidebar:
   order: 6
 ---
 
+import BackoffChart from '../../../components/diagrams/BackoffChart.astro';
+
 A Ballerina program cannot wait for "a key or a timer or a message" at once, so the runtime wakes to
 look. How often it wakes is the idle cost.
 
 ## Adaptive backoff
 
-```
- sleep
- 0.5 s |                                         ________________  maxPollInterval
-       |                                 _______/
-       |                        _______/
-       |               _______/             doubles after every 20 empty checks
- 5 ms  |______________/
-       +-----------------------------------------------------------> idle time
-        key arrives: back to pollInterval at once              ~13 s
-```
+<BackoffChart />
 
 - It starts at `pollInterval` (5 ms).
 - After every 20 checks that found nothing, the sleep doubles.
