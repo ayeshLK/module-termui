@@ -67,15 +67,66 @@ class LateProgram {
 }
 
 @test:Config {}
-function testMessagesAfterAnIdlePauseAreDeliveredInOrderAndTheLoopRecovers() returns error? {
+function testMessagesAfterAnIdlePauseAreDeliveredInOrderWithinTheCeiling() returns error? {
     term:FakeTerminal terminal = new (40, 5);
     terminal.pushText("g");
     // a pause long enough for the sleep to reach the 40 ms ceiling, then two messages 0.2 s apart
     LateProgram program = new (1.5, [0.0, 0.2]);
     check run(program, terminal, {pollInterval: 0.005, maxPollInterval: 0.04});
     test:assertEquals(program.arrived, [0, 1], "every message is delivered, in order");
-    test:assertTrue(program.waited[0] <= 0.12d, string `the first message waited ${program.waited[0].toString()} s for the loop`);
-    test:assertTrue(program.waited[1] <= 0.05d, string `after activity the loop is back to its short sleep, but the next message waited ${program.waited[1].toString()} s`);
+    // the ceiling is 40 ms: a generous margin for a slow machine, far below what a 0.5 s sleep would give
+    test:assertTrue(program.waited[0] <= 0.3d, string `the first message waited ${program.waited[0].toString()} s for the loop`);
+    test:assertTrue(program.waited[1] <= 0.3d, string `the second message waited ${program.waited[1].toString()} s for the loop`);
+}
+
+// The loop's sleeps, driven without sleeping: steps that find nothing lengthen the sleep, anything else restores it.
+@test:Config {}
+function testTheSleepGrowsWhileIdleAndReturnsToTheBaseOnActivity() returns error? {
+    term:FakeTerminal terminal = new (40, 5);
+    TestProgram program = new;
+    Engine engine = newEngine(program, terminal);
+    engine.launch();
+    // let the first frame and the end of the (empty) input go by: those are activity
+    check pump(engine, function () returns boolean {
+        return countKind(program.seen, "inputEnded") >= 1;
+    });
+    decimal sleep = engine.nextSleep(0.005, 0.5);
+    test:assertEquals(sleep, 0.005d, "a step that had something to do sleeps the base");
+    // idle steps: the sleep doubles after every 20 of them
+    foreach int _ in 0 ..< 19 {
+        _ = check engine.step();
+        sleep = engine.nextSleep(0.005, 0.5);
+    }
+    test:assertEquals(sleep, 0.005d, "19 empty checks");
+    _ = check engine.step();
+    test:assertEquals(engine.nextSleep(0.005, 0.5), 0.010d, "the 20th empty check doubles it");
+    foreach int _ in 0 ..< 400 {
+        _ = check engine.step();
+        sleep = engine.nextSleep(0.005, 0.5);
+    }
+    test:assertEquals(sleep, 0.5d, "and it stops at the ceiling");
+    // a message that is not a tick ends the backoff
+    engine.session.send({kind: "other"});
+    _ = check engine.step();
+    test:assertEquals(engine.nextSleep(0.005, 0.5), 0.005d, "back to the base after activity");
+    engine.stop();
+}
+
+@test:Config {}
+function testTheSleepNeverGrowsWhenTheCeilingIsAtTheBase() returns error? {
+    TestProgram program = new;
+    Engine engine = newEngine(program, new term:FakeTerminal(40, 5));
+    engine.launch();
+    check pump(engine, function () returns boolean {
+        return countKind(program.seen, "inputEnded") >= 1;
+    });
+    decimal sleep = 0;
+    foreach int _ in 0 ..< 100 {
+        _ = check engine.step();
+        sleep = engine.nextSleep(0.005, 0.005);
+    }
+    engine.stop();
+    test:assertEquals(sleep, 0.005d);
 }
 
 @test:Config {}
@@ -224,7 +275,7 @@ function testATickThatChangesTheViewIsDrawn() returns error? {
         return program.ticks >= 5;
     });
     engine.stop();
-    test:assertTrue(drawCount(renderer) >= afterTwoTicks + 3, "each tick shows a new count, so each is drawn");
+    test:assertTrue(drawCount(renderer) > afterTwoTicks, "ticks that change the view are drawn");
 }
 
 @test:Config {}

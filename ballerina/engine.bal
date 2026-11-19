@@ -116,6 +116,8 @@ class Engine {
     private int promptSerial = 0;
     private int promptIndex = 0;
     private boolean stepWasActive = true;
+    private decimal sleepInterval = 0;
+    private int emptyChecks = 0;
     private text:Span[][]? lastFrame = ();
     private decimal? shortestTimer = ();
     private Message[] timerMessages = [];
@@ -151,6 +153,20 @@ class Engine {
     // goes back to its shortest sleep after such a step and sleeps longer after one that was not.
     function wasActive() returns boolean {
         return self.stepWasActive;
+    }
+
+    // How long to sleep after the step just taken: the short interval after a step that had something to do,
+    // and a longer one (see backoff.bal) after each step that found nothing, up to the ceiling.
+    function nextSleep(decimal base, decimal maxInterval) returns decimal {
+        if self.stepWasActive || self.sleepInterval == 0d {
+            self.sleepInterval = base;
+            self.emptyChecks = 0;
+        } else {
+            [decimal, int] [longer, counted] = backOff(self.sleepInterval, self.emptyChecks, base, self.ceiling(maxInterval, base));
+            self.sleepInterval = longer;
+            self.emptyChecks = counted;
+        }
+        return self.sleepInterval;
     }
 
     // The longest the loop may sleep: the ceiling asked for, lowered so that the ticks of the program's fastest
@@ -372,17 +388,8 @@ public function run(Program program, term:Terminal terminal, Options options = {
         Engine running = new (program, terminal, drawing, options.interactive);
         engine = running;
         running.launch(options.initialCommand, size);
-        decimal interval = options.pollInterval;
-        int emptyChecks = 0;
         while check running.step() {
-            if running.wasActive() {
-                interval = options.pollInterval;
-                emptyChecks = 0;
-            } else {
-                [interval, emptyChecks] = backOff(interval, emptyChecks, options.pollInterval,
-                    running.ceiling(options.maxPollInterval, options.pollInterval));
-            }
-            runtime:sleep(interval);
+            runtime:sleep(running.nextSleep(options.pollInterval, options.maxPollInterval));
         }
         check drawing.close();
     } on fail error cause {

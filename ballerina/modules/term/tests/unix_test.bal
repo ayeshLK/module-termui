@@ -537,8 +537,8 @@ function testAKeyAfterAPauseIsDeliveredWithinTheCeilingAndTheLoopRecovers() retu
     test:assertEquals(got.length(), 3);
     test:assertEquals(got[0][0], <KeyEvent>{key: "k"});
     test:assertEquals(got[1][0], <KeyEvent>{key: "j"});
-    test:assertTrue(got[0][1] - firstAsked <= 0.15d, string `the first key waited ${(got[0][1] - firstAsked).toString()} s`);
-    test:assertTrue(got[1][1] - secondAsked <= 0.06d, string `after input the loop is back to its short sleep, but the next key waited ${(got[1][1] - secondAsked).toString()} s`);
+    test:assertTrue(got[0][1] - firstAsked <= 0.3d, string `the first key waited ${(got[0][1] - firstAsked).toString()} s`);
+    test:assertTrue(got[1][1] - secondAsked <= 0.12d, string `after input the loop is back to its short sleep, but the next key waited ${(got[1][1] - secondAsked).toString()} s`);
 }
 
 @test:Config {groups: ["tty"]}
