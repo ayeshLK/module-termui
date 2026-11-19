@@ -27,9 +27,9 @@
 
 ## 5. README and Module.md
 
-- [ ] 5.1 Replace the README's loop diagram with a Mermaid block with the same labels as the site's `Flow`; verify it parses with Mermaid's parser and renders on GitHub when viewing the branch's README
-- [ ] 5.2 Make the loop diagram in `ballerina/Module.md` and the anchoring diagram in `ballerina/modules/render/Module.md` tidy ASCII with identical wording to the site; verify searching the repository for "one frame per batch" finds the site, the README and `ballerina/Module.md`
-- [ ] 5.3 Note in `CONTRIBUTING.md` where the loop diagram's wording lives; verify the note names each file
+- [x] 5.1 Replace the README's loop diagram with a Mermaid block with the same labels as the site's `Flow`; verify it parses with Mermaid's parser and renders on GitHub when viewing the branch's README
+- [x] 5.2 Make the loop diagram in `ballerina/Module.md` and the anchoring diagram in `ballerina/modules/render/Module.md` tidy ASCII with identical wording to the site; verify searching the repository for "one frame per batch" finds the site, the README and `ballerina/Module.md`
+- [x] 5.3 Note in `CONTRIBUTING.md` where the loop diagram's wording lives; verify the note names each file
 
 ## 6. Whole-site review
 

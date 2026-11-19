@@ -4,9 +4,14 @@ The runtime that turns a program into a running terminal application. A program 
 methods, and the runtime does the rest.
 
 ```
- keys, resizes, timers, effect results ---> [ message queue ] ---> loop ---> update(message) ---> command
-                                                                      |
-                                                                      +--> view() --> one frame per batch
+   keys, resizes, timers, effect results
+                     |
+                     v
+   +-------> message queue --> loop --> update(message) --> command --+
+   |                           |                                      |
+   |                           +--> view() --> one frame per batch    |
+   |                                                                  |
+   +------ effects and timers send new messages ----------------------+
 ```
 
 - **`Program`** has `update(message)`, called once per message, and `view()`, which returns the lines

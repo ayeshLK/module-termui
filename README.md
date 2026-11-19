@@ -80,11 +80,23 @@ Run it with `bal run` and press `+`, `-` and `q`. Requires Ballerina 2201.14 and
 
 ## How it works
 
+```mermaid
+flowchart LR
+    outside["keys, resizes, timers, effect results"] --> queue[message queue]
+    queue --> loop
+    loop --> update["update(message)"] --> command
+    command -. "effects and timers send new messages" .-> queue
+    loop --> view["view()"] --> frame[one frame per batch]
+
+    classDef outsideNode stroke-dasharray: 4 4,fill:none
+    classDef runtimeNode fill:#dbe4ff,stroke:#4263eb,color:#1b1b1f
+    classDef yoursNode fill:#d3f9d8,stroke:#2f9e44,color:#1b1b1f
+    class outside outsideNode
+    class queue,loop,command,frame runtimeNode
+    class update,view yoursNode
 ```
- keys, resizes, timers, effect results ──> message queue ──> loop ──> update(message) ──> command
-                                                               │
-                                                               └──> view() ──> one frame per batch
-```
+
+Blue steps are the termui runtime, green steps are your program, and the dashed box is outside the program.
 
 You write a `Program` with two methods: `update` is called for each message and returns what to do next (`quit()`, start an `effect`, `commitProse` some finished output, and so on), and `view` returns the live region as lines of styled text. The runtime applies every waiting message, then draws **one** frame, writing only the cells that changed. Work that takes time runs in an effect on its own strand and reports back with messages, so the interface never blocks.
 
