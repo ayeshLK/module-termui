@@ -10,7 +10,8 @@ Working drafts for announcing termui as a stable release. The links are filled i
 | 2 | Ballerina community Tech Blog | A permanent, searchable home (the official blog is for releases; ask in Discord how to submit) | The long post |
 | 3 | `ballerina-lang` GitHub Discussions, General | Reaches people who follow the project | A short pointer, only if the rules allow self-posts |
 | 4 | Your own blog, dev.to, or Hashnode | Reaches people searching for terminal UI and agent topics | The long post, cross-posted |
-| 5 | Terminal and CLI communities | A different audience, interested in the design | A technical angle, not a library pitch |
+| 5 | Show HN | People who like to try things; a different audience from the Ballerina community | The Show HN text below, linking something they can try |
+| 6 | Lobsters, r/commandline | Terminal and CLI people | A technical angle, not a library pitch; see the rules below before either |
 
 One channel at a time over about a week, and answer every reply quickly.
 
@@ -21,7 +22,8 @@ One channel at a time over about a week, and answer every reply quickly.
 - [x] GitHub Discussions are enabled.
 - [x] The documentation site is live, with the concepts, best practices and a six-step tutorial: https://ayeshlk.github.io/module-termui/
 - [x] No `good first issue` labels, by decision: issues should come from the community.
-- [ ] Each channel's rules on self-promotion have been read.
+- [x] The channels' own rules on self-promotion were read on 2026-11-19 (see "Channel rules" below). Two remain for you, because they cannot be read from outside: the rules inside the Ballerina Discord server, and r/commandline's sidebar.
+- [ ] Read the Ballerina Discord rules after joining (https://discord.gg/ballerinalang), and ask there how to be added as a writer to the Tech Blog.
 
 ## Short post (Discord Showcase)
 
@@ -29,7 +31,7 @@ One channel at a time over about a week, and answer every reply quickly.
 > A small live region (spinner, status line, prompt) redrawn in place, finished output going into your normal scrollback, and an approval prompt like the ones agent CLIs use.
 > What I care about most: the same program runs interactively, with its output piped, and in CI. In a pipe only the result goes to stdout, and questions return their default instead of hanging. It is also testable without a terminal, and effects are `isolated` so the compiler checks the concurrency.
 > Stable, with semantic versioning (the policy is in the repo), macOS and Linux. It includes a text input with readline-style editing, multi-line and history.
-> Docs, with a tutorial that builds a small agent harness step by step (prompt, streaming, interrupt, approval, tests): https://ayeshlk.github.io/module-termui/
+> Docs, with an interactive diagram you can walk a message through, and a tutorial that builds a small agent harness step by step (prompt, streaming, interrupt, approval, tests): https://ayeshlk.github.io/module-termui/
 > Demo and a 25-line quickstart in the repo: https://github.com/ayeshLK/module-termui
 > I would love feedback on the API, and on what an agent CLI needs that is missing.
 
@@ -57,11 +59,37 @@ Long-running work is an *effect*: an `isolated` function that can only talk back
 
 **Where it stands.** It is stable: the API follows semantic versioning, and `COMPATIBILITY.md` in the repository says what that covers. It runs on macOS and Linux only, and takes about 0.3 s to the first frame on the JVM. A `LineEditor` (cursor movement, word editing, multi-line input, paste and history) is included. Missing: more widgets (a select list, a spinner), incremental markdown, and a bridge to Ballerina's AI module.
 
-**Where to start.** The documentation site (https://ayeshlk.github.io/module-termui/) explains how the pieces work and what to avoid, and its tutorial builds a small harness in six steps: a prompt, a streamed answer, a status line with Esc to interrupt, a tool call that asks for approval, and tests. Every program in it is built and tested in CI, and the tutorial uses a scripted model, so it needs no account or key; it says where a real model would plug in.
+**Where to start.** The documentation site (https://ayeshlk.github.io/module-termui/) explains how the pieces work (the update and view loop is an interactive diagram: send a key press and step it through the loop, and click any step to see what it does and the code behind it) and what to avoid, and its tutorial builds a small harness in six steps: a prompt, a streamed answer, a status line with Esc to interrupt, a tool call that asks for approval, and tests. Every program in it is built and tested in CI, and the tutorial uses a scripted model, so it needs no account or key; it says where a real model would plug in.
 
 Code, demo, and the design notes: https://github.com/ayeshLK/module-termui. If you build a CLI with it, I would love to hear what got in your way.
 
 The "what I learned" paragraph is the strongest part for readers outside the Ballerina community, so keep it.
+
+## Channel rules (read on 2026-11-19)
+
+What each channel's own pages say about posting your own work, and what it means for these drafts.
+
+| Channel | What the rules say | What to do |
+|---|---|---|
+| Ballerina Discord | The rules are inside the server and cannot be read from outside. | Join, read the rules channel, and ask where a project belongs (Showcase) before posting. |
+| Ballerina Tech Blog | It is a Medium publication, [Ballerina Swan Lake Tech Blog](https://medium.com/ballerina-techblog), with no public submission page. The [community page](https://ballerina.io/community/) lists a rewarded "Blog/article" contribution path and a curated list of community articles. The official blog is for releases and company news. | Ask in Discord how to be added as a writer, and whether the post can be listed on the community page. |
+| `ballerina-lang` Discussions | Governed by the [Ballerina Code of Conduct](https://ballerina.io/code-of-conduct/); no rule specific to self-promotion was found. GitHub's [community guidelines](https://docs.github.com/en/site-policy/github-terms/github-community-guidelines) frown on unsolicited links with no relevant context. | Post only if it fits a category, with context (what it is, why it helps Ballerina users), not a bare link. |
+| dev.to | The [terms](https://dev.to/terms) ask users to share content that is "on-topic, of high-quality, and is not designed primarily for the purposes of promotion or creating backlinks". | Publish the long post as a technical article that stands on its own, and say it is your project. |
+| Show HN | [Show HN guidelines](https://news.ycombinator.com/showhn.html): it is for something others can try; blog posts, landing pages and sign-up pages are off topic; it should be non-trivial and something you made and are around to discuss; make it easy to try without sign-ups; "Foo 1.3.1 is out" is not substantive; do not ask friends to upvote. | A library with a tutorial that needs no account qualifies. Title starts with "Show HN", link the repository or the docs site, and be there to answer. Do it once, for 1.0. |
+| Lobsters | [About](https://lobste.rs/about): invite-only; "self-promo should be less than a quarter of one's stories and comments in the last year"; accounts in their first 70 days cannot submit self-promo. | Only if you already have an established account that takes part in other threads. Otherwise skip it. |
+| r/commandline | Not checked: Reddit is blocked for the tool used to prepare this. | Read the sidebar rules first; many subreddits limit self-promotion to a share of your posts. |
+
+## Show HN text
+
+**Title:** Show HN: termui, agent-style terminal UIs in Ballerina
+
+**First comment** (explain how and why, as the guidelines ask):
+
+> I wanted the feel of an agent CLI (output streaming in, a status line and prompt that stay put at the bottom, an approval question before something risky) in Ballerina, and I wanted the same program to be well behaved in a pipe and in CI, which most of these tools are not: with output redirected only the result goes to stdout, and with no terminal a question returns its default instead of hanging.
+> It is a small Model-View-Update runtime: you write `update(message)` and `view()`, long work runs as an effect on its own strand and reports back with immutable messages (the compiler rejects a mutable message), and it draws one frame per batch. A `FakeTerminal` lets you test without a terminal.
+> You can try it without any account or key: the tutorial builds a small harness with a scripted model, and the docs have an interactive diagram of the loop. macOS and Linux only; it is on the JVM, so about 0.3 s to the first frame.
+> Tutorial and docs: https://ayeshlk.github.io/module-termui/ Code: https://github.com/ayeshLK/module-termui
+> I would love to hear what an agent CLI needs that is missing.
 
 ## Sources
 
@@ -69,3 +97,4 @@ The "what I learned" paragraph is the strongest part for readers outside the Bal
 - [Ballerina moves from Slack to Discord](https://blog.ballerina.io/posts/2022-09-21-ballerina-is-moving-from-slack-to-discord)
 - [Publishing packages to Ballerina Central](https://ballerina.io/learn/publish-packages-to-ballerina-central/)
 - [ballerina-lang Discussions](https://www.github.com/ballerina-platform/ballerina-lang/discussions)
+- [Ballerina community](https://ballerina.io/community/), [Show HN guidelines](https://news.ycombinator.com/showhn.html), [Lobsters about](https://lobste.rs/about), [dev.to terms](https://dev.to/terms)
