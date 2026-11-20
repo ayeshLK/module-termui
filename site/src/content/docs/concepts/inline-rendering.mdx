@@ -68,11 +68,9 @@ chat input:
 	caption="With anchorBottom, the region keeps the last rows and the gap above it is used first."
 />
 
-The renderer asks the terminal once where its cursor is, puts the region on the last rows, and scrolls
-the screen by exactly the rows it lacks, never overwriting anything. Committed output is then written
-into the gap, a growing region grows upward into it, and when the gap is used up the screen scrolls
-exactly as it does without the option. Everything that scrolls off the top stays in the terminal's
-scrollback, and no blank row is ever written into it.
+Committed output is written into the gap first, and a growing region grows upward into it. When the gap is
+used up, the screen scrolls as it does without the option. Everything that scrolls off the top stays in the
+terminal's scrollback.
 
 Limits:
 

@@ -39,7 +39,7 @@ run cannot pause on.
 <ExampleCode file="examples/tutorial/step6-testing/tests/unit_test.bal" region="unit-tests" title="tests/unit_test.bal" />
 
 These four tests check that the unfinished line is live and a finished one is not, that a late message from
-an old turn is ignored, that a tick leaves an idle view unchanged (so costs no redraw), and that the next
+an old turn is ignored, that a tick leaves the view unchanged (so costs no redraw), and that the next
 question works after an interruption.
 
 ## Layer 2: run the whole program
@@ -137,7 +137,7 @@ approval step and tests, using only the released API.
 - **Plug in a real model.** [Step 3](../03-streaming/) says what to replace and what to keep. Nothing else
   in the program changes.
 - **How it works.** The [concepts](../../concepts/the-loop/) pages explain the loop, effects and timers,
-  inline rendering, modes and idle cost.
+  inline rendering and modes.
 - **What to do and avoid.** [Strands and isolation](../../best-practices/strands-and-isolation/) and
   [testing without a terminal](../../best-practices/testing/).
 - **Every symbol.** The API reference is on

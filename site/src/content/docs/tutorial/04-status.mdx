@@ -54,18 +54,11 @@ message. The program counts them, so ten ticks are a second.
 
 ### What a timer costs
 
-A program that sits idle usually costs almost nothing, because the runtime sleeps longer while nothing
-happens. A timer interferes with that, so it is worth knowing the rules (they are on the
-[idle cost](../../concepts/idle-cost/) page):
+A timer calls `update` and `view` every period, so two rules keep it cheap:
 
-- Ticks do not end the idle backoff, and the runtime wakes at least twice per tick period, so a 0.1 s
-  timer is handled on time.
 - A tick that leaves the view **unchanged does not redraw**. When no answer is running the view does not
   depend on the tick count, so an idle program writes nothing. A test checks this.
-
-Measured with `bench/idle_cpu.py` on a developer laptop, this step uses about 6% of one core while it
-waits for a question, and writes nothing to the terminal. That is mostly the work of its own `update` and
-`view`, ten times a second. A program without a timer idles at about 1%.
+- Keep `view` cheap, because a timer runs it ten times a second here.
 
 <details>
 <summary>The whole of model.bal</summary>
@@ -113,8 +106,7 @@ view stays equal, which is why those ticks cost no redraw.
   already written.
 - Press Ctrl+C during an answer to quit.
 - Change the timer to `termui:every(0.25, ...)`. The spinner turns more slowly; the seconds are computed
-  from the tick count, so you would also divide by four instead of ten. Run `bench/idle_cpu.py` on both
-  to see what a slower timer saves.
+  from the tick count, so you would also divide by four instead of ten.
 
 ## Next
 

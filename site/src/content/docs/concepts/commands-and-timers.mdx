@@ -59,8 +59,7 @@ time:
 A tick is an ordinary message, handled by `update` like any other. Two things to know:
 
 - A tick that leaves `view` unchanged does not redraw, so a quiet timer costs little.
-- Timers do not end the idle backoff, and the runtime wakes at least twice per period of your fastest
-  timer. See [idle cost](../idle-cost/).
+- Keep `view` cheap: a timer calls it every period.
 
 ## Output order
 
