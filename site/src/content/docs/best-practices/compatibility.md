@@ -19,8 +19,8 @@ is the short version for application authors.
 - **Implementing `Terminal` or `Renderer` yourself is safe.** Their required methods are fixed. New
   abilities arrive as separate optional types, such as `CursorReporter`, that your implementation may
   also provide.
-- **Defaults are frozen for a major version.** Colors and reflow on, bottom anchoring off, interactive on,
-  `pollInterval` 5 ms and `maxPollInterval` 0.5 s stay as they are until termui 2.0.
+- **Defaults are frozen for a major version.** Colors and reflow on, bottom anchoring off and interactive on
+  stay as they are until termui 2.0.
 - **Symbols marked low-level** are covered, but may change in a minor release, with notice.
 
 ## Where to check before you upgrade
