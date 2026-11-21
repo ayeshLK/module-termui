@@ -22,7 +22,6 @@ import ayesha/termui.text;
 import ballerina/file;
 import ballerina/io;
 
-// region state
 type Item record {|
     string text;
     boolean done = false;
@@ -40,9 +39,7 @@ class TodoList {
     function init(Item[] items = []) {
         self.items = items;
     }
-    // endregion state
 
-    // region update
     public function update(termui:Message message) returns termui:Command? {
         if message is termui:InputEnded {
             return termui:quit();
@@ -91,9 +88,7 @@ class TodoList {
         }
         return;
     }
-    // endregion update
 
-    // region view
     public function view() returns text:Span[][] {
         if self.leaving {
             return []; // the list was committed to the scrollback, so draw nothing more
@@ -118,7 +113,6 @@ class TodoList {
         }
         return lines;
     }
-    // endregion view
 
     // The list as it is left in the scrollback when the program quits.
     function summary() returns text:Span[][] {
@@ -130,7 +124,6 @@ class TodoList {
     }
 }
 
-// region storage
 const string FILE_NAME = "todos.json";
 
 function loadItems(string path = FILE_NAME) returns Item[]|error {
@@ -144,13 +137,10 @@ function loadItems(string path = FILE_NAME) returns Item[]|error {
 function saveItems(Item[] items, string path = FILE_NAME) returns error? {
     check io:fileWriteJson(path, items.toJson());
 }
-// endregion storage
 
-// region main
 public function main() returns error? {
     TodoList list = new (check loadItems());
     termui:Interface ui = new (term:detectEnvironment());
     check ui.run(list);
     check saveItems(list.items);
 }
-// endregion main

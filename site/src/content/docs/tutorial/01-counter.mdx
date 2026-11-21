@@ -27,10 +27,98 @@ You need Ballerina 2201.14 and JDK 25, on macOS or Linux.
 
 ## The program
 
-Replace `main.bal` with this. It is the file CI builds as `examples/tutorial/step1-counter`, so what
-you read here compiles.
+You build the counter in four stages, and `bal build` compiles after each one. Each stage says whether
+its code replaces something you already have or is added to it. Start by deleting everything in the
+`main.bal` that `bal new` made, then add imports to the ones at the top of the file, in alphabetical
+order. An import added before the code that uses it is a compile error, so each stage adds only its own.
 
-<ExampleCode file="examples/tutorial/step1-counter/main.bal" title="main.bal" />
+### 1. A skeleton
+
+Add these imports:
+
+```ballerina
+import ayesha/termui;
+import ayesha/termui.text;
+```
+
+Add this class at the end of the file. **The program is a class.** `*termui:Program` is the contract: the
+class has an `update` and a `view`. Its state, `count`, is an ordinary field. Both functions are empty
+for now.
+
+```ballerina
+class Counter {
+    *termui:Program;
+
+    int count = 0;
+
+    public function update(termui:Message message) returns termui:Command? {
+        return ();
+    }
+
+    public function view() returns text:Span[][] {
+        return [];
+    }
+}
+```
+
+### 2. Update
+
+**`update` handles messages.** The runtime calls it once for every message: a key press, a resize, a
+timer tick. Anything it does not recognise, it ignores by returning `()`. The only thing it changes is
+`self`; the thing it returns is a *command* telling the runtime what to do next.
+
+Add this import:
+
+```ballerina
+import ayesha/termui.term;
+```
+
+Inside `Counter`, replace the empty `update` with this one:
+
+```ballerina
+    public function update(termui:Message message) returns termui:Command? {
+        if message is term:KeyEvent {
+            if message.key == "+" {
+                self.count += 1;
+            } else if message.key == "-" {
+                self.count -= 1;
+            } else if message.key == "q" {
+                return termui:quit();
+            }
+        }
+        return ();
+    }
+```
+
+### 3. View
+
+**`view` describes the screen.** It returns lines, each a list of styled spans. It does not draw
+anything. After handling the waiting messages, the runtime calls it once and writes only the cells that
+changed.
+
+Inside `Counter`, replace the empty `view` with this one:
+
+```ballerina
+    public function view() returns text:Span[][] {
+        return [
+            [{text: "count: " + self.count.toString(), style: {bold: true}}],
+            [{text: "+ and - change it, q quits", style: {dim: true}}]
+        ];
+    }
+```
+
+### 4. Main
+
+**`main` connects the program to a terminal.** `term:detectEnvironment()` looks at what the process is
+attached to, and `ui.run` runs the loop until the program returns `quit()`. Add it at the end of the
+file:
+
+```ballerina
+public function main() returns error? {
+    termui:Interface ui = new (term:detectEnvironment());
+    check ui.run(new Counter());
+}
+```
 
 Run it:
 
@@ -40,29 +128,16 @@ bal run
 
 <CastPlayer cast="counter-demo.cast" caption="Press + and - to change the count, q to quit." />
 
-## What each part does
+If yours does not build, compare it with the finished file:
 
-**The program is a class.** `*termui:Program` is the contract: the class has an `update` and a `view`.
-Its state, `count`, is an ordinary field.
+<details>
+<summary>The whole program</summary>
 
-<ExampleCode file="examples/tutorial/step1-counter/main.bal" region="state" title="State" />
+<ExampleCode file="examples/tutorial/step1-counter/main.bal" title="main.bal" />
 
-**`update` handles messages.** The runtime calls it once for every message: a key press, a resize, a
-timer tick. Anything it does not recognise, it ignores by returning `()`. The only thing it changes is
-`self`; the thing it returns is a *command* telling the runtime what to do next.
+</details>
 
-<ExampleCode file="examples/tutorial/step1-counter/main.bal" region="update" title="update" />
-
-**`view` describes the screen.** It returns lines, each a list of styled spans. It does not draw
-anything. After handling the waiting messages, the runtime calls it once and writes only the cells that
-changed.
-
-<ExampleCode file="examples/tutorial/step1-counter/main.bal" region="view" title="view" />
-
-**`main` connects the program to a terminal.** `term:detectEnvironment()` looks at what the process is
-attached to, and `ui.run` runs the loop until the program returns `quit()`.
-
-<ExampleCode file="examples/tutorial/step1-counter/main.bal" region="main" title="main" />
+It is the file CI builds as `examples/tutorial/step1-counter`, so what you read here compiles.
 
 ## Try this
 

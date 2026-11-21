@@ -26,21 +26,95 @@ Starting from step 2, you:
 
 ## The scripted model
 
-There is no real model in this tutorial. `model.bal` answers every question with the same lines, so the
-interface has something to stream and nothing needs an account, a key or a network.
+There is no real model in this tutorial. A new file, `model.bal`, answers every question with the same
+lines, so the interface has something to stream and nothing needs an account, a key or a network. You
+write it in three stages, and `bal build` compiles after each one. Each stage says whether its code
+replaces something you already have or is added to it. Add imports to the ones at the top of the file,
+in alphabetical order.
 
-<ExampleCode file="examples/tutorial/step3-streaming/model.bal" region="stream-answer" title="model.bal" />
+### 1. The messages
+
+Create `model.bal` and put this in it. The effect talks back in one way only, with small records. Every
+message carries the **turn** it belongs to. If a piece from an old question arrives after a new one has
+started, the program ignores it.
+
+```ballerina
+// One piece of the answer, tagged with the turn it belongs to so a late piece from an old turn is ignored.
+type Token record {|
+    "token" kind = "token";
+    int turn;
+    string text;
+|};
+
+type Done record {|
+    "done" kind = "done";
+    int turn;
+|};
+```
+
+### 2. The answer
+
+Add these two functions at the end of `model.bal`. `answerTo` is the fixed answer, and `chunks` cuts it
+into pieces of a few characters.
+
+```ballerina
+isolated function answerTo(string question) returns string {
+    return "You asked: " + question + "\n" +
+        "This answer is streamed a few characters at a time.\n" +
+        "Each finished line is committed to your scrollback, and the line being written stays live.";
+}
+
+isolated function chunks(string text, int size = 3) returns string[] {
+    string[] pieces = [];
+    string piece = "";
+    int count = 0;
+    foreach string:Char c in text {
+        piece += c;
+        count += 1;
+        if count == size {
+            pieces.push(piece);
+            piece = "";
+            count = 0;
+        }
+    }
+    if piece != "" {
+        pieces.push(piece);
+    }
+    return pieces;
+}
+```
+
+### 3. The effect
 
 This is the part that matters. The effect is an **`isolated` function**, so it runs on its own strand
-and cannot touch the program's fields. It talks back in one way only: `session.send(...)`, once per
-piece. The messages are small records:
+and cannot touch the program's fields. It talks back with `session.send(...)`, once per piece.
 
-<ExampleCode file="examples/tutorial/step3-streaming/model.bal" region="messages" title="The messages" />
+Add these imports to `model.bal`:
 
-Every message carries the **turn** it belongs to. If a piece from an old question arrives after a new
-one has started, the program ignores it.
+```ballerina
+import ayesha/termui;
+import ballerina/lang.runtime;
+```
 
-### Connecting a real model
+Add this function at the end of `model.bal`:
+
+```ballerina
+// The effect: it runs on its own strand and reports back only with messages.
+isolated function streamAnswer(int turn, string question, decimal delay) returns termui:EffectFunction {
+    return isolated function(termui:Session session) returns error? {
+        foreach string piece in chunks(answerTo(question)) {
+            if session.isStopped() {
+                return;
+            }
+            session.send({kind: "token", turn, text: piece});
+            runtime:sleep(delay);
+        }
+        session.send({kind: "done", turn});
+    };
+}
+```
+
+#### Connecting a real model
 
 To use a real model, change what happens inside `streamAnswer` and keep everything else:
 
@@ -62,50 +136,205 @@ anything the call needs, such as a client or a key, into `streamAnswer` as argum
 
 ## The program
 
-The finished file, built and tested by CI as `examples/tutorial/step3-streaming`:
+Start from step 2's complete program, which is on [step 2](../02-prompt/), and add the model file above.
+You turn the prompt into the chat in seven stages, and `bal build` compiles after each one.
 
-<ExampleCode file="examples/tutorial/step3-streaming/main.bal" title="main.bal" />
+### 1. Rename it
 
-### State
+Replace the class header `class Prompt {` with:
 
-<ExampleCode file="examples/tutorial/step3-streaming/main.bal" region="state" title="State" />
+```ballerina
+class Chat {
+```
+
+Replace `main` so it runs the renamed class:
+
+```ballerina
+public function main() returns error? {
+    termui:Interface ui = new (term:detectEnvironment());
+    check ui.run(new Chat());
+}
+```
+
+### 2. State
 
 `busy` says an answer is streaming, `turn` numbers the questions, and `partial` is the line being
 written. The delay between pieces is an argument, so a test can set it to zero.
 
-### Starting a turn
+Add these fields after the `width` field:
 
-<ExampleCode file="examples/tutorial/step3-streaming/main.bal" region="ask" title="Submitting a line" />
+```ballerina
+    private final decimal delay;      // pause between pieces of the answer
+    private boolean busy = false;     // an answer is streaming
+    private int turn = 0;             // which question the answer belongs to
+    private string partial = "";      // the line being written, not finished yet
+    private boolean quitWhenIdle = false;
+```
+
+Add this `init` after the fields:
+
+```ballerina
+    function init(decimal delay = 0.03) {
+        self.delay = delay;
+    }
+```
+
+### 3. Starting a turn
 
 Submitting returns two commands in a `batch`: commit the question above the prompt, and start the
 effect. While an answer is streaming, Enter is ignored and what you type is kept for the next question.
 
-### Handling the stream
+Inside `Chat`, add this after `update`. It is the key handling that `update` has today, plus the check
+for a running answer, with the submitted line now going to `ask`:
 
-<ExampleCode file="examples/tutorial/step3-streaming/main.bal" region="stream-messages" title="Messages from the effect" />
+```ballerina
+    private function onInput(term:KeyEvent|term:PasteEvent message) returns termui:Command? {
+        if self.busy && message is term:KeyEvent && message.key == "enter" {
+            return; // keep what is typed until the answer is finished
+        }
+        input:EditResult result = self.editor.handleEvent(message);
+        if result is input:Submitted {
+            return self.ask(result.text);
+        }
+        if result == "ignored" && message is term:KeyEvent && message.ctrl && message.key == "c" {
+            return termui:quit();
+        }
+        return;
+    }
+```
 
-<ExampleCode file="examples/tutorial/step3-streaming/main.bal" region="fold" title="Folding a piece into the line" />
+Add `ask` after `onInput`:
+
+```ballerina
+    private function ask(string question) returns termui:Command {
+        self.busy = true;
+        self.turn += 1;
+        self.partial = "";
+        return termui:batch([
+            termui:commitProse([[{text: "❯ " + question, style: {bold: true}}]]),
+            termui:effect(streamAnswer(self.turn, question, self.delay))
+        ]);
+    }
+```
+
+### 4. Folding the stream into lines
 
 Each `token` is added to `partial`. Whenever `partial` holds a newline, the finished line is committed
 with `commitBlock` and the rest stays live. `commitBlock` wraps the line to the width at that moment, which
 is what you want for a line that will not be re-laid out later.
 
-When the input ends while an answer is streaming, the program sets `quitWhenIdle` and lets the answer
-finish before it quits, so a script that pipes a question in still gets the whole answer.
+Add these two functions after `ask`:
 
-### Drawing
+```ballerina
+    // Folds a piece into the line being written. Every line that is finished is committed.
+    private function onToken(string piece) returns termui:Command? {
+        self.partial += piece;
+        termui:Command[] commands = [];
+        int? newline = self.partial.indexOf("\n");
+        while newline is int {
+            commands.push(termui:commitBlock([[{text: self.partial.substring(0, newline)}]]));
+            self.partial = self.partial.substring(newline + 1);
+            newline = self.partial.indexOf("\n");
+        }
+        return commands.length() == 0 ? () : termui:batch(commands);
+    }
 
-<ExampleCode file="examples/tutorial/step3-streaming/main.bal" region="view" title="view" />
+    private function onDone() returns termui:Command? {
+        termui:Command[] commands = [];
+        if self.partial != "" {
+            commands.push(termui:commitBlock([[{text: self.partial}]]));
+        }
+        commands.push(termui:commitProse([[]]));
+        self.partial = "";
+        self.busy = false;
+        if self.quitWhenIdle {
+            commands.push(termui:quit());
+        }
+        return termui:batch(commands);
+    }
+```
 
-The live region is the unfinished line, if there is one, above the prompt.
+### 5. Handling the messages
 
-### Starting it
+Now `update` can use all of it. It gains the messages from the effect, and a failed effect becomes a red
+line. When the input ends while an answer is streaming, the program sets `quitWhenIdle` and lets the
+answer finish before it quits, so a script that pipes a question in still gets the whole answer.
 
-<ExampleCode file="examples/tutorial/step3-streaming/main.bal" region="main" title="main" />
+Inside `Chat`, replace `update` with this one:
+
+```ballerina
+    public function update(termui:Message message) returns termui:Command? {
+        if message is term:ResizeEvent {
+            self.width = message.width;
+            return;
+        }
+        if message is termui:InputEnded {
+            if self.busy {
+                self.quitWhenIdle = true; // let the answer finish first
+                return;
+            }
+            return termui:quit();
+        }
+        if message is Token && message.turn == self.turn {
+            return self.onToken(message.text);
+        }
+        if message is Done && message.turn == self.turn {
+            return self.onDone();
+        }
+        if message is termui:EffectFailed {
+            // the effect returned an error (a real model call can fail): say so and take input again
+            self.busy = false;
+            self.partial = "";
+            return termui:commitProse([[{text: "error: " + message.reason, style: {fg: "red"}}]]);
+        }
+        if message is term:KeyEvent|term:PasteEvent {
+            return self.onInput(message);
+        }
+        return;
+    }
+```
+
+### 6. Drawing
+
+The live region is the unfinished line, if there is one, above the prompt. Inside `Chat`, replace `view`
+with this one:
+
+```ballerina
+    public function view() returns text:Span[][] {
+        text:Span[][] lines = [];
+        if self.partial != "" {
+            lines.push([{text: self.partial}]);
+        }
+        foreach text:Span[] row in self.editor.render(self.width, "❯ ") {
+            lines.push(row);
+        }
+        return lines;
+    }
+```
+
+### 7. Starting it
 
 `anchorBottom = true` keeps the live region on the last rows of the terminal, like a chat input, so the
 prompt does not jump around as the answer grows. See [inline rendering](../../concepts/inline-rendering/)
-for how it works and where it does not apply.
+for how it works and where it does not apply. Replace `main` with:
+
+```ballerina
+public function main() returns error? {
+    termui:Interface ui = new (term:detectEnvironment());
+    check ui.run(new Chat(), anchorBottom = true);
+}
+```
+
+If yours does not build, compare it with the finished file:
+
+<details>
+<summary>The whole program</summary>
+
+<ExampleCode file="examples/tutorial/step3-streaming/main.bal" title="main.bal" />
+
+</details>
+
+It is the file CI builds and tests as `examples/tutorial/step3-streaming`.
 
 ## Check it without a terminal
 

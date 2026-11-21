@@ -19,7 +19,6 @@
 import ayesha/termui;
 import ballerina/lang.runtime;
 
-// region messages
 // Every message carries the turn it belongs to, so a late message from an old turn is ignored.
 type Status record {|
     "status" kind = "status";
@@ -54,9 +53,7 @@ type Done record {|
     int turn;
     boolean interrupted;
 |};
-// endregion messages
 
-// region cancel
 // Shared between the program (which cancels) and the effect (which checks). It is `isolated`, so both
 // strands may hold it.
 isolated class CancelFlag {
@@ -74,7 +71,6 @@ isolated class CancelFlag {
         }
     }
 }
-// endregion cancel
 
 isolated function answerTo(string question) returns string {
     return "You asked: " + question + "\n" +
@@ -104,7 +100,6 @@ isolated function chunks(string text, int size = 3) returns string[] {
 const string TOOL = "Bash";
 const string TOOL_ARG = "bal test";
 
-// region stream-answer
 // The effect: it runs on its own strand and reports back only with messages.
 isolated function streamAnswer(int turn, string question, decimal delay, CancelFlag flag) returns termui:EffectFunction {
     return isolated function(termui:Session session) returns error? {
@@ -126,9 +121,7 @@ isolated function streamAnswer(int turn, string question, decimal delay, CancelF
         session.send({kind: "done", turn, interrupted});
     };
 }
-// endregion stream-answer
 
-// region approval
 // Asks before running the tool. `confirm` waits for the user's answer, and with no terminal to answer it
 // returns the default we pass (false: deny) at once, so a script never hangs and never runs a tool nobody
 // approved.
@@ -143,4 +136,3 @@ isolated function runTool(termui:Session session, int turn, decimal delay) retur
     runtime:sleep(delay * 30);
     session.send({kind: "toolFinished", turn, name: TOOL, arg: TOOL_ARG, summary: "12 passed, 0 failed", ok: true});
 }
-// endregion approval

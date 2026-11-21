@@ -22,9 +22,62 @@ Starting from step 4, you:
 - show "Waiting for approval" in the status line while the question is up, and
 - decide what the program does when there is nobody to ask.
 
-## Asking from an effect
+## The program
 
-<ExampleCode file="examples/tutorial/step5-approval/model.bal" region="approval" title="runTool" />
+Start from step 4's complete program, which is on [step 4](../04-status/), with its `main.bal` and
+`model.bal`. You add the tool call in four stages, and `bal build` compiles after each one. Each stage
+says whether its code replaces something you already have or is added to it, and which file it is in.
+
+### 1. The tool messages
+
+In `model.bal`, add these two message types after `Token`:
+
+```ballerina
+type ToolStarted record {|
+    "toolStarted" kind = "toolStarted";
+    int turn;
+    string name;
+    string arg;
+|};
+
+type ToolFinished record {|
+    "toolFinished" kind = "toolFinished";
+    int turn;
+    string name;
+    string arg;
+    string summary;
+    boolean ok;
+|};
+```
+
+### 2. Asking from an effect
+
+The model has to ask before it runs a tool. In `model.bal`, add the tool's name and argument after
+`chunks`:
+
+```ballerina
+const string TOOL = "Bash";
+const string TOOL_ARG = "bal test";
+```
+
+Add `runTool` after `streamAnswer`:
+
+```ballerina
+// Asks before running the tool. `confirm` waits for the user's answer, and with no terminal to answer it
+// returns the default we pass (false: deny) at once, so a script never hangs and never runs a tool nobody
+// approved.
+isolated function runTool(termui:Session session, int turn, decimal delay) returns error? {
+    session.send({kind: "status", turn, text: "Waiting for approval"});
+    boolean allowed = check session.confirm(string `Allow ${TOOL}(${TOOL_ARG})?`, false);
+    if !allowed {
+        session.send({kind: "toolFinished", turn, name: TOOL, arg: TOOL_ARG, summary: "denied by user", ok: false});
+        return;
+    }
+    session.send({kind: "toolStarted", turn, name: TOOL, arg: TOOL_ARG});
+    runtime:sleep(delay * 30);
+    session.send({kind: "toolFinished", turn, name: TOOL, arg: TOOL_ARG, summary: "12 passed, 0 failed", ok: true});
+}
+```
 
 `session.confirm(question, defaultAnswer)` shows the question below the live region and **waits** for the
 answer. That is why it lives in the effect: waiting for a person would freeze the interface if the
@@ -33,7 +86,43 @@ program: `y` to allow, `n` to deny, Enter for the default, Esc for no.
 
 The default is the part to think about. Here it is `false`: if there is nothing to answer, **deny**.
 
-### When nobody can answer
+Replace `streamAnswer` so that it runs the tool when the answer was not interrupted:
+
+```ballerina
+isolated function streamAnswer(int turn, string question, decimal delay, CancelFlag flag) returns termui:EffectFunction {
+    return isolated function(termui:Session session) returns error? {
+        session.send({kind: "status", turn, text: "Thinking"});
+        runtime:sleep(delay * 40);
+        session.send({kind: "status", turn, text: "Responding"});
+        boolean interrupted = false;
+        foreach string piece in chunks(answerTo(question)) {
+            if flag.isCancelled() || session.isStopped() {
+                interrupted = true;
+                break;
+            }
+            session.send({kind: "token", turn, text: piece});
+            runtime:sleep(delay);
+        }
+        if !interrupted {
+            check runTool(session, turn, delay);
+        }
+        session.send({kind: "done", turn, interrupted});
+    };
+}
+```
+
+Replace `answerTo` so the answer ends with a newline. Its last line is then committed before the question
+appears:
+
+```ballerina
+isolated function answerTo(string question) returns string {
+    return "You asked: " + question + "\n" +
+        "This answer is streamed a few characters at a time.\n" +
+        "Each finished line is committed to your scrollback, and the line being written stays live.\n";
+}
+```
+
+#### When nobody can answer
 
 `confirm` does not wait when there is no terminal to answer it. It returns the default you passed at
 once, or a `NoTerminal` error if you gave none. `Interface` tells the runtime whether a user can answer,
@@ -48,22 +137,73 @@ what "no answer" means for your program, and make it the safe thing.
 
 </details>
 
-## The program
+### 3. Handling the tool messages
 
-<ExampleCode file="examples/tutorial/step5-approval/main.bal" region="tool-messages" title="Handling the tool messages" />
+In `main.bal`, inside `update`, add these two branches after the one for `Status`:
 
-<ExampleCode file="examples/tutorial/step5-approval/main.bal" region="tool-finished" title="Committing a finished tool call" />
+```ballerina
+        if message is ToolStarted && message.turn == self.turn {
+            self.statusText = string `Running ${message.name}(${message.arg})`;
+            return;
+        }
+        if message is ToolFinished && message.turn == self.turn {
+            return self.onToolFinished(message);
+        }
+```
+
+Add `onToolFinished` to `Chat`, after `ask`:
+
+```ballerina
+    private function onToolFinished(ToolFinished tool) returns termui:Command {
+        text:Style markStyle = {fg: tool.ok ? "green" : "red"};
+        return termui:commitBlock([
+            [{text: "●", style: markStyle}, {text: " " + tool.name, style: {bold: true}}, {text: "(" + tool.arg + ")", style: {dim: true}}],
+            [{text: "  ⎿  " + tool.summary, style: {dim: true}}]
+        ]);
+    }
+```
 
 The tool call is committed with `commitBlock`, like a finished line of the answer: it is written once
-into your scrollback and never redrawn. The answer now ends with a newline, so its last line is committed
-before the question appears.
+into your scrollback and never redrawn.
 
-The status line also changes while the question is up. Esc answers the question then, rather than
-interrupting, so the hint says "answer below" instead of "esc to interrupt".
+### 4. The status line while the question is up
 
-The whole program is the file CI builds and tests as `examples/tutorial/step5-approval`:
+Esc answers the question while it is shown, rather than interrupting, so the hint should say "answer
+below" instead of "esc to interrupt". Inside `Chat`, replace `view` with this one:
+
+```ballerina
+    public function view() returns text:Span[][] {
+        text:Span[][] lines = [];
+        if self.partial != "" {
+            lines.push([{text: self.partial}]);
+        }
+        if self.busy {
+            string frame = SPINNER[self.ticks % SPINNER.length()];
+            int seconds = (self.ticks - self.turnStartTick) / 10;
+            // while a question is shown, keys answer it, so Esc is not "interrupt" then
+            string hint = self.statusText == "Waiting for approval" ? "answer below" : "esc to interrupt";
+            lines.push([
+                {text: frame + " " + self.statusText + "… ", style: {fg: "brightCyan"}},
+                {text: string `(${seconds}s · ${hint})`, style: {dim: true}}
+            ]);
+        }
+        foreach text:Span[] row in self.editor.render(self.width, "❯ ") {
+            lines.push(row);
+        }
+        return lines;
+    }
+```
+
+If yours does not build, compare it with the finished file:
+
+<details>
+<summary>The whole of main.bal</summary>
 
 <ExampleCode file="examples/tutorial/step5-approval/main.bal" title="main.bal" />
+
+</details>
+
+They are the files CI builds and tests as `examples/tutorial/step5-approval`.
 
 ## Check it without a terminal
 

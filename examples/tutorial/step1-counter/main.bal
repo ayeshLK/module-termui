@@ -18,14 +18,11 @@ import ayesha/termui;
 import ayesha/termui.term;
 import ayesha/termui.text;
 
-// region state
 class Counter {
     *termui:Program;
 
     int count = 0;
-// endregion state
 
-    // region update
     public function update(termui:Message message) returns termui:Command? {
         if message is term:KeyEvent {
             if message.key == "+" {
@@ -38,21 +35,16 @@ class Counter {
         }
         return ();
     }
-    // endregion update
 
-    // region view
     public function view() returns text:Span[][] {
         return [
             [{text: "count: " + self.count.toString(), style: {bold: true}}],
             [{text: "+ and - change it, q quits", style: {dim: true}}]
         ];
     }
-    // endregion view
 }
 
-// region main
 public function main() returns error? {
     termui:Interface ui = new (term:detectEnvironment());
     check ui.run(new Counter());
 }
-// endregion main

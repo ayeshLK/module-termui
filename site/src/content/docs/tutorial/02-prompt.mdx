@@ -23,24 +23,99 @@ Starting from step 1, you:
 
 ## The program
 
-It is the file CI builds and tests as `examples/tutorial/step2-prompt`.
+Start from step 1's complete program, which is on [step 1](../01-counter/). You turn it into the prompt
+in four stages, and `bal build` compiles after each one. Each stage says whether its code replaces
+something you already have or is added to it. Add imports to the ones at the top of the file, in
+alphabetical order.
 
-<ExampleCode file="examples/tutorial/step2-prompt/main.bal" title="main.bal" />
+### 1. A prompt skeleton
 
-Run it with `bal run`, type, press Enter, then press Up.
+Replace the `Counter` class with an empty `Prompt` class. The program no longer counts, so it has no
+state yet:
 
-## What each part does
+```ballerina
+class Prompt {
+    *termui:Program;
 
-**State.** The editor holds the text and the cursor and remembers what you submit. It owns no terminal.
-The width starts at 80; the real one arrives as the program's first message.
+    public function update(termui:Message message) returns termui:Command? {
+        return;
+    }
 
-<ExampleCode file="examples/tutorial/step2-prompt/main.bal" region="state" title="State" />
+    public function view() returns text:Span[][] {
+        return [];
+    }
+}
+```
+
+Replace `main` so it runs the new class:
+
+```ballerina
+public function main() returns error? {
+    termui:Interface ui = new (term:detectEnvironment());
+    check ui.run(new Prompt());
+}
+```
+
+### 2. State
+
+The editor holds the text and the cursor and remembers what you submit. It owns no terminal. The width
+starts at 80; the real one arrives as the program's first message.
+
+Add this import:
+
+```ballerina
+import ayesha/termui.input;
+```
+
+Replace the `Prompt` class with this one. It adds the editor and the width, and keeps `update` and `view`
+empty:
+
+```ballerina
+class Prompt {
+    *termui:Program;
+
+    private input:LineEditor editor = new;
+    private int width = 80;
+
+    public function update(termui:Message message) returns termui:Command? {
+        return;
+    }
+
+    public function view() returns text:Span[][] {
+        return [];
+    }
+}
+```
+
+### 3. Update
 
 **`update` hands events to the editor.** `handleEvent` returns `edited` when it used the event,
 `ignored` when it did not, or a `Submitted` with the text when Enter was pressed. The editor is then
 empty again.
 
-<ExampleCode file="examples/tutorial/step2-prompt/main.bal" region="update" title="update" />
+Inside `Prompt`, replace the empty `update` with this one:
+
+```ballerina
+    public function update(termui:Message message) returns termui:Command? {
+        if message is term:ResizeEvent {
+            self.width = message.width;
+            return;
+        }
+        if message is termui:InputEnded {
+            return termui:quit();
+        }
+        if message is term:KeyEvent|term:PasteEvent {
+            input:EditResult result = self.editor.handleEvent(message);
+            if result is input:Submitted {
+                return termui:commitProse([[{text: "❯ " + result.text, style: {bold: true}}]]);
+            }
+            if result == "ignored" && message is term:KeyEvent && message.ctrl && message.key == "c" {
+                return termui:quit();
+            }
+        }
+        return;
+    }
+```
 
 Three things worth noticing:
 
@@ -53,10 +128,31 @@ Three things worth noticing:
   program runs in a script instead of waiting forever. See
   [modes and headless operation](../../concepts/headless-modes/).
 
+### 4. View
+
 **`view` draws the editor.** `render(width, prompt)` wraps long lines by display width, indents later
 rows under the prompt, and shows the cursor as the character under it in reverse video.
 
-<ExampleCode file="examples/tutorial/step2-prompt/main.bal" region="view" title="view" />
+Inside `Prompt`, replace the empty `view` with this one:
+
+```ballerina
+    public function view() returns text:Span[][] {
+        return self.editor.render(self.width, "❯ ");
+    }
+```
+
+Run it with `bal run`, type, press Enter, then press Up.
+
+If yours does not build, compare it with the finished file:
+
+<details>
+<summary>The whole program</summary>
+
+<ExampleCode file="examples/tutorial/step2-prompt/main.bal" title="main.bal" />
+
+</details>
+
+It is the file CI builds and tests as `examples/tutorial/step2-prompt`.
 
 ## Check it without a terminal
 

@@ -23,42 +23,290 @@ Starting from step 3, you:
 - draw a **status line** above the prompt while an answer is running, and
 - cancel the running answer on Esc and commit an "Interrupted" line.
 
-## The model: status and cancel
+## The program
 
-The model now sends a `status` message first and checks a flag between pieces.
+Start from step 3's complete program, which is on [step 3](../03-streaming/), with its `main.bal` and
+`model.bal`. You add the status line and the interrupt in six stages, and `bal build` compiles after each
+one. Each stage says whether its code replaces something you already have or is added to it, and which
+file it is in.
 
-<ExampleCode file="examples/tutorial/step4-status/model.bal" region="messages" title="The messages" />
+### 1. A shared cancel flag
 
-`Done` gained an `interrupted` field, so the program can say which way the answer ended.
+The model needs to be told to stop. The program's state lives on one strand and the effect on another,
+and the effect may not read the program's fields. A flag is the one thing both may hold. It is an
+`isolated` class, so the compiler allows both strands to share it.
 
-<ExampleCode file="examples/tutorial/step4-status/model.bal" region="cancel" title="A shared cancel flag" />
+In `model.bal`, add this class after the `Done` type:
 
-Why a flag? The program's state lives on one strand and the effect on another, and the effect may not read
-the program's fields. The flag is the one thing both may hold. It is an `isolated` class, so the compiler
-allows both strands to share it.
+```ballerina
+// Shared between the program (which cancels) and the effect (which checks). It is `isolated`, so both
+// strands may hold it.
+isolated class CancelFlag {
+    private boolean set = false;
 
-<ExampleCode file="examples/tutorial/step4-status/model.bal" region="stream-answer" title="The effect checks the flag" />
+    isolated function cancel() {
+        lock {
+            self.set = true;
+        }
+    }
 
-The effect also checks `session.isStopped()`, which becomes true when the program ends, so it never keeps
-working for a program that has gone.
+    isolated function isCancelled() returns boolean {
+        lock {
+            return self.set;
+        }
+    }
+}
+```
 
-## The timer
+### 2. Status state
 
-<ExampleCode file="examples/tutorial/step4-status/main.bal" region="tick" title="The tick message" />
+In `main.bal`, add the spinner frames and the timer's message before the `Chat` class. A tick is an
+ordinary message that the program counts, so ten ticks are a second.
 
-<ExampleCode file="examples/tutorial/step4-status/main.bal" region="main" title="Starting the timer" />
+```ballerina
+const string[] SPINNER = ["⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧", "⠇", "⠏"];
+
+// Sent by the timer every 0.1 seconds.
+type Tick record {|
+    "tick" kind = "tick";
+|};
+```
+
+Add these fields to `Chat`, after `quitWhenIdle`:
+
+```ballerina
+    private int ticks = 0;            // one tick is 0.1 s
+    private int turnStartTick = 0;
+    private string statusText = "";
+    private CancelFlag? cancel = ();  // set while an answer is streaming
+```
+
+### 3. A model that reports status and can be stopped
+
+The model now sends a `status` message first, and checks the flag between pieces. `Done` gains an
+`interrupted` field, so the program can say which way the answer ended. The effect also checks
+`session.isStopped()`, which becomes true when the program ends, so it never keeps working for a program
+that has gone.
+
+In `model.bal`, replace the three message types, `Token` and `Done` with these three:
+
+```ballerina
+// Every message carries the turn it belongs to, so a late message from an old turn is ignored.
+type Status record {|
+    "status" kind = "status";
+    int turn;
+    string text;
+|};
+
+type Token record {|
+    "token" kind = "token";
+    int turn;
+    string text;
+|};
+
+type Done record {|
+    "done" kind = "done";
+    int turn;
+    boolean interrupted;
+|};
+```
+
+Replace `streamAnswer` with this one, which takes the flag:
+
+```ballerina
+isolated function streamAnswer(int turn, string question, decimal delay, CancelFlag flag) returns termui:EffectFunction {
+    return isolated function(termui:Session session) returns error? {
+        session.send({kind: "status", turn, text: "Thinking"});
+        runtime:sleep(delay * 40);
+        session.send({kind: "status", turn, text: "Responding"});
+        boolean interrupted = false;
+        foreach string piece in chunks(answerTo(question)) {
+            if flag.isCancelled() || session.isStopped() {
+                interrupted = true;
+                break;
+            }
+            session.send({kind: "token", turn, text: piece});
+            runtime:sleep(delay);
+        }
+        session.send({kind: "done", turn, interrupted});
+    };
+}
+```
+
+In `main.bal`, replace `ask` with this one. It makes a flag for each answer, keeps it in `cancel`, passes it
+to the effect, and starts the status at "Thinking":
+
+```ballerina
+    private function ask(string question) returns termui:Command {
+        CancelFlag flag = new;
+        self.cancel = flag;
+        self.busy = true;
+        self.turn += 1;
+        self.partial = "";
+        self.turnStartTick = self.ticks;
+        self.statusText = "Thinking";
+        return termui:batch([
+            termui:commitProse([[{text: "❯ " + question, style: {bold: true}}]]),
+            termui:effect(streamAnswer(self.turn, question, self.delay, flag))
+        ]);
+    }
+```
+
+### 4. Ticks, status and interrupting
+
+Now `update` can use all of it. It counts ticks, keeps the status text, and passes `interrupted` on to
+`onDone`, which commits an "Interrupted" line when it is set. `onInput` handles Esc.
+
+Esc is not a key the editor uses, so the program handles it first. If an answer is running it cancels the
+flag and says "Interrupting". The effect sees the flag at its next check and ends with
+`interrupted: true`, and the program commits the "Interrupted" line. The text the effect had already sent
+stays in the scrollback.
+
+Inside `Chat`, replace `update` with this one:
+
+```ballerina
+    public function update(termui:Message message) returns termui:Command? {
+        if message is Tick {
+            self.ticks += 1;
+            return;
+        }
+        if message is term:ResizeEvent {
+            self.width = message.width;
+            return;
+        }
+        if message is termui:InputEnded {
+            if self.busy {
+                self.quitWhenIdle = true; // let the answer finish first
+                return;
+            }
+            return termui:quit();
+        }
+        if message is Status && message.turn == self.turn {
+            self.statusText = message.text;
+            return;
+        }
+        if message is Token && message.turn == self.turn {
+            return self.onToken(message.text);
+        }
+        if message is Done && message.turn == self.turn {
+            return self.onDone(message.interrupted);
+        }
+        if message is termui:EffectFailed {
+            self.busy = false;
+            self.cancel = ();
+            self.partial = "";
+            return termui:commitProse([[{text: "error: " + message.reason, style: {fg: "red"}}]]);
+        }
+        if message is term:KeyEvent|term:PasteEvent {
+            return self.onInput(message);
+        }
+        return;
+    }
+```
+
+Replace `onInput` with this one, which adds the Esc check at the top:
+
+```ballerina
+    private function onInput(term:KeyEvent|term:PasteEvent message) returns termui:Command? {
+        if message is term:KeyEvent && message.key == "escape" {
+            CancelFlag? flag = self.cancel;
+            if self.busy && flag is CancelFlag {
+                flag.cancel();
+                self.statusText = "Interrupting";
+            }
+            return;
+        }
+        if self.busy && message is term:KeyEvent && message.key == "enter" {
+            return; // keep what is typed until the answer is finished
+        }
+        input:EditResult result = self.editor.handleEvent(message);
+        if result is input:Submitted {
+            return self.ask(result.text);
+        }
+        if result == "ignored" && message is term:KeyEvent && message.ctrl && message.key == "c" {
+            return termui:quit();
+        }
+        return;
+    }
+```
+
+Replace `onDone` with this one, which takes `interrupted`:
+
+```ballerina
+    private function onDone(boolean interrupted) returns termui:Command? {
+        termui:Command[] commands = [];
+        if self.partial != "" {
+            commands.push(termui:commitBlock([[{text: self.partial}]]));
+        }
+        if interrupted {
+            commands.push(termui:commitProse([[{text: "⏹ Interrupted", style: {fg: "yellow"}}]]));
+        }
+        commands.push(termui:commitProse([[]]));
+        self.partial = "";
+        self.busy = false;
+        self.cancel = ();
+        if self.quitWhenIdle {
+            commands.push(termui:quit());
+        }
+        return termui:batch(commands);
+    }
+```
+
+### 5. Drawing the status line
+
+The spinner frame and the seconds both come from the tick count, so `view` is still a plain function of
+state. Inside `Chat`, replace `view` with this one:
+
+```ballerina
+    public function view() returns text:Span[][] {
+        text:Span[][] lines = [];
+        if self.partial != "" {
+            lines.push([{text: self.partial}]);
+        }
+        if self.busy {
+            string frame = SPINNER[self.ticks % SPINNER.length()];
+            int seconds = (self.ticks - self.turnStartTick) / 10;
+            lines.push([
+                {text: frame + " " + self.statusText + "… ", style: {fg: "brightCyan"}},
+                {text: string `(${seconds}s · esc to interrupt)`, style: {dim: true}}
+            ]);
+        }
+        foreach text:Span[] row in self.editor.render(self.width, "❯ ") {
+            lines.push(row);
+        }
+        return lines;
+    }
+```
+
+### 6. The timer
 
 `termui:every(0.1, ...)` is a command: the runtime sends the message to `update` every 0.1 seconds. It is
-passed to `ui.run` as the **initial command**, so it starts with the program. A tick is an ordinary
-message. The program counts them, so ten ticks are a second.
+passed to `ui.run` as the **initial command**, so it starts with the program. Replace `main` with:
 
-### What a timer costs
+```ballerina
+public function main() returns error? {
+    termui:Interface ui = new (term:detectEnvironment());
+    // the timer ticks every 0.1 s for the spinner and the elapsed time
+    check ui.run(new Chat(), termui:every(0.1, {kind: "tick"}), anchorBottom = true);
+}
+```
+
+#### What a timer costs
 
 A timer calls `update` and `view` every period, so two rules keep it cheap:
 
 - A tick that leaves the view **unchanged does not redraw**. When no answer is running the view does not
   depend on the tick count, so an idle program writes nothing. A test checks this.
 - Keep `view` cheap, because a timer runs it ten times a second here.
+
+If yours does not build, compare it with the finished files:
+
+<details>
+<summary>The whole of main.bal</summary>
+
+<ExampleCode file="examples/tutorial/step4-status/main.bal" title="main.bal" />
+
+</details>
 
 <details>
 <summary>The whole of model.bal</summary>
@@ -67,29 +315,7 @@ A timer calls `update` and `view` every period, so two rules keep it cheap:
 
 </details>
 
-## The program
-
-<ExampleCode file="examples/tutorial/step4-status/main.bal" title="main.bal" />
-
-### Status state
-
-<ExampleCode file="examples/tutorial/step4-status/main.bal" region="status-state" title="State" />
-
-### Interrupting
-
-<ExampleCode file="examples/tutorial/step4-status/main.bal" region="interrupt" title="Esc" />
-
-Esc is not a key the editor uses, so the program handles it first. If an answer is running it cancels the
-flag and says "Interrupting". The effect sees the flag at its next check and ends with
-`interrupted: true`, and the program commits the "Interrupted" line. The text the effect had already sent
-stays in the scrollback.
-
-### Drawing the status line
-
-<ExampleCode file="examples/tutorial/step4-status/main.bal" region="view" title="view" />
-
-The spinner frame and the seconds both come from the tick count, so `view` is still a plain function of
-state.
+They are the files CI builds and tests as `examples/tutorial/step4-status`.
 
 ## Check it without a terminal
 
