@@ -18,8 +18,8 @@
 
 ## 3. Check
 
-- [ ] 3.1 Build the site and check the homepage in a browser with scripts on (the recording is beside the introduction, starts by itself, loops, and can be paused and scrubbed; the poster shows the streamed answer and an approval prompt) and with scripts off (the description and frame are visible)
-- [ ] 3.2 Check the homepage with reduced motion on (no autoplay, the poster frame shows), at phone width, and in both colour themes
+- [x] 3.1 Build the site and check the homepage in a browser with scripts on (the recording is beside the introduction, starts by itself, loops, and can be paused and scrubbed; the poster shows the streamed answer and an approval prompt) and with scripts off (the description and frame are visible)
+- [x] 3.2 Check the homepage with reduced motion on (no autoplay, the poster frame shows), at phone width, and in both colour themes
 - [x] 3.3 Run `npm test`, the site build and the link check, and confirm the pages that use `CastPlayer` without the new props render as before
 - [x] 3.4 Add a sentence to `CONTRIBUTING.md`'s recordings line saying the homepage description and poster time need updating when `harness-demo.cast` is replaced
 
