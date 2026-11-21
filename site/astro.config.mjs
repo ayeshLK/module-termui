@@ -4,9 +4,21 @@ import starlight from '@astrojs/starlight';
 
 // The site is served from https://ayeshlk.github.io/module-termui/. A custom domain would change
 // only `site` and `base`.
+const base = '/module-termui';
+
 export default defineConfig({
 	site: 'https://ayeshlk.github.io',
-	base: '/module-termui',
+	base,
+	// The harness tutorial moved under /tutorial/harness/. The old step addresses still work. Astro does not add
+	// the base to a redirect's target, so it is added here.
+	redirects: {
+		'/tutorial/01-counter': `${base}/tutorial/harness/01-counter/`,
+		'/tutorial/02-prompt': `${base}/tutorial/harness/02-prompt/`,
+		'/tutorial/03-streaming': `${base}/tutorial/harness/03-streaming/`,
+		'/tutorial/04-status': `${base}/tutorial/harness/04-status/`,
+		'/tutorial/05-approval': `${base}/tutorial/harness/05-approval/`,
+		'/tutorial/06-testing': `${base}/tutorial/harness/06-testing/`,
+	},
 	integrations: [
 		starlight({
 			title: 'termui',
@@ -19,7 +31,14 @@ export default defineConfig({
 				{ label: 'Start here', items: [{ autogenerate: { directory: 'start' } }] },
 				{ label: 'Concepts', items: [{ autogenerate: { directory: 'concepts' } }] },
 				{ label: 'Best practices', items: [{ autogenerate: { directory: 'best-practices' } }] },
-				{ label: 'Tutorial', items: [{ autogenerate: { directory: 'tutorial' } }] },
+				{
+					label: 'Tutorials',
+					items: [
+						{ label: 'Choose a tutorial', slug: 'tutorial' },
+						{ label: 'A to-do list', items: [{ autogenerate: { directory: 'tutorial/todo-list' } }] },
+						{ label: 'An agent harness', items: [{ autogenerate: { directory: 'tutorial/harness' } }] },
+					],
+				},
 				{
 					label: 'Reference',
 					items: [

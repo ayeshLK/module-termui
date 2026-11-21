@@ -1,0 +1,46 @@
+---
+title: "1. A counter"
+description: "The counter from the Quick start, and three things to try with it."
+sidebar:
+  order: 1
+---
+
+import ExampleCode from '../../../../components/ExampleCode.astro';
+
+This step starts from the counter you built in the [Quick start](../../../start/quick-start/). It is the
+smallest program that shows the whole shape of a termui application, and every later step grows from it.
+If you did the Quick start you already have this program in your `main.bal`, so you can go straight to
+[Try this](#try-this).
+
+If you skipped it, you need Ballerina 2201.14 and JDK 25 on macOS or Linux. Create a package with
+`bal new harness` and `cd harness`, then replace everything in `main.bal` with this. There is no
+dependency to declare: the first build fetches termui from Ballerina Central.
+
+<ExampleCode file="examples/tutorial/step1-counter/main.bal" title="main.bal" />
+
+It is the file CI builds as `examples/tutorial/step1-counter`, so what you read here compiles. Run it with
+`bal run`: `+` and `-` change the count and `q` quits.
+
+## Try this
+
+- Make `-` stop at zero, so the count cannot go negative. Save and run again.
+- Make `view` show the count in red, using `style: {fg: "red"}`.
+- Make it work in a pipe. Run `bal run < /dev/null` and you will see it wait forever: with no input,
+  nothing ever tells the counter to stop. Add a first check to `update`:
+
+  ```ballerina
+  if message is termui:InputEnded {
+      return termui:quit();
+  }
+  ```
+
+  Now `bal run < /dev/null | cat` prints `count: 0` and the hint line as plain text and exits. This is
+  [headless mode](../../../concepts/headless-modes/): the program needed no other change.
+
+## Next
+
+[Step 2](../02-prompt/) replaces the counter with a prompt you can type into, with editing and history.
+The finished harness is in
+[`examples/agent-harness`](https://github.com/ayeshLK/module-termui/tree/main/examples/agent-harness)
+if you want to read ahead. Meanwhile, [the update and view loop](../../../concepts/the-loop/) explains
+what you just built.

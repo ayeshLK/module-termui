@@ -14,15 +14,15 @@ import pyte
 HERE = os.path.dirname(os.path.abspath(__file__))
 JAVA = os.environ.get("JAVA", "java")
 COLS, ROWS = 90, 14
-SIZES = {"step5-approval": (90, 18), "quick-start": (70, 10)}   # programs that need other than the default size
+SIZES = {"step5-approval": (90, 18), "todo-list": (70, 10)}   # programs that need other than the default size
 # Programs that do not live in a tutorial step directory, relative to this file. They also run in an empty
 # folder, so a program that saves a file starts from nothing and leaves no file in the repository.
-ELSEWHERE = {"quick-start": "../quick-start"}
+ELSEWHERE = {"todo-list": "../todo-list"}
 
 # ("wait", text): wait for text to appear. ("idle", seconds): let time pass. ("type", text): type it like a
 # person. ("key", bytes): send one key. The last step should end the program.
 SCRIPTS = {
-    "quick-start": [
+    "todo-list": [
         ("wait", "Nothing to do"), ("idle", 1.2),
         ("key", b"a"), ("idle", 0.4), ("type", "buy milk"), ("idle", 0.4), ("key", b"\r"), ("idle", 0.8),
         ("key", b"a"), ("idle", 0.4), ("type", "write the docs"), ("idle", 0.4), ("key", b"\r"), ("idle", 0.8),

@@ -12,7 +12,8 @@
 // either express or implied. See the License for the specific
 // language governing permissions and limitations under the License.
 
-// The quickstart from the README. Keep the two in step: CI builds this file.
+// The counter: the quick start on the documentation site and in the README. Keep them in step: CI builds
+// and checks this file.
 
 import ayesha/termui;
 import ayesha/termui.term;

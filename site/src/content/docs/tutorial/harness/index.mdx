@@ -1,0 +1,32 @@
+---
+title: Build a harness
+description: Build a small agent harness in ordered steps, each a complete program.
+sidebar:
+  order: 0
+---
+
+import { LinkButton } from '@astrojs/starlight/components';
+import StepList from '../../../../components/diagrams/StepList.astro';
+
+This tutorial builds a small agent-style harness: a prompt, streamed answers, tool calls with
+approval, and a status line. Every step is a complete program that compiles and runs, and each one
+extends the one before it. It starts from the counter in the [Quick start](../../start/quick-start/).
+
+<LinkButton href="./01-counter/" variant="primary">Start with step 1</LinkButton>
+
+<StepList
+	steps={[
+		{title: 'A counter', href: './01-counter/', build: 'The smallest interactive program', learn: [{text: 'Program', code: true}, {text: 'update', code: true}, {text: 'view', code: true}, {text: 'run', code: true}]},
+		{title: 'A prompt', href: './02-prompt/', build: 'A text input with history', learn: [{text: 'LineEditor', code: true}, {text: 'commitProse', code: true}]},
+		{title: 'Streaming output', href: './03-streaming/', build: 'An answer that arrives in pieces', learn: [{text: 'Effects'}, {text: 'messages'}, {text: 'commitBlock', code: true}, {text: 'anchorBottom', code: true}]},
+		{title: 'Status and interrupt', href: './04-status/', build: 'A live status line and Esc to stop', learn: [{text: 'Timers'}, {text: 'quiet ticks'}, {text: 'a cancel flag'}]},
+		{title: 'Tool calls', href: './05-approval/', build: 'An approval prompt', learn: [{text: 'confirm', code: true}, {text: 'the default answer'}, {text: 'headless'}]},
+		{title: 'Testing it', href: './06-testing/', build: 'The harness under a fake terminal', learn: [{text: 'FakeTerminal', code: true}, {text: 'a gated terminal'}, {text: 'headless'}]},
+	]}
+/>
+
+Each step has a recording or a test you can run, and the programs are the files CI builds, in
+[`examples/tutorial`](https://github.com/ayeshLK/module-termui/tree/main/examples/tutorial). The tutorial
+uses a scripted model, so it needs no account, key or network, and says where a real model would plug in.
+The finished harness, with more features, is
+[`examples/agent-harness`](https://github.com/ayeshLK/module-termui/tree/main/examples/agent-harness).
