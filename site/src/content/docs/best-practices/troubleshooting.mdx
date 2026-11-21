@@ -1,0 +1,179 @@
+---
+title: Troubleshooting
+description: "What you may see in a terminal, in a pipe or in CI, why it happens and what to do."
+sidebar:
+  order: 4
+---
+
+import ExampleCode from '../../../components/ExampleCode.astro';
+
+This page is organized by what you see. Each entry starts with whether it is how termui is meant to behave,
+then says why it happens and what to do, and links to the page that explains it. If yours is not here, go to
+[Still stuck?](#still-stuck).
+
+## In CI, pipes and scripts
+
+### My program hangs in CI or with `< /dev/null`
+
+*Expected.* When input ends, the runtime sends `termui:InputEnded`. A program that ignores it keeps waiting
+for input that never comes. Return `termui:quit()` when `message is termui:InputEnded`, after committing
+anything you want to keep.
+
+Read more: [Modes and headless operation](../../concepts/headless-modes/). The
+[to-do tutorial](../../tutorial/todo-list/01-list/) handles it from its first step.
+
+### A question returns at once, or I get a `NoTerminal` error
+
+*Expected.* When standard input is not a terminal, `session.confirm` and `session.choose` do not wait. They
+return the default you gave, or a `NoTerminal` error when there is none. Decide what "no answer" means for
+your program, for example deny by default.
+
+Read more: [What your program can rely on](../../concepts/headless-modes/#what-your-program-can-rely-on).
+
+### There are no colors or styling in my CI log or pipe
+
+*Expected.* Color is on only when standard output is a terminal, `NO_COLOR` is unset or empty, and `TERM`
+is not `dumb`. When standard input is not a terminal, committed output is plain lines with no styling or
+escape sequences. If colors are missing in a terminal, check `NO_COLOR` and `TERM`.
+
+Read more: [Modes and headless operation](../../concepts/headless-modes/#what-your-program-can-rely-on).
+
+### In CI I only see the final state, or two runs differ
+
+*Expected.* Without a terminal on standard input the live region is not redrawn. Its final state is written
+once, when the program ends, and committed output is written as it happens. Two runs with the same input
+produce the same bytes, unless the live region holds something that depends on time, such as an animation
+frame or a clock. Stop animating when `ui.interactive` is `false`.
+
+Read more: [Modes and headless operation](../../concepts/headless-modes/#what-your-program-can-rely-on).
+
+### My output file has the results but not the interface
+
+*Expected.* When only standard output is redirected, the interface is still drawn on the terminal, and only
+results go to the file, so the next program in a pipe gets clean data. Send what the file should contain
+with `ui.result`.
+
+Read more: [Modes and headless operation](../../concepts/headless-modes/).
+
+## What you see on screen
+
+### A long line is cut off at the right edge
+
+*Expected.* A line of the live region that is wider than the terminal is cut off, not wrapped. Wrap it first
+with `text:wrap`. The line editor does this for you.
+
+Read more: [Inline rendering](../../concepts/inline-rendering/#live-region-and-committed-output).
+
+### The prompt sits at the top of the screen, or `anchorBottom` does nothing
+
+*Expected.* By default the live region starts on the row where the program was started, so on a cleared
+screen it is at the top. `anchorBottom = true` keeps it on the last rows. It has no effect when the terminal
+does not answer the cursor position request, and it is ignored when the program is not running interactively.
+
+Read more: [Anchoring to the bottom](../../concepts/inline-rendering/#anchoring-to-the-bottom) and
+[Compatibility and upgrades](../compatibility/).
+
+### After I resize the window, the old output looks wrong
+
+*Expected.* The live region is drawn again at the new size, but finished output is never laid out again.
+Terminals that reflow re-wrap prose, and a block keeps the width it was written at. If your terminal does not
+re-wrap, turn the `reflow` option off.
+
+Read more: [Resize](../../concepts/inline-rendering/#resize).
+
+### My debug prints garble the display
+
+*Expected.* Output you give to termui, through the commit commands and `ui.result`, is kept in order and does
+not disturb the live region. The region redraws only what changed and does not know about text written to the
+terminal some other way, so a print from your own code can overwrite part of it. Put text on the screen with
+`commitProse` or `commitBlock`, hand a caller or a pipe its output with `ui.result`, and write diagnostics to
+a file.
+
+Read more: [Anchoring to the bottom](../../concepts/inline-rendering/#anchoring-to-the-bottom) lists the
+limits, and [Output order](../../concepts/commands-and-timers/#output-order) says how committed output is
+ordered.
+
+## Keys and input
+
+### Ctrl+C does not stop my program
+
+*Expected.* While the interface runs, the terminal is in raw mode: Ctrl+C reaches your program as a key
+event and does not end the process. Handle it in `update` and return `termui:quit()`, the way the
+[Quick start](../../start/quick-start/)'s counter handles `q`. The line editor hands Ctrl+C back as
+`ignored` so your program can act on it.
+
+Read more: [The line editor](../../concepts/line-editor/) and the
+[terminal module reference](https://central.ballerina.io/ayesha/termui/1.0.0).
+
+### Alt shortcuts do not work, or Shift+Enter submits
+
+*Expected on most terminals.* Shift+Enter cannot be told from Enter, so a line break is Alt+Enter or Ctrl+J.
+On macOS the Option key has to send Escape sequences for the Alt shortcuts to work: set "Use Option as Meta
+key" in Terminal, or "Esc+" for the Option key in iTerm2.
+
+Read more: [Keys](../../concepts/line-editor/#keys).
+
+## Effects and timers
+
+### I get a compile error when I pass a function to `effect` or send a message
+
+*A rule your program must follow, and the compiler enforces it.* Two messages come up:
+
+- `incompatible types: expected '...:EffectFunction', found 'function (...:Session) returns (error?)'` means
+  the function is not `isolated`. The message never says so. Declare it `isolated function`, which means it
+  cannot reach the program's fields or mutable module variables.
+- `incompatible types: expected '...:Message', found 'map<string>'` means the value given to
+  `session.send` is not an immutable `Message`. Build it as a read-only record of strings and numbers.
+
+Read more: [Effects](../../concepts/commands-and-timers/#effects-work-that-takes-time) and
+[Strands and isolation](../strands-and-isolation/).
+
+### My timer or spinner shows nothing, or stops
+
+*Expected.* A tick that leaves `view` unchanged is not redrawn, so make `view` depend on state that the tick
+changes, such as a frame counter or the elapsed time. When standard input is not a terminal there is nothing
+to animate: check `ui.interactive` and skip the animation when it is `false`.
+
+Read more: [Timers](../../concepts/commands-and-timers/#timers).
+
+### An effect's messages stop arriving, or I see `EffectFailed`
+
+*Expected.* After the program has ended, `session.send` drops messages and `session.isStopped()` is `true`,
+so a long effect should check it and stop. When an effect returns an error, the program receives an
+`EffectFailed` message with the reason, so handle it in `update` to show the error.
+
+Read more: [Effects](../../concepts/commands-and-timers/#effects-work-that-takes-time).
+
+## Terminal state
+
+### My terminal shows no echo after the program was killed
+
+*Expected for `kill -9`.* The terminal's settings are restored when the program quits, when it fails, and
+when it is stopped gracefully. `kill -9` cannot be handled and leaves the terminal in raw mode. Type this and
+press Enter. You may not see what you type:
+
+```sh
+stty sane
+```
+
+Read more: the [terminal module reference](https://central.ballerina.io/ayesha/termui/1.0.0).
+
+## Still stuck?
+
+Windows is not supported: termui runs on macOS and Linux (see
+[Compatibility and upgrades](../compatibility/)). On those, everything above is how termui is meant to
+behave, so a symptom from the list that does not match its entry is worth reporting.
+
+Print how your program will run, once at startup, and include the line in your report:
+
+<ExampleCode file="examples/best-practices/diagnose.bal" region="diagnose" title="Say how a program runs" />
+
+In a CI job it prints, for example:
+
+```text
+mode: headless; stdin is a terminal: false; stdout is a terminal: false; stderr is a terminal: false; color: false; fallback size: 80x24
+```
+
+A report is easiest to act on with that line, the termui and Ballerina versions (`bal version`), your
+operating system and terminal, a small program that shows the problem, and what you expected to see. Open an
+issue at [github.com/ayeshLK/module-termui/issues](https://github.com/ayeshLK/module-termui/issues).
