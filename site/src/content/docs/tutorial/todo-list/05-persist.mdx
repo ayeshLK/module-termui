@@ -1,0 +1,106 @@
+---
+title: "5. Keep it between runs"
+description: "Save the items in a file and load them next time."
+sidebar:
+  order: 5
+---
+
+import ExampleCode from '../../../../components/ExampleCode.astro';
+import CastPlayer from '../../../../components/CastPlayer.astro';
+
+The list is gone as soon as the program exits. In this step it reads its items from a file when it starts and
+writes them when you quit. None of it touches the `TodoList` class: the program does not know where its items
+come from.
+
+## What changes
+
+- Two helper functions, `loadItems` and `saveItems`, read and write a JSON file.
+- `main` loads the items, runs the program until you quit, and saves them.
+
+## The program
+
+Start from step 4's program. You make two changes, and `bal build` compiles after each.
+
+### 1. Load and save
+
+The list lives in a file next to where you run the program. Reading and writing it is ordinary Ballerina, using
+two libraries that are part of Ballerina and need no download. Add these imports, in alphabetical order:
+
+```ballerina
+import ballerina/file;
+import ballerina/io;
+```
+
+Add this between the `TodoList` class and `main`:
+
+```ballerina
+const string FILE_NAME = "todos.json";
+
+function loadItems(string path = FILE_NAME) returns Item[]|error {
+    if !check file:test(path, file:EXISTS) {
+        return [];
+    }
+    json content = check io:fileReadJson(path);
+    return content.cloneWithType();
+}
+
+function saveItems(Item[] items, string path = FILE_NAME) returns error? {
+    check io:fileWriteJson(path, items.toJson());
+}
+```
+
+### 2. Main
+
+`main` loads the items, runs the program until you quit, and saves them. Replace `main` with this one:
+
+```ballerina
+public function main() returns error? {
+    TodoList list = new (check loadItems());
+    termui:Interface ui = new (term:detectEnvironment());
+    check ui.run(list);
+    check saveItems(list.items);
+}
+```
+
+Run it, add a few items, quit, and run it again:
+
+```sh
+bal run
+```
+
+<CastPlayer cast="todo-list.cast" cols={70} rows={10} caption="Add three items, delete one, mark one done, quit. The list stays in the scrollback." />
+
+Your list is back: it was saved in `todos.json`.
+
+<details>
+<summary>The whole program</summary>
+
+<ExampleCode file="examples/todo-list/main.bal" title="main.bal" />
+
+</details>
+
+It is the file CI builds and tests as `examples/todo-list`, so what you read here compiles.
+
+<details>
+<summary>How this step is tested</summary>
+
+These are all of the finished program's tests: the ones from the earlier steps, and three for saving and loading. The tests run the program against a fake terminal: they push keys, let the program run to the end of its input, then read the state or the screen. [Testing without a terminal](../../../best-practices/testing/) explains the idea.
+
+<ExampleCode file="examples/todo-list/tests/todo_test.bal" region="tests" title="tests/todo_test.bal" />
+
+</details>
+
+## What you built
+
+- **A program is a class** with `update` and `view`. [The update and view loop](../../../concepts/the-loop/)
+  follows one message through it.
+- **The screen is a small live region** at the bottom of your terminal. Output you commit, like the final list,
+  goes into the normal scrollback. [Inline rendering](../../../concepts/inline-rendering/) explains why.
+- **The text input is a `LineEditor`**, which gives you cursor movement, word editing and history. [The line
+  editor](../../../concepts/line-editor/) covers it.
+
+## Next
+
+- [Build an agent harness](../../harness/): the other tutorial, from the counter to streamed answers and
+  approval prompts.
+- [The modules](../../../start/modules/): what each of the package's modules is for.

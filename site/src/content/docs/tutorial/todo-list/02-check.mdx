@@ -1,0 +1,104 @@
+---
+title: "2. Check things off"
+description: "Mark items done with space and delete them with d."
+sidebar:
+  order: 2
+---
+
+import ExampleCode from '../../../../components/ExampleCode.astro';
+
+In this step the list can change: space marks the selected item done, and `d` deletes it.
+
+## What changes
+
+- `update` gains two branches, one for space and one for `d`.
+- A done item is drawn with a check and dimmed, and the list can now be empty, so `view` says so.
+
+## The program
+
+Start from step 1's program. You make two changes, and `bal build` compiles after each. No new imports.
+
+### 1. Update
+
+Replace `update` with this one. It reads the key once into `key`, then has the two new branches.
+
+Both branches check `self.items.length() > 0`, because there is nothing to toggle or delete in an empty list.
+Deleting an item can leave `selected` past the end, so it is brought back into range with `int:min`, and
+`int:max` keeps it at 0 when the list becomes empty.
+
+```ballerina
+    public function update(termui:Message message) returns termui:Command? {
+        if message is termui:InputEnded {
+            return termui:quit();
+        }
+        if message is term:KeyEvent {
+            string key = message.key;
+            if key == "up" {
+                self.selected = int:max(self.selected - 1, 0);
+            } else if key == "down" {
+                self.selected = int:min(self.selected + 1, self.items.length() - 1);
+            } else if key == " " && self.items.length() > 0 {
+                self.items[self.selected].done = !self.items[self.selected].done;
+            } else if key == "d" && self.items.length() > 0 {
+                _ = self.items.remove(self.selected);
+                self.selected = int:max(int:min(self.selected, self.items.length() - 1), 0);
+            } else if key == "q" {
+                return termui:quit();
+            }
+        }
+        return;
+    }
+```
+
+### 2. View
+
+A done item shows `[x]` and is dimmed, and the selected item is bold. An empty list says so, and the hint
+line lists the new keys. Replace `view` with this one:
+
+```ballerina
+    public function view() returns text:Span[][] {
+        text:Span[][] lines = [];
+        foreach int i in 0 ..< self.items.length() {
+            Item item = self.items[i];
+            boolean current = i == self.selected;
+            lines.push([
+                {text: current ? "> " : "  "},
+                {text: item.done ? "[x] " : "[ ] ", style: {dim: item.done}},
+                {text: item.text, style: {dim: item.done, bold: current}}
+            ]);
+        }
+        if self.items.length() == 0 {
+            lines.push([{text: "Nothing to do.", style: {dim: true}}]);
+        }
+        lines.push([{text: "up/down move   space done   d delete   q quit", style: {dim: true}}]);
+        return lines;
+    }
+```
+
+Run it, press space on an item and `d` on another:
+
+```sh
+bal run
+```
+
+<details>
+<summary>The whole program</summary>
+
+<ExampleCode file="examples/tutorial/todo2-check/main.bal" title="main.bal" />
+
+</details>
+
+It is the file CI builds and tests as `examples/tutorial/todo2-check`, so what you read here compiles.
+
+<details>
+<summary>How this step is tested</summary>
+
+The tests run the program against a fake terminal: they push keys, let the program run to the end of its input, then read the state or the screen. [Testing without a terminal](../../../best-practices/testing/) explains the idea.
+
+<ExampleCode file="examples/tutorial/todo2-check/tests/check_test.bal" region="tests" title="tests/check_test.bal" />
+
+</details>
+
+## Next
+
+[Step 3](../03-add/) adds a text input so you can add items.

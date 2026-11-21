@@ -1,0 +1,97 @@
+---
+title: "4. Leave the list behind"
+description: "Leave the list in your scrollback when you quit."
+sidebar:
+  order: 4
+---
+
+import ExampleCode from '../../../../components/ExampleCode.astro';
+
+When you quit, the list vanishes, because the live region at the bottom of the terminal is erased. In this
+step the program leaves the list behind in your terminal's scrollback, the way a command leaves its output.
+
+## What changes
+
+- `summary` turns the items into plain lines.
+- Pressing `q` returns a command that commits those lines to the scrollback and then quits.
+- Once `q` is pressed, `view` draws nothing, so nothing is left under the committed list.
+
+## The program
+
+Start from step 3's program. You make three changes, and `bal build` compiles after each. No new imports.
+
+### 1. A flag and a summary
+
+Add this field to `TodoList`, after `adding`. It says the program is on its way out.
+
+```ballerina
+    boolean leaving = false;
+```
+
+Add this function at the end of `TodoList`, after `view`. It returns the list as lines of plain text, no styles,
+so it reads the same in a scrollback or a pipe.
+
+```ballerina
+    // The list as it is left in the scrollback when the program quits.
+    function summary() returns text:Span[][] {
+        if self.items.length() == 0 {
+            return [[{text: "No items."}]];
+        }
+        return from Item item in self.items
+            select [{text: (item.done ? "[x] " : "[ ] ") + item.text}];
+    }
+```
+
+### 2. A command
+
+**A command is how `update` asks the runtime to do something.** `termui:commitProse` writes lines into the
+scrollback above the live region, `termui:quit` ends the program, and `termui:batch` runs several commands in
+order: commit, then quit. In `browsing`, replace the `q` branch with this one:
+
+```ballerina
+        } else if key == "q" {
+            self.leaving = true;
+            return termui:batch([termui:commitProse(self.summary()), termui:quit()]);
+        }
+```
+
+### 3. View
+
+Add these lines at the top of `view`. After `q`, `leaving` is true and `view` returns no lines.
+
+```ballerina
+        if self.leaving {
+            return []; // the list was committed to the scrollback, so draw nothing more
+        }
+```
+
+Run it, add an item and press `q`:
+
+```sh
+bal run
+```
+
+The list stays in your terminal after the program exits. [Inline rendering](../../../concepts/inline-rendering/)
+explains why.
+
+<details>
+<summary>The whole program</summary>
+
+<ExampleCode file="examples/tutorial/todo4-scrollback/main.bal" title="main.bal" />
+
+</details>
+
+It is the file CI builds and tests as `examples/tutorial/todo4-scrollback`, so what you read here compiles.
+
+<details>
+<summary>How this step is tested</summary>
+
+The tests run the program against a fake terminal: they push keys, let the program run to the end of its input, then read the state or the screen. [Testing without a terminal](../../../best-practices/testing/) explains the idea.
+
+<ExampleCode file="examples/tutorial/todo4-scrollback/tests/scrollback_test.bal" region="tests" title="tests/scrollback_test.bal" />
+
+</details>
+
+## Next
+
+[Step 5](../05-persist/) keeps the items in a file, so they are there next time.

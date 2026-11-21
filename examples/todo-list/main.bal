@@ -12,8 +12,8 @@
 // either express or implied. See the License for the specific
 // language governing permissions and limitations under the License.
 
-// The quick start from the documentation site: a to-do list that keeps its items in a file.
-// CI builds and tests this file.
+// Step 5 of the to-do list tutorial on the documentation site: the finished program, a to-do list that keeps
+// its items in a file. CI builds and tests this file.
 
 import ayesha/termui;
 import ayesha/termui.input;
