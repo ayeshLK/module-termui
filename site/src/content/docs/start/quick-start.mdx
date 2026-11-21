@@ -19,51 +19,253 @@ bal new todo
 cd todo
 ```
 
-## Import termui
+## Start from an empty program
 
-Open `main.bal` and import the package. There is nothing to add to `Ballerina.toml`: the first
-`bal build` or `bal run` fetches the latest release from
+`bal new` gives you a `main.bal` with a hello-world `main`. Delete everything in it: you will build the
+program up in stages, and `bal build` compiles after each one. There is nothing to add to
+`Ballerina.toml`: the first `bal build` fetches the latest release from
 [Ballerina Central](https://central.ballerina.io/ayesha/termui/1.0.0) and records its version in
 `Dependencies.toml`.
 
-```ballerina
-import ayesha/termui;
-import ayesha/termui.input;
-import ayesha/termui.term;
-import ayesha/termui.text;
-```
-
 The package has several modules, and the program uses four of them. [The modules](../modules/) says what
-each is for.
+each is for. Each stage adds the imports it needs, so you never import something before the code that
+uses it.
 
 ## Write the program
 
-The program is a class with an `update` and a `view`. Everything it knows is in its fields.
+The program is a class with an `update` and a `view`. Everything it knows is in its fields. Each stage
+below says whether its code replaces something you already have or is added to it. Add imports to the ones
+already at the top of `main.bal`, in alphabetical order. If you add an import too early, the compiler
+reports an unused module prefix.
 
-<ExampleCode file="examples/quick-start/main.bal" region="state" title="State" />
+### 1. The item
+
+Add this at the end of `main.bal`. An item is its text and whether it is done.
+
+```ballerina
+type Item record {|
+    string text;
+    boolean done = false;
+|};
+```
+
+### 2. A skeleton
+
+Add these imports:
+
+```ballerina
+import ayesha/termui;
+import ayesha/termui.text;
+```
+
+Add this class at the end of the file. `*termui:Program` says the class is a program, and `update` and
+`view` are the two functions the runtime calls. Both are empty for now.
+
+```ballerina
+class TodoList {
+    *termui:Program;
+
+    public function update(termui:Message message) returns termui:Command? {
+        return;
+    }
+
+    public function view() returns text:Span[][] {
+        return [];
+    }
+}
+```
+
+### 3. State
+
+Add this import:
+
+```ballerina
+import ayesha/termui.input;
+```
+
+Replace the `TodoList` class with this one. It adds the fields, which are everything the program
+knows, and an `init` that takes the items to start with. `update` and `view` stay empty.
+
+```ballerina
+class TodoList {
+    *termui:Program;
+
+    Item[] items;
+    int selected = 0;
+    boolean adding = false;
+    boolean leaving = false;
+    private input:LineEditor editor = new (multiline = false);
+
+    function init(Item[] items = []) {
+        self.items = items;
+    }
+
+    public function update(termui:Message message) returns termui:Command? {
+        return;
+    }
+
+    public function view() returns text:Span[][] {
+        return [];
+    }
+}
+```
+
+### 4. Update
+
+Add this import:
+
+```ballerina
+import ayesha/termui.term;
+```
 
 `update` receives every message: a key press, a resize, the end of input. It works in one of two modes.
 Browsing moves the selection, marks an item done, deletes it, starts an add, or quits. Adding hands
 every key to a line editor until you press Enter, which appends the item, or Escape, which gives up.
 
-<ExampleCode file="examples/quick-start/main.bal" region="update" title="update" />
+Inside `TodoList`, replace the empty `update` with these three functions:
+
+```ballerina
+    public function update(termui:Message message) returns termui:Command? {
+        if message is termui:InputEnded {
+            return termui:quit();
+        }
+        if message is term:KeyEvent|term:PasteEvent {
+            return self.adding ? self.typing(message) : self.browsing(message);
+        }
+        return;
+    }
+
+    // Browsing: move, toggle, delete, start an add, or quit.
+    function browsing(term:KeyEvent|term:PasteEvent message) returns termui:Command? {
+        if message is term:PasteEvent {
+            return;
+        }
+        string key = message.key;
+        if key == "up" {
+            self.selected = int:max(self.selected - 1, 0);
+        } else if key == "down" {
+            self.selected = int:min(self.selected + 1, self.items.length() - 1);
+        } else if key == " " && self.items.length() > 0 {
+            self.items[self.selected].done = !self.items[self.selected].done;
+        } else if key == "d" && self.items.length() > 0 {
+            _ = self.items.remove(self.selected);
+            self.selected = int:max(int:min(self.selected, self.items.length() - 1), 0);
+        } else if key == "a" {
+            self.adding = true;
+        } else if key == "q" {
+            self.leaving = true;
+            return termui:batch([termui:commitProse(self.summary()), termui:quit()]);
+        }
+        return;
+    }
+
+    // Adding: the line editor handles the keys; enter appends the item, escape gives up.
+    function typing(term:KeyEvent|term:PasteEvent message) returns termui:Command? {
+        input:EditResult result = self.editor.handleEvent(message);
+        if result is input:Submitted {
+            if result.text.trim() != "" {
+                self.items.push({text: result.text.trim()});
+                self.selected = self.items.length() - 1;
+            }
+            self.adding = false;
+        } else if result == "ignored" && message is term:KeyEvent && message.key == "escape" {
+            self.adding = false;
+        }
+        return;
+    }
+```
+
+Quitting commits the list to the scrollback, so `browsing` calls a `summary` that you add at the end of
+`TodoList`, after `view`:
+
+```ballerina
+    // The list as it is left in the scrollback when the program quits.
+    function summary() returns text:Span[][] {
+        if self.items.length() == 0 {
+            return [[{text: "No items."}]];
+        }
+        return from Item item in self.items
+            select [{text: (item.done ? "[x] " : "[ ] ") + item.text}];
+    }
+```
+
+### 5. View
 
 `view` returns the lines to show, as styled spans. It does not draw anything: the runtime compares each
 frame with the last one and writes only what changed. When you quit it returns nothing, because `q` has
 already put the list in your scrollback.
 
-<ExampleCode file="examples/quick-start/main.bal" region="view" title="view" />
+Inside `TodoList`, replace the empty `view` with this one:
 
-The list lives in a file next to where you run the program. Reading and writing it is ordinary Ballerina.
+```ballerina
+    public function view() returns text:Span[][] {
+        if self.leaving {
+            return []; // the list was committed to the scrollback, so draw nothing more
+        }
+        text:Span[][] lines = [];
+        foreach int i in 0 ..< self.items.length() {
+            Item item = self.items[i];
+            boolean current = i == self.selected && !self.adding;
+            lines.push([
+                {text: current ? "> " : "  "},
+                {text: item.done ? "[x] " : "[ ] ", style: {dim: item.done}},
+                {text: item.text, style: {dim: item.done, bold: current}}
+            ]);
+        }
+        if self.items.length() == 0 {
+            lines.push([{text: "Nothing to do. Press a to add an item.", style: {dim: true}}]);
+        }
+        if self.adding {
+            lines.push(...self.editor.render(60, "new: "));
+        } else {
+            lines.push([{text: "up/down move   space done   a add   d delete   q quit", style: {dim: true}}]);
+        }
+        return lines;
+    }
+```
 
-<ExampleCode file="examples/quick-start/main.bal" region="storage" title="Load and save" />
+### 6. Load and save
 
-`main` loads the items, runs the program until you quit, and saves them.
+The list lives in a file next to where you run the program. Reading and writing it is ordinary
+Ballerina, using two libraries that are part of Ballerina and need no download. Add these imports:
 
-<ExampleCode file="examples/quick-start/main.bal" region="main" title="main" />
+```ballerina
+import ballerina/file;
+import ballerina/io;
+```
 
-These pieces are one file. Here it is whole, to copy into `main.bal`; it also needs the two library
-imports it uses, `ballerina/file` and `ballerina/io`, which are part of Ballerina and need no download.
+Add this at the end of the file:
+
+```ballerina
+const string FILE_NAME = "todos.json";
+
+function loadItems(string path = FILE_NAME) returns Item[]|error {
+    if !check file:test(path, file:EXISTS) {
+        return [];
+    }
+    json content = check io:fileReadJson(path);
+    return content.cloneWithType();
+}
+
+function saveItems(Item[] items, string path = FILE_NAME) returns error? {
+    check io:fileWriteJson(path, items.toJson());
+}
+```
+
+### 7. Main
+
+`main` loads the items, runs the program until you quit, and saves them. Add it at the end of the file:
+
+```ballerina
+public function main() returns error? {
+    TodoList list = new (check loadItems());
+    termui:Interface ui = new (term:detectEnvironment());
+    check ui.run(list);
+    check saveItems(list.items);
+}
+```
+
+That is the whole program. If yours does not build, compare it with the finished file:
 
 <details>
 <summary>The whole program</summary>

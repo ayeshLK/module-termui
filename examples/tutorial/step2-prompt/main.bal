@@ -22,12 +22,9 @@ import ayesha/termui.text;
 class Prompt {
     *termui:Program;
 
-    // region state
     private input:LineEditor editor = new;
     private int width = 80;
-    // endregion state
 
-    // region update
     public function update(termui:Message message) returns termui:Command? {
         if message is term:ResizeEvent {
             self.width = message.width;
@@ -47,18 +44,13 @@ class Prompt {
         }
         return;
     }
-    // endregion update
 
-    // region view
     public function view() returns text:Span[][] {
         return self.editor.render(self.width, "❯ ");
     }
-    // endregion view
 }
 
-// region main
 public function main() returns error? {
     termui:Interface ui = new (term:detectEnvironment());
     check ui.run(new Prompt());
 }
-// endregion main

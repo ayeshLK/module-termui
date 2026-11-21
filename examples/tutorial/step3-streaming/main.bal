@@ -24,13 +24,11 @@ class Chat {
 
     private input:LineEditor editor = new;
     private int width = 80;
-    // region state
     private final decimal delay;      // pause between pieces of the answer
     private boolean busy = false;     // an answer is streaming
     private int turn = 0;             // which question the answer belongs to
     private string partial = "";      // the line being written, not finished yet
     private boolean quitWhenIdle = false;
-    // endregion state
 
     function init(decimal delay = 0.03) {
         self.delay = delay;
@@ -48,7 +46,6 @@ class Chat {
             }
             return termui:quit();
         }
-        // region stream-messages
         if message is Token && message.turn == self.turn {
             return self.onToken(message.text);
         }
@@ -61,7 +58,6 @@ class Chat {
             self.partial = "";
             return termui:commitProse([[{text: "error: " + message.reason, style: {fg: "red"}}]]);
         }
-        // endregion stream-messages
         if message is term:KeyEvent|term:PasteEvent {
             return self.onInput(message);
         }
@@ -82,7 +78,6 @@ class Chat {
         return;
     }
 
-    // region ask
     private function ask(string question) returns termui:Command {
         self.busy = true;
         self.turn += 1;
@@ -92,9 +87,7 @@ class Chat {
             termui:effect(streamAnswer(self.turn, question, self.delay))
         ]);
     }
-    // endregion ask
 
-    // region fold
     // Folds a piece into the line being written. Every line that is finished is committed.
     private function onToken(string piece) returns termui:Command? {
         self.partial += piece;
@@ -121,9 +114,7 @@ class Chat {
         }
         return termui:batch(commands);
     }
-    // endregion fold
 
-    // region view
     public function view() returns text:Span[][] {
         text:Span[][] lines = [];
         if self.partial != "" {
@@ -134,12 +125,9 @@ class Chat {
         }
         return lines;
     }
-    // endregion view
 }
 
-// region main
 public function main() returns error? {
     termui:Interface ui = new (term:detectEnvironment());
     check ui.run(new Chat(), anchorBottom = true);
 }
-// endregion main

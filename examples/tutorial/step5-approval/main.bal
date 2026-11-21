@@ -21,12 +21,10 @@ import ayesha/termui.text;
 
 const string[] SPINNER = ["⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧", "⠇", "⠏"];
 
-// region tick
 // Sent by the timer every 0.1 seconds.
 type Tick record {|
     "tick" kind = "tick";
 |};
-// endregion tick
 
 class Chat {
     *termui:Program;
@@ -38,12 +36,10 @@ class Chat {
     private int turn = 0;             // which question the answer belongs to
     private string partial = "";      // the line being written, not finished yet
     private boolean quitWhenIdle = false;
-    // region status-state
     private int ticks = 0;            // one tick is 0.1 s
     private int turnStartTick = 0;
     private string statusText = "";
     private CancelFlag? cancel = ();  // set while an answer is streaming
-    // endregion status-state
 
     function init(decimal delay = 0.03) {
         self.delay = delay;
@@ -69,7 +65,6 @@ class Chat {
             self.statusText = message.text;
             return;
         }
-        // region tool-messages
         if message is ToolStarted && message.turn == self.turn {
             self.statusText = string `Running ${message.name}(${message.arg})`;
             return;
@@ -77,7 +72,6 @@ class Chat {
         if message is ToolFinished && message.turn == self.turn {
             return self.onToolFinished(message);
         }
-        // endregion tool-messages
         if message is Token && message.turn == self.turn {
             return self.onToken(message.text);
         }
@@ -97,7 +91,6 @@ class Chat {
     }
 
     private function onInput(term:KeyEvent|term:PasteEvent message) returns termui:Command? {
-        // region interrupt
         if message is term:KeyEvent && message.key == "escape" {
             CancelFlag? flag = self.cancel;
             if self.busy && flag is CancelFlag {
@@ -106,7 +99,6 @@ class Chat {
             }
             return;
         }
-        // endregion interrupt
         if self.busy && message is term:KeyEvent && message.key == "enter" {
             return; // keep what is typed until the answer is finished
         }
@@ -134,7 +126,6 @@ class Chat {
         ]);
     }
 
-    // region tool-finished
     private function onToolFinished(ToolFinished tool) returns termui:Command {
         text:Style markStyle = {fg: tool.ok ? "green" : "red"};
         return termui:commitBlock([
@@ -142,7 +133,6 @@ class Chat {
             [{text: "  ⎿  " + tool.summary, style: {dim: true}}]
         ]);
     }
-    // endregion tool-finished
 
     // Folds a piece into the line being written. Every line that is finished is committed.
     private function onToken(string piece) returns termui:Command? {
@@ -175,7 +165,6 @@ class Chat {
         return termui:batch(commands);
     }
 
-    // region view
     public function view() returns text:Span[][] {
         text:Span[][] lines = [];
         if self.partial != "" {
@@ -196,13 +185,10 @@ class Chat {
         }
         return lines;
     }
-    // endregion view
 }
 
-// region main
 public function main() returns error? {
     termui:Interface ui = new (term:detectEnvironment());
     // the timer ticks every 0.1 s for the spinner and the elapsed time
     check ui.run(new Chat(), termui:every(0.1, {kind: "tick"}), anchorBottom = true);
 }
-// endregion main

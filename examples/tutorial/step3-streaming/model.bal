@@ -19,7 +19,6 @@
 import ayesha/termui;
 import ballerina/lang.runtime;
 
-// region messages
 // One piece of the answer, tagged with the turn it belongs to so a late piece from an old turn is ignored.
 type Token record {|
     "token" kind = "token";
@@ -31,7 +30,6 @@ type Done record {|
     "done" kind = "done";
     int turn;
 |};
-// endregion messages
 
 isolated function answerTo(string question) returns string {
     return "You asked: " + question + "\n" +
@@ -58,7 +56,6 @@ isolated function chunks(string text, int size = 3) returns string[] {
     return pieces;
 }
 
-// region stream-answer
 // The effect: it runs on its own strand and reports back only with messages.
 isolated function streamAnswer(int turn, string question, decimal delay) returns termui:EffectFunction {
     return isolated function(termui:Session session) returns error? {
@@ -72,4 +69,3 @@ isolated function streamAnswer(int turn, string question, decimal delay) returns
         session.send({kind: "done", turn});
     };
 }
-// endregion stream-answer
