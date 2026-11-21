@@ -1,0 +1,8 @@
+{"version": 2, "width": 70, "height": 8, "timestamp": 0, "env": {"TERM": "xterm-256color", "SHELL": "/bin/sh"}}
+[0.5298, "o", "\u001b[?2004h\u001b[?2048h"]
+[0.568, "o", "\u001b[1G> \u001b[1mbuy milk\u001b[0m\r\n\u001b[1G  write the docs\r\n\u001b[1G  call mum\r\n\u001b[1G\u001b[2mup/down move   q quit\u001b[0m\u001b[1G"]
+[1.9082, "o", "\u001b[3A\u001b[1G \u001b[3Gbuy milk\u001b[1B\u001b[1G>\u001b[3G\u001b[1mwrite the docs\u001b[0m\u001b[1G"]
+[2.6503, "o", "\u001b[1G \u001b[3Gwrite the docs\u001b[1B\u001b[1G>\u001b[3G\u001b[1mcall mum\u001b[0m\u001b[1G"]
+[3.4866, "o", "\u001b[1A\u001b[1G>\u001b[3G\u001b[1mwrite the docs\u001b[0m\u001b[1B\u001b[1G \u001b[3Gcall mum\u001b[1G"]
+[4.3225, "o", "\r\n"]
+[4.3494, "o", "\u001b[?2004l\u001b[?2048l"]

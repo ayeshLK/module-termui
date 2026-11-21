@@ -14,7 +14,7 @@ import pyte
 HERE = os.path.dirname(os.path.abspath(__file__))
 JAVA = os.environ.get("JAVA", "java")
 COLS, ROWS = 90, 14
-SIZES = {"step5-approval": (90, 18), "todo-list": (70, 10)}   # programs that need other than the default size
+SIZES = {"step5-approval": (90, 18), "todo-list": (70, 10), "todo1-list": (70, 8), "todo3-add": (70, 10)}   # programs that need other than the default size
 # Programs that do not live in a tutorial step directory, relative to this file. They also run in an empty
 # folder, so a program that saves a file starts from nothing and leaves no file in the repository.
 ELSEWHERE = {"todo-list": "../todo-list"}
@@ -22,6 +22,20 @@ ELSEWHERE = {"todo-list": "../todo-list"}
 # ("wait", text): wait for text to appear. ("idle", seconds): let time pass. ("type", text): type it like a
 # person. ("key", bytes): send one key. The last step should end the program.
 SCRIPTS = {
+    "todo1-list": [
+        ("wait", "buy milk"), ("idle", 1.2),
+        ("key", b"\x1b[B"), ("idle", 0.8),       # down: the marker moves to the second item
+        ("key", b"\x1b[B"), ("idle", 0.8),
+        ("key", b"\x1b[A"), ("idle", 0.8),       # up
+        ("key", b"q"), ("idle", 1.0),
+    ],
+    "todo3-add": [
+        ("wait", "buy milk"), ("idle", 1.2),
+        ("key", b"a"), ("idle", 0.4), ("type", "feed the cat"), ("idle", 0.4), ("key", b"\r"), ("idle", 1.0),
+        ("key", b"a"), ("idle", 0.4), ("type", "never mind"), ("idle", 0.6),
+        ("key", b"\x1b"), ("idle", 1.0),         # Escape gives up this add
+        ("key", b"q"), ("idle", 1.0),
+    ],
     "todo-list": [
         ("wait", "Nothing to do"), ("idle", 1.2),
         ("key", b"a"), ("idle", 0.4), ("type", "buy milk"), ("idle", 0.4), ("key", b"\r"), ("idle", 0.8),
