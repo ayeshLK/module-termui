@@ -5,7 +5,7 @@ sidebar:
   order: 2
 ---
 
-import ExampleCode from '../../../components/ExampleCode.astro';
+import ExampleCode from '../../../../components/ExampleCode.astro';
 
 The counter's state was a number. A harness needs a prompt: somewhere to type, edit and resubmit. In
 this step the state becomes a `LineEditor`, and a submitted line is **committed** above the prompt, into
@@ -123,10 +123,10 @@ Three things worth noticing:
   state, so the program does not keep it. The terminal's scrollback holds the history of the session.
 - Ctrl+C comes back from the editor as `ignored`, because the editor does not use it. That is how a
   program finds the keys that are its own. The editor handles all the editing keys, including Alt+Enter for a new
-  line and Ctrl+W to delete a word; see [the line editor](../../concepts/line-editor/) for the full list.
+  line and Ctrl+W to delete a word; see [the line editor](../../../concepts/line-editor/) for the full list.
 - `termui:InputEnded` arrives when there is no more input, for example in a pipe. Quitting on it means the
   program runs in a script instead of waiting forever. See
-  [modes and headless operation](../../concepts/headless-modes/).
+  [modes and headless operation](../../../concepts/headless-modes/).
 
 ### 4. View
 

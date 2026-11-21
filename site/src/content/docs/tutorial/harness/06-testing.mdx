@@ -5,8 +5,8 @@ sidebar:
   order: 6
 ---
 
-import ExampleCode from '../../../components/ExampleCode.astro';
-import Layers from '../../../components/diagrams/Layers.astro';
+import ExampleCode from '../../../../components/ExampleCode.astro';
+import Layers from '../../../../components/diagrams/Layers.astro';
 
 The harness is finished. This step does not change the program: it is step 5, unchanged. What it adds is
 a `tests/` folder, and a way of thinking about testing a terminal program, which is normally awkward. It
@@ -74,7 +74,7 @@ environment and hand it a fake terminal, so a test can read exactly what was wri
 
 <ExampleCode file="examples/tutorial/step6-testing/tests/headless_test.bal" region="headless-tests" title="tests/headless_test.bal" />
 
-The test asserts what the [headless rules](../../concepts/headless-modes/) promise: the mode is
+The test asserts what the [headless rules](../../../concepts/headless-modes/) promise: the mode is
 `headless`, nobody can answer, the output has no escape sequences or carriage returns, the question took
 its default (deny), and the tool did not run.
 
@@ -136,10 +136,10 @@ approval step and tests, using only the released API.
   in a turn, and a terminal check that drives it on a real pseudo-terminal.
 - **Plug in a real model.** [Step 3](../03-streaming/) says what to replace and what to keep. Nothing else
   in the program changes.
-- **How it works.** The [concepts](../../concepts/the-loop/) pages explain the loop, effects and timers,
+- **How it works.** The [concepts](../../../concepts/the-loop/) pages explain the loop, effects and timers,
   inline rendering and modes.
-- **What to do and avoid.** [Strands and isolation](../../best-practices/strands-and-isolation/) and
-  [testing without a terminal](../../best-practices/testing/).
+- **What to do and avoid.** [Strands and isolation](../../../best-practices/strands-and-isolation/) and
+  [testing without a terminal](../../../best-practices/testing/).
 - **Every symbol.** The API reference is on
   [Ballerina Central](https://central.ballerina.io/ayesha/termui/1.0.0).
 - **Questions and ideas.** [Discussions](https://github.com/ayeshLK/module-termui/discussions) on the

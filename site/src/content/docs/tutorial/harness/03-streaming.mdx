@@ -5,8 +5,8 @@ sidebar:
   order: 3
 ---
 
-import ExampleCode from '../../../components/ExampleCode.astro';
-import CastPlayer from '../../../components/CastPlayer.astro';
+import ExampleCode from '../../../../components/ExampleCode.astro';
+import CastPlayer from '../../../../components/CastPlayer.astro';
 
 A harness's answer arrives in pieces. In this step the prompt starts an **effect** that streams a
 scripted answer back as messages. Finished lines are committed to your scrollback, and the line being
@@ -315,7 +315,7 @@ with this one:
 ### 7. Starting it
 
 `anchorBottom = true` keeps the live region on the last rows of the terminal, like a chat input, so the
-prompt does not jump around as the answer grows. See [inline rendering](../../concepts/inline-rendering/)
+prompt does not jump around as the answer grows. See [inline rendering](../../../concepts/inline-rendering/)
 for how it works and where it does not apply. Replace `main` with:
 
 ```ballerina

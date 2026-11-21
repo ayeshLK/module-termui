@@ -5,8 +5,8 @@ sidebar:
   order: 5
 ---
 
-import ExampleCode from '../../../components/ExampleCode.astro';
-import CastPlayer from '../../../components/CastPlayer.astro';
+import ExampleCode from '../../../../components/ExampleCode.astro';
+import CastPlayer from '../../../../components/CastPlayer.astro';
 
 An agent that runs tools should ask first. In this step the scripted model finishes its answer and then
 asks to run one tool, `Bash(bal test)`. The effect waits for your yes or no before it runs anything.
@@ -126,7 +126,7 @@ isolated function answerTo(string question) returns string {
 
 `confirm` does not wait when there is no terminal to answer it. It returns the default you passed at
 once, or a `NoTerminal` error if you gave none. `Interface` tells the runtime whether a user can answer,
-as [modes and headless operation](../../concepts/headless-modes/) explains. A script, a pipe or CI therefore
+as [modes and headless operation](../../../concepts/headless-modes/) explains. A script, a pipe or CI therefore
 never hangs on a question, and, because the default is deny, never runs a tool that nobody approved. Decide
 what "no answer" means for your program, and make it the safe thing.
 

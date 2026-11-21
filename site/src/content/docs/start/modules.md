@@ -26,5 +26,5 @@ release may change.
 
 ## Next
 
-- [Quick start](../quick-start/): a to-do list in one file.
+- [Quick start](../quick-start/): a counter, built in four stages.
 - [The update and view loop](../../concepts/the-loop/): the idea everything else builds on.
