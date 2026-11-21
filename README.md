@@ -12,7 +12,7 @@
 <br>
 
 <p align="center">
-  <b>Build agent-style terminal apps in Ballerina: streaming output, a live region, and approval prompts that stay well-behaved in pipes and CI.</b>
+  <b>A general-purpose terminal UI library for Ballerina.</b>
 </p>
 
 <p align="center">
