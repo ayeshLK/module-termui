@@ -1,0 +1,61 @@
+---
+// The homepage's recording: the agent harness, playing beside the introduction. The text inside the
+// "fallback" slot is what a reader sees when scripts are off, and `frame` is the screen of the recording
+// at 13 seconds (the poster), replayed from harness-demo.cast.
+import CastPlayer from './CastPlayer.astro';
+
+const source = 'https://github.com/ayeshLK/module-termui/tree/main/examples/agent-harness';
+const frame = `❯ fix the bug in the handler
+I'll start by looking at where the request is handled.
+● Read(src/handler.bal)
+  ⎿  142 lines
+● Grep("nil" in src/)
+  ⎿  3 matches in 2 files
+Found it. parseBody returns () for an empty payload and the caller dereferences it without
+checking. Here is the fix:
+    function parseBody(http:Request req) returns json|error {
+        json|error body = req.getJsonPayload();
+        if body is error {
+            return {};   // treat an empty payload as an empty object
+        }
+        return body;
+    }
+Let me apply that change.
+⠴ Running Edit(src/handler.bal)… (7s · ↓ 96 tokens · esc to interrupt)
+❯ █
+  dummy-agent-1 · 96 tokens · /help for commands · ctrl+d to quit
+? Allow Edit(src/handler.bal)? (y/N)`;
+---
+
+<CastPlayer
+	cast="harness-demo.cast"
+	cols={92}
+	rows={26}
+	poster="npt:0:13"
+	autoplay
+	loop
+	caption={`An agent harness built with termui, recorded from the real program. <a href="${source}">See its source.</a>`}
+>
+	<Fragment slot="fallback">
+		<p>What the recording shows, in order:</p>
+		<ol>
+			<li>The harness starts with a prompt, and you type <code>fix the bug in the handler</code>.</li>
+			<li>
+				A spinner and a status line (elapsed time, tokens, how to interrupt) stay at the bottom while the
+				answer streams in above them.
+			</li>
+			<li>
+				Each tool call (<code>Read</code>, <code>Grep</code>) and each paragraph of the answer, once
+				finished, is written into the terminal's normal scrollback.
+			</li>
+			<li>
+				Before <code>Edit</code> and again before <code>Bash(bal test)</code>, the program asks for approval
+				and waits for <code>y</code> or <code>n</code>.
+			</li>
+			<li>When the answer is complete the prompt comes back. After you quit, the whole session stays in the scrollback.</li>
+		</ol>
+		<p>The screen at the first approval prompt:</p>
+		<pre><code set:text={frame} /></pre>
+		<p>The source is in <a href={source}><code>examples/agent-harness</code></a>.</p>
+	</Fragment>
+</CastPlayer>
