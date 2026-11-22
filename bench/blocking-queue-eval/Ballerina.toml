@@ -1,0 +1,10 @@
+[package]
+org = "ayesha"
+name = "blocking_queue_eval"
+version = "0.1.0"
+distribution = "2201.14.2"
+
+[[dependency]]
+org = "xlibb"
+name = "pipe"
+version = "1.6.1"
