@@ -129,14 +129,41 @@ function testTheSleepNeverGrowsWhenTheCeilingIsAtTheBase() returns error? {
     test:assertEquals(sleep, 0.005d);
 }
 
+// An engine that has handled the end of input and has nothing left to do, so every further step is idle.
+function idleEngine() returns Engine|error {
+    TestProgram program = new;
+    Engine engine = newEngine(program, new term:FakeTerminal(40, 5));
+    engine.launch();
+    check pump(engine, function () returns boolean {
+        return countKind(program.seen, "inputEnded") >= 1;
+    });
+    return engine;
+}
+
+// `run` sleeps for `sleepAfterStep(engine, options)`, so this is how the run options set the loop's sleep. No
+// clock is involved: a sleep that is too long or too short is a different number.
 @test:Config {}
-function testACeilingAtTheBaseKeepsTheShortSleepWhenIdle() returns error? {
-    term:FakeTerminal terminal = new (40, 5);
-    terminal.pushText("g");
-    LateProgram program = new (1.5, [0.0]);
-    check run(program, terminal, {pollInterval: 0.005, maxPollInterval: 0.005});
-    test:assertEquals(program.arrived, [0]);
-    test:assertTrue(program.waited[0] <= 0.05d, string `with the backoff off the message waited ${program.waited[0].toString()} s`);
+function testTheRunOptionsSetHowLongAnIdleLoopSleeps() returns error? {
+    Engine backingOff = check idleEngine();
+    Engine backoffOff = check idleEngine();
+    Engine slowerBase = check idleEngine();
+    decimal sleptWithBackoff = 0;
+    decimal sleptWithoutBackoff = 0;
+    foreach int _ in 0 ..< 100 {
+        _ = check backingOff.step();
+        sleptWithBackoff = sleepAfterStep(backingOff, {pollInterval: 0.005, maxPollInterval: 0.5});
+        _ = check backoffOff.step();
+        sleptWithoutBackoff = sleepAfterStep(backoffOff, {pollInterval: 0.005, maxPollInterval: 0.005});
+    }
+    // The first sleep is the poll interval that was asked for, before any backoff has grown it.
+    _ = check slowerBase.step();
+    decimal firstSleepFromSlowerBase = sleepAfterStep(slowerBase, {pollInterval: 0.02, maxPollInterval: 0.5});
+    backingOff.stop();
+    backoffOff.stop();
+    slowerBase.stop();
+    test:assertTrue(sleptWithBackoff > 0.005d, "a ceiling above the base lets an idle loop sleep longer");
+    test:assertEquals(sleptWithoutBackoff, 0.005d, "a ceiling at the base keeps the short sleep");
+    test:assertEquals(firstSleepFromSlowerBase, 0.02d, "the base is the poll interval that was asked for");
 }
 
 @test:Config {}

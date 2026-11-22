@@ -365,6 +365,12 @@ isolated function usableSize(term:Size|error reported, term:Size fallback) retur
     return fallback;
 }
 
+// How long `run` sleeps after a step, for the options it was given. A function of its own so that a test can
+// check how the options set the sleep without waiting for it.
+function sleepAfterStep(Engine engine, Options options) returns decimal {
+    return engine.nextSleep(options.pollInterval, options.maxPollInterval);
+}
+
 # Runs a program on a terminal until it asks to quit.
 #
 # The terminal is acquired first and always released afterwards, also when the program fails. Input,
@@ -389,7 +395,7 @@ public function run(Program program, term:Terminal terminal, Options options = {
         engine = running;
         running.launch(options.initialCommand, size);
         while check running.step() {
-            runtime:sleep(running.nextSleep(options.pollInterval, options.maxPollInterval));
+            runtime:sleep(sleepAfterStep(running, options));
         }
         check drawing.close();
     } on fail error cause {
